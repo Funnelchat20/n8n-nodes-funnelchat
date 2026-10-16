@@ -1,0 +1,385 @@
+{
+	"x-fc-suplemento": {
+		"id": "accounts-webhook-subscriptions",
+		"titulo": "Suscripciones de webhooks unificadas de accounts",
+		"fuente": "accounts origin/main @ c34cba2c0c8f2274494731f99bbddd8d23321355 (2026-10-16 00:34 -03:00), solo lectura",
+		"archivos": [
+			"back/routes/api/webhooks.php",
+			"back/app/Modules/Webhook/Http/Controllers/WebhookSubscriptionController.php",
+			"back/app/Modules/Webhook/Http/Controllers/WebhookSubscriptionDeliveryController.php",
+			"back/app/Modules/Webhook/Http/Controllers/WebhookSubscriptionTestController.php",
+			"back/app/Modules/Webhook/Http/Requests/StoreWebhookSubscriptionRequest.php",
+			"back/app/Modules/Webhook/Http/Requests/UpdateWebhookSubscriptionRequest.php",
+			"back/app/Modules/Webhook/Http/Resources/WebhookSubscriptionResource.php",
+			"back/app/Modules/Webhook/Http/Resources/WebhookSubscriptionCreatedResource.php",
+			"back/app/Modules/Webhook/Http/Resources/WebhookSubscriptionDeliveryResource.php",
+			"back/app/Modules/Webhook/Services/SubscriptionFilter.php"
+		],
+		"portal": "developers-portal feat/armar-funnelchat-portal @ dd7cd42, content/webhooks.md",
+		"motivo": "La especificación unificada del portal (feat/openapi-unificada @ 0ef4abb) no trae estas rutas. Se toman del código para el disparador y para el recurso Webhooks. Si una instantánea nueva las incluye, el generador ignora este suplemento.",
+		"estado_claves": "En accounts origin/main @ c34cba2c0 estas rutas no están en el allowed de config/platform-gate.php: una clave de API recibe 403 route_not_available. Además exigen que la clave sea del titular de la cuenta."
+	},
+	"tags": [
+		{
+			"name": "WebhookSubscription",
+			"x-displayName": "Suscripciones de webhooks",
+			"description": "Una suscripción recibe, en una URL https, los eventos elegidos de las tres áreas (accounts, conversations y communities) con un solo secreto y un solo historial de entregas."
+		}
+	],
+	"paths": {
+		"/api/v1/webhooks": {
+			"get": {
+				"operationId": "webhookSubscription.index",
+				"summary": "Listar suscripciones de webhooks",
+				"tags": ["WebhookSubscription"],
+				"x-fc-domain": "accounts",
+				"x-fc-permission": null,
+				"x-fc-proposito": "Usalo para ver todas las suscripciones de la cuenta, también las que crearon otras integraciones o personas.",
+				"x-fc-nota": "Tomada del código de accounts (origin/main @ c34cba2c0): no está en la especificación del portal y hoy una clave de API recibe 403 route_not_available.",
+				"responses": {
+					"200": {
+						"description": "Lista sin paginar, ordenada por id.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "array",
+									"items": { "$ref": "#/components/schemas/SupWebhookSubscription" }
+								}
+							}
+						}
+					}
+				}
+			},
+			"post": {
+				"operationId": "webhookSubscription.store",
+				"summary": "Crear una suscripción de webhook",
+				"tags": ["WebhookSubscription"],
+				"x-fc-domain": "accounts",
+				"x-fc-permission": null,
+				"x-fc-proposito": "Usalo para registrar una URL https y elegir los eventos que recibe. La respuesta trae el secreto una sola vez: guardalo para verificar la firma.",
+				"x-fc-nota": "Tomada del código de accounts (origin/main @ c34cba2c0): no está en la especificación del portal y hoy una clave de API recibe 403 route_not_available.",
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": { "$ref": "#/components/schemas/SupStoreWebhookSubscriptionRequest" }
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"description": "La suscripción creada, con `secret` (la única vez que se muestra).",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/SupWebhookSubscriptionCreated" }
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/webhooks/{id}": {
+			"get": {
+				"operationId": "webhookSubscription.show",
+				"summary": "Ver una suscripción de webhook",
+				"tags": ["WebhookSubscription"],
+				"x-fc-domain": "accounts",
+				"x-fc-permission": null,
+				"x-fc-proposito": "Usalo para ver la URL, los eventos, el filtro y el estado de una suscripción. Nunca trae el secreto.",
+				"x-fc-nota": "Tomada del código de accounts (origin/main @ c34cba2c0): no está en la especificación del portal y hoy una clave de API recibe 403 route_not_available.",
+				"parameters": [{ "$ref": "#/components/parameters/SupWebhookSubscriptionId" }],
+				"responses": {
+					"200": {
+						"description": "La suscripción.",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/SupWebhookSubscription" }
+							}
+						}
+					}
+				}
+			},
+			"put": {
+				"operationId": "webhookSubscription.update",
+				"summary": "Actualizar una suscripción de webhook",
+				"tags": ["WebhookSubscription"],
+				"x-fc-domain": "accounts",
+				"x-fc-permission": null,
+				"x-fc-proposito": "Usalo para cambiar la URL (por ejemplo, cuando cambia tu túnel), los eventos, el filtro o pausar y reactivar una suscripción. Reemplaza la suscripción completa y el secreto no cambia.",
+				"x-fc-nota": "Tomada del código de accounts (origin/main @ c34cba2c0): no está en la especificación del portal y hoy una clave de API recibe 403 route_not_available.",
+				"parameters": [{ "$ref": "#/components/parameters/SupWebhookSubscriptionId" }],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": { "$ref": "#/components/schemas/SupUpdateWebhookSubscriptionRequest" }
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "La suscripción actualizada.",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/SupWebhookSubscription" }
+							}
+						}
+					}
+				}
+			},
+			"delete": {
+				"operationId": "webhookSubscription.destroy",
+				"summary": "Eliminar una suscripción de webhook",
+				"tags": ["WebhookSubscription"],
+				"x-fc-domain": "accounts",
+				"x-fc-permission": null,
+				"x-fc-destructive": true,
+				"x-fc-proposito": "Usalo para dar de baja una suscripción. Sus eventos y su historial de entregas se borran con ella. No borres las que no reconocés: pueden ser de otra integración de la cuenta.",
+				"x-fc-nota": "Tomada del código de accounts (origin/main @ c34cba2c0): no está en la especificación del portal y hoy una clave de API recibe 403 route_not_available.",
+				"parameters": [{ "$ref": "#/components/parameters/SupWebhookSubscriptionId" }],
+				"responses": {
+					"204": { "description": "Eliminada." }
+				}
+			}
+		},
+		"/api/v1/webhooks/{id}/deliveries": {
+			"get": {
+				"operationId": "webhookSubscriptionDelivery.index",
+				"summary": "Listar las entregas de una suscripción",
+				"tags": ["WebhookSubscription"],
+				"x-fc-domain": "accounts",
+				"x-fc-permission": null,
+				"x-fc-proposito": "Usalo para revisar cada intento de entrega de una suscripción: estado HTTP, error y duración, lo más reciente primero.",
+				"x-fc-nota": "Tomada del código de accounts (origin/main @ c34cba2c0): no está en la especificación del portal y hoy una clave de API recibe 403 route_not_available.",
+				"x-fc-listing": {
+					"per_page_default": 25,
+					"per_page_max": 100,
+					"size_params": ["per_page"],
+					"order": "attempted_at descendente, después id descendente",
+					"sortable": []
+				},
+				"parameters": [
+					{ "$ref": "#/components/parameters/SupWebhookSubscriptionId" },
+					{
+						"name": "event_type",
+						"in": "query",
+						"description": "Solo los intentos de este tipo de evento.",
+						"schema": { "type": "string" }
+					},
+					{
+						"name": "event_id",
+						"in": "query",
+						"description": "Solo los intentos de este evento (`evt_…`).",
+						"schema": { "type": "string" }
+					},
+					{
+						"name": "per_page",
+						"in": "query",
+						"schema": { "type": "integer", "default": 25, "minimum": 1, "maximum": 100 }
+					},
+					{
+						"name": "page",
+						"in": "query",
+						"schema": { "type": "integer", "minimum": 1 }
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Página de intentos.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"data": {
+											"type": "array",
+											"items": { "$ref": "#/components/schemas/SupWebhookSubscriptionDelivery" }
+										},
+										"links": { "type": "object" },
+										"meta": {
+											"type": "object",
+											"properties": {
+												"current_page": { "type": "integer" },
+												"last_page": { "type": "integer" },
+												"per_page": { "type": "integer" },
+												"total": { "type": "integer" }
+											}
+										}
+									},
+									"required": ["data", "links", "meta"]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/webhooks/{id}/test": {
+			"post": {
+				"operationId": "webhookSubscriptionTest.test",
+				"summary": "Enviar un evento de prueba",
+				"tags": ["WebhookSubscription"],
+				"x-fc-domain": "accounts",
+				"x-fc-permission": null,
+				"x-fc-proposito": "Usalo para probar tu receptor: envía un único evento webhook.test firmado igual que uno real, sin reintentos, y lo deja en el historial.",
+				"x-fc-nota": "Tomada del código de accounts (origin/main @ c34cba2c0): no está en la especificación del portal y hoy una clave de API recibe 403 route_not_available.",
+				"parameters": [{ "$ref": "#/components/parameters/SupWebhookSubscriptionId" }],
+				"responses": {
+					"200": {
+						"description": "Resultado del intento (responde 200 aunque el destino falle).",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"succeeded": { "type": "boolean" },
+										"response_status": { "type": ["integer", "null"] },
+										"error": { "type": ["string", "null"] },
+										"duration_ms": { "type": ["integer", "null"] },
+										"delivery_id": { "type": "integer" }
+									},
+									"required": ["succeeded", "response_status", "error", "duration_ms", "delivery_id"]
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"parameters": {
+			"SupWebhookSubscriptionId": {
+				"name": "id",
+				"in": "path",
+				"required": true,
+				"description": "El `id` (UUID) de la suscripción.",
+				"schema": { "type": "string", "format": "uuid" }
+			}
+		},
+		"schemas": {
+			"SupStoreWebhookSubscriptionRequest": {
+				"type": "object",
+				"properties": {
+					"url": {
+						"type": "string",
+						"maxLength": 2048,
+						"description": "URL `https` pública que recibe las entregas. Sin usuario ni contraseña; una dirección interna se rechaza."
+					},
+					"events": {
+						"type": "array",
+						"minItems": 1,
+						"maxItems": 50,
+						"items": { "type": "string" },
+						"description": "Tipos de evento del catálogo (`GET /api/v1/webhooks/events`) que se pueden suscribir. Con una clave, cada tipo pide el permiso de lectura de su área."
+					},
+					"description": {
+						"type": ["string", "null"],
+						"maxLength": 160,
+						"description": "Texto para reconocer la suscripción en la lista."
+					},
+					"filters": {
+						"type": ["object", "null"],
+						"properties": {
+							"campaign_ids": {
+								"type": ["array", "null"],
+								"maxItems": 100,
+								"items": { "type": "string", "minLength": 6, "maxLength": 64, "pattern": "^[A-Za-z0-9_-]+$" }
+							}
+						},
+						"additionalProperties": false,
+						"description": "Filtro opcional por campañas (`campaign_ids`): con filtro, un evento sin campaña no se entrega."
+					}
+				},
+				"required": ["url", "events"]
+			},
+			"SupUpdateWebhookSubscriptionRequest": {
+				"type": "object",
+				"properties": {
+					"url": {
+						"type": "string",
+						"maxLength": 2048,
+						"description": "URL `https` pública que recibe las entregas."
+					},
+					"events": {
+						"type": "array",
+						"minItems": 1,
+						"maxItems": 50,
+						"items": { "type": "string" },
+						"description": "La lista completa de tipos de evento: reemplaza a la anterior."
+					},
+					"description": {
+						"type": ["string", "null"],
+						"maxLength": 160,
+						"description": "Texto para reconocer la suscripción en la lista."
+					},
+					"filters": {
+						"type": ["object", "null"],
+						"properties": {
+							"campaign_ids": {
+								"type": ["array", "null"],
+								"maxItems": 100,
+								"items": { "type": "string" }
+							}
+						},
+						"additionalProperties": false,
+						"description": "Filtro opcional por campañas (`campaign_ids`)."
+					},
+					"status": {
+						"type": "string",
+						"enum": ["active", "paused"],
+						"description": "Pausar o reactivar la suscripción. No se puede dejar en `disabled`."
+					}
+				},
+				"required": ["url", "events"]
+			},
+			"SupWebhookSubscription": {
+				"type": "object",
+				"properties": {
+					"id": { "type": "string", "format": "uuid" },
+					"url": { "type": "string" },
+					"description": { "type": ["string", "null"] },
+					"events": { "type": "array", "items": { "type": "string" } },
+					"filters": { "type": "object" },
+					"status": { "type": "string", "enum": ["active", "paused", "disabled"] },
+					"disabled_reason": { "type": ["string", "null"] },
+					"last_delivery_at": { "type": ["string", "null"], "format": "date-time" },
+					"last_success_at": { "type": ["string", "null"], "format": "date-time" },
+					"secret_rotated_at": { "type": ["string", "null"], "format": "date-time" },
+					"created_at": { "type": ["string", "null"], "format": "date-time" },
+					"updated_at": { "type": ["string", "null"], "format": "date-time" },
+					"migration": { "type": ["object", "null"] }
+				},
+				"required": ["id", "url", "events", "filters", "status"]
+			},
+			"SupWebhookSubscriptionCreated": {
+				"allOf": [
+					{ "$ref": "#/components/schemas/SupWebhookSubscription" },
+					{
+						"type": "object",
+						"properties": {
+							"secret": { "type": "string", "description": "`whsec_…`: se muestra solo en esta respuesta." },
+							"secret_notice": { "type": "string" }
+						},
+						"required": ["secret"]
+					}
+				]
+			},
+			"SupWebhookSubscriptionDelivery": {
+				"type": "object",
+				"properties": {
+					"id": { "type": "integer" },
+					"event_id": { "type": "string" },
+					"event_type": { "type": "string" },
+					"attempt": { "type": "integer" },
+					"url": { "type": "string" },
+					"response_status": { "type": ["integer", "null"] },
+					"succeeded": { "type": "boolean" },
+					"error": { "type": ["string", "null"] },
+					"duration_ms": { "type": ["integer", "null"] },
+					"attempted_at": { "type": ["string", "null"], "format": "date-time" }
+				}
+			}
+		}
+	}
+}
