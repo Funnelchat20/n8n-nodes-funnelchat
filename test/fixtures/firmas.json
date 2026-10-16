@@ -1,0 +1,15 @@
+{
+	"_procedencia": "developers-portal feat/armar-funnelchat-portal @ dd7cd42, tests/test_firmas.py: SECRETO y CUERPO copiados tal cual (el cuerpo, con los bytes exactos que firma el test). Los casos se arman en test/signature.test.ts igual que casos() del test del portal.",
+	"secreto": "whsec_prueba_9f3a1c7e5b2d4a6c8e0f1a3b5c7d9e1f",
+	"secreto_sin_prefijo": "9f3a1c7e5b2d4a6c8e0f1a3b5c7d9e1f",
+	"cuerpo": "{\"id\":\"evt_000000000000000000000001\",\"type\":\"message.received\",\"version\":1,\"occurred_at\":\"2026-10-01T12:00:00Z\",\"data\":{\"message\":{\"id\":1001,\"type\":\"text\",\"text\":\"Hola, quiero más información\",\"media\":null},\"contact\":{\"id\":2001,\"name\":\"Contacto de ejemplo\",\"phone\":\"+5491100000000\"},\"receiver\":{\"phone\":\"+5491100000001\"}}}",
+	"cuerpo_utf8": "{\"texto\":\"Ñandú 🚀 — acentos: áéíóú\"}",
+	"sha256_cuerpo": "3b9818e46f97dc466260d8c9904b22c2f0fc63aab2b34162884150361536445b",
+	"vector_fijo": {
+		"_nota": "Firmado con firmar() de tests/test_firmas.py del portal, con t fijo, para comparar byte a byte con la implementación de referencia.",
+		"t": 1790000000,
+		"cabecera": "t=1790000000,v1=2c796bcb36dfd1a6f64642cd3a5ee1fdc6abee6df1975e6114b4ba1252f97b5d",
+		"cabecera_utf8": "t=1790000000,v1=629921ea0b1c22666709ac4964d9f1875307e7beb82810a4dc465d8ceaf8a2d8",
+		"cabecera_sin_prefijo": "t=1790000000,v1=cecbf06658567ae2ce2c7ce449c9ee13cfb6ba266b204f5b465727d7d292e22c"
+	}
+}
