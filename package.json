@@ -1,0 +1,61 @@
+{
+	"name": "n8n-nodes-funnelchat",
+	"version": "0.1.0",
+	"description": "Nodo comunitario de n8n para la API pública de Funnelchat: acciones sobre contactos, conversaciones, plantillas, grupos, números y webhooks, y un disparador por webhooks firmados.",
+	"license": "MIT",
+	"homepage": "https://github.com/Funnelchat20/n8n-nodes-funnelchat",
+	"keywords": [
+		"n8n-community-node-package",
+		"n8n",
+		"funnelchat",
+		"whatsapp",
+		"crm"
+	],
+	"author": {
+		"name": "Funnelchat",
+		"email": "soporte@funnelchat.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Funnelchat20/n8n-nodes-funnelchat.git"
+	},
+	"private": true,
+	"scripts": {
+		"generate": "node scripts/generate.mjs",
+		"build": "n8n-node build",
+		"build:watch": "tsc --watch",
+		"dev": "n8n-node dev",
+		"lint": "n8n-node lint",
+		"lint:fix": "n8n-node lint --fix",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"release": "n8n-node release",
+		"prepublishOnly": "n8n-node prerelease"
+	},
+	"files": [
+		"dist"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"strict": true,
+		"credentials": [
+			"dist/credentials/FunnelchatApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/Funnelchat/Funnelchat.node.js",
+			"dist/nodes/FunnelchatTrigger/FunnelchatTrigger.node.js"
+		]
+	},
+	"devDependencies": {
+		"@n8n/node-cli": "*",
+		"@types/node": "^22.20.5",
+		"eslint": "9.39.4",
+		"prettier": "3.8.3",
+		"release-it": "20.2.0",
+		"typescript": "5.9.3",
+		"vitest": "^3.2.4"
+	},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	}
+}
