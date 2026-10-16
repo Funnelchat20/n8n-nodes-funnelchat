@@ -351,6 +351,9 @@ function buildOperation(ctx, doc, path, method, op, resource, source) {
 	if (flag && PORTAL_FLAG_NOTES[flag]) notices.push(PORTAL_FLAG_NOTES[flag]);
 	if (flag && !PORTAL_FLAG_NOTES[flag])
 		warnings.push(`${operationId}: x-portal-v0 «${flag}» sin nota conocida`);
+	// What the code of a domain requires and its specification does not say (checked by reading the code).
+	const extra = config.operationNotes?.[operationId];
+	if (extra) notices.push(cleanText(extra));
 
 	const permission = op['x-fc-permission'] ?? null;
 	const purpose = firstSentences(op['x-fc-proposito'] ?? op.summary ?? '');

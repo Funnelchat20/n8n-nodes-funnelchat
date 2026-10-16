@@ -69,6 +69,9 @@
 		}
 	],
 	"excludeOperations": [],
+	"operationNotes": {
+		"conversation.sendMessage": "La especificación no lo marca, pero conversations exige phone o whatsapp_id además de contact_id (SendMessageRequest: required_without, origin/main @ 22f921605): agregá Teléfono o ID de WhatsApp en Campos adicionales."
+	},
 	"labels": {
 		"active_conversation": "Conversación activa",
 		"activeConversation": "Conversación activa",

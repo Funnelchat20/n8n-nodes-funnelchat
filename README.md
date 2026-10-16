@@ -342,6 +342,8 @@ del portal (`snippets/verificar-firma.js`) y los tests usan sus mismos vectores 
    - ID del contacto (en la ruta): `{{ $json.data.contact.id }}`
    - ID del número: el id del número que responde, de «Números → Listar números».
    - ID del contacto (en el cuerpo): `{{ $json.data.contact.id }}`
+   - Campos adicionales → Teléfono: `{{ $json.data.contact.phone }}`. La especificación no lo marca como obligatorio,
+     pero conversations pide `phone` o `whatsapp_id` además de `contact_id` (lo dice su código, `SendMessageRequest`).
    - Campos adicionales → Texto: `¡Gracias por escribirnos! Te respondemos en un rato.`
 
 Respondé dentro de la ventana de 24 horas del contacto: fuera de ella, WhatsApp pide una plantilla («Plantillas →
@@ -381,7 +383,9 @@ publique una especificación nueva:
 
 Lo que cambia solo, sin tocar código: operaciones nuevas, nombres, descripciones, permisos, notas del portal, campos y
 paginación. Lo que se configura en `scripts/generator.config.json`: qué etiquetas (tags) de la especificación entran en
-cada recurso y los nombres en español de los campos (los que no figuran se muestran con su nombre de la API).
+cada recurso, los nombres en español de los campos (los que no figuran se muestran con su nombre de la API) y, en
+`operationNotes`, avisos de lo que el código de un dominio exige y su especificación no dice. Al regenerar, revisá si
+esos avisos siguen haciendo falta.
 
 - **Suplementos.** `spec/suplementos/` tiene lo que la especificación todavía no trae (hoy, las suscripciones de webhooks
   de accounts). Si una especificación nueva incluye esas rutas, el generador usa las de la especificación y avisa que el

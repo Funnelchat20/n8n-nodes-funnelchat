@@ -1821,7 +1821,7 @@ export const OPERATIONS: OperationSpec[] = [
 		"method": "POST",
 		"path": "/api/v1/contacts/{contact}/message",
 		"permission": "conversations:send",
-		"notice": "El envío con clave se abre con el permiso `conversations:send` y las reglas de WhatsApp (ventana de 24 horas y frenos contra spam): está en camino. Hasta que se habilite, esta ruta responde `403 route_not_available` a cualquier clave. El envío con clave llega con conversations PR #2284, sin mergear al 16-10-2026.",
+		"notice": "El envío con clave se abre con el permiso `conversations:send` y las reglas de WhatsApp (ventana de 24 horas y frenos contra spam): está en camino. Hasta que se habilite, esta ruta responde `403 route_not_available` a cualquier clave. El envío con clave llega con conversations PR #2284, sin mergear al 16-10-2026. La especificación no lo marca, pero conversations exige phone o whatsapp_id además de contact_id (SendMessageRequest: required_without, origin/main @ 22f921605): agregá Teléfono o ID de WhatsApp en Campos adicionales.",
 		"source": "spec",
 		"body": {
 			"required": true,
