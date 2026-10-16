@@ -1,5 +1,6 @@
 import {
 	NodeApiError,
+	NodeOperationError,
 	sleep,
 	type IDataObject,
 	type IExecuteFunctions,
@@ -42,7 +43,26 @@ export interface FunnelchatResponse {
 	body: unknown;
 }
 
-export function baseUrlFor(environment: unknown): string {
+/** The `environment` value of a custom base URL (for example the local sandbox, `http://localhost:4010`). */
+export const CUSTOM_ENVIRONMENT = 'custom';
+
+/** A custom base URL is `http://` or `https://` with a host, and does not end in `/` (the node appends `/api/v1/…`). */
+export function isValidBaseUrl(value: unknown): value is string {
+	if (typeof value !== 'string' || value !== value.trim()) return false;
+	if (!/^https?:\/\/[^\s/?#]+/.test(value) || value.endsWith('/') || /[?#]/.test(value))
+		return false;
+	try {
+		const url = new URL(value);
+		return (url.protocol === 'http:' || url.protocol === 'https:') && url.hostname !== '';
+	} catch {
+		return false;
+	}
+}
+
+/** The base URL of the credential: the one of its environment, or its own when the environment is `custom`. */
+export function baseUrlFor(environment: unknown, customBaseUrl?: unknown): string | undefined {
+	if (environment === CUSTOM_ENVIRONMENT)
+		return isValidBaseUrl(customBaseUrl) ? customBaseUrl : undefined;
 	return BASE_URLS[String(environment)] ?? BASE_URLS.production;
 }
 
@@ -139,9 +159,20 @@ export async function funnelchatApiRequest(
 	wait: (ms: number) => Promise<void> = sleep,
 ): Promise<FunnelchatResponse> {
 	const credentials = await this.getCredentials(CREDENTIAL_NAME);
+	const baseURL = baseUrlFor(credentials.environment, credentials.baseUrl);
+	if (!baseURL) {
+		throw new NodeOperationError(
+			this.getNode(),
+			'La URL base de la credencial no es válida: tiene que empezar con http:// o https:// y no terminar en /.',
+			{
+				itemIndex: request.itemIndex,
+				description: `Valor actual: ${String(credentials.baseUrl ?? '') || '(vacío)'}. Por ejemplo: http://localhost:4010.`,
+			},
+		);
+	}
 	const options: IHttpRequestOptions = {
 		method: request.method,
-		baseURL: baseUrlFor(credentials.environment),
+		baseURL,
 		url: request.url,
 		headers: { Accept: 'application/json' },
 		json: true,

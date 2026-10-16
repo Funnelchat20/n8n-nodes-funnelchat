@@ -52,6 +52,7 @@ export function executeContext(opts: {
 	responses: FakeResponse[];
 	continueOnFail?: boolean;
 	environment?: string;
+	baseUrl?: string;
 	items?: number;
 }) {
 	const http = fakeHttp(opts.responses);
@@ -64,6 +65,7 @@ export function executeContext(opts: {
 		getCredentials: async () => ({
 			apiKey: 'clave-de-prueba',
 			environment: opts.environment ?? 'production',
+			...(opts.baseUrl !== undefined ? { baseUrl: opts.baseUrl } : {}),
 		}),
 		helpers: { httpRequestWithAuthentication: http.httpRequestWithAuthentication },
 	};
@@ -79,6 +81,8 @@ export function hookContext(opts: {
 	staticData?: IDataObject;
 	webhookUrl?: string;
 	workflowName?: string;
+	environment?: string;
+	baseUrl?: string;
 }) {
 	const http = fakeHttp(opts.responses);
 	const staticData: IDataObject = opts.staticData ?? {};
@@ -94,7 +98,11 @@ export function hookContext(opts: {
 			name: 'Funnelchat Trigger',
 			type: 'n8n-nodes-funnelchat.funnelchatTrigger',
 		}),
-		getCredentials: async () => ({ apiKey: 'clave-de-prueba', environment: 'production' }),
+		getCredentials: async () => ({
+			apiKey: 'clave-de-prueba',
+			environment: opts.environment ?? 'production',
+			...(opts.baseUrl !== undefined ? { baseUrl: opts.baseUrl } : {}),
+		}),
 		helpers: { httpRequestWithAuthentication: http.httpRequestWithAuthentication },
 		logger,
 	};

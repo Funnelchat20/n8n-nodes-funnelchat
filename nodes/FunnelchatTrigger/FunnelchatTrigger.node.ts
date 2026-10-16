@@ -27,6 +27,9 @@ import { funnelchatApiRequest } from '../shared/transport';
  *
  * The secret is returned only once, on creation, so it is kept in the node's static data next to the subscription
  * id, by webhook URL: the test URL and the production URL have their own subscription and never touch each other.
+ *
+ * The node never filters the webhook URL n8n gives it: the API decides. The real API only accepts public https URLs;
+ * the sandbox (credential with a custom base URL) also accepts http and local ones, such as http://localhost:5678.
  */
 
 const SUBSCRIPTIONS_PATH = '/api/v1/webhooks';
@@ -157,7 +160,7 @@ export class FunnelchatTrigger implements INodeType {
 		properties: [
 			{
 				displayName:
-					'Al activar el flujo se crea una suscripción en Funnelchat (POST /api/v1/webhooks) y al desactivarlo se borra. La URL de n8n tiene que ser https y pública. Las entregas sin una firma válida se rechazan con 400.',
+					'Al activar el flujo se crea una suscripción en Funnelchat (POST /api/v1/webhooks) y al desactivarlo se borra. Con Producción o Staging, la URL de n8n tiene que ser https y pública; con una URL base personalizada (por ejemplo el sandbox local) también sirve una URL local, como http://localhost:5678. Las entregas sin una firma válida se rechazan con 400.',
 				name: 'notice',
 				type: 'notice',
 				default: '',
