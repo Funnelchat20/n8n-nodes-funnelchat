@@ -23,6 +23,7 @@ Trae tres piezas:
 - [Nodo «Funnelchat»](#nodo-funnelchat)
 - [Disparador «Funnelchat Trigger»](#disparador-funnelchat-trigger)
 - [Ejemplos de flujos](#ejemplos-de-flujos)
+- [Probar con el sandbox](#probar-con-el-sandbox)
 - [Cómo regenerar](#cómo-regenerar)
 - [Desarrollo](#desarrollo)
 - [Qué depende de trabajo sin mergear](#qué-depende-de-trabajo-sin-mergear)
@@ -41,16 +42,16 @@ npm run build
 npm pack            # genera n8n-nodes-funnelchat-0.1.0.tgz
 ```
 
-En el servidor de n8n, instalá ese archivo en la carpeta de nodos propios y reiniciá n8n:
+En el servidor de n8n, instalá ese archivo en la carpeta de paquetes de nodos de n8n y reiniciá n8n:
 
 ```bash
-mkdir -p ~/.n8n/custom && cd ~/.n8n/custom
-npm init -y
+mkdir -p ~/.n8n/nodes && cd ~/.n8n/nodes
+npm init -y              # solo la primera vez
 npm install /ruta/a/n8n-nodes-funnelchat-0.1.0.tgz
 ```
 
-Con Docker, montá esa carpeta en `/home/node/.n8n/custom` (o apuntá `N8N_CUSTOM_EXTENSIONS` a ella). Después de
-reiniciar, buscá «Funnelchat» en el panel de nodos.
+Con Docker, esa carpeta es `/home/node/.n8n/nodes` dentro del volumen de n8n. Después de reiniciar, buscá «Funnelchat»
+en el panel de nodos. Así se probó con n8n 2.25.7 (imagen `n8nio/n8n`).
 
 ### Nodos comunitarios (cuando esté publicado)
 
@@ -65,7 +66,10 @@ ejecución), pero todavía no se envió.
 2. En n8n, creá una credencial **Funnelchat API**:
    - **Clave de API**: la clave completa, incluido el `<id>|` del principio. Se manda como
      `Authorization: Bearer <clave>`.
-   - **Entorno**: **Producción** (`https://api.funnelchat.com`) o **Staging** (`https://api-staging.funnelchat.com`).
+   - **Entorno**: **Producción** (`https://api.funnelchat.com`), **Staging** (`https://api-staging.funnelchat.com`) o
+     **Personalizado**, con una **URL base** propia: por ejemplo el sandbox local, `http://localhost:4010` (ver
+     [Probar con el sandbox](#probar-con-el-sandbox)). La URL base empieza con `http://` o `https://`, no termina en `/` y
+     no lleva `/api/v1`: el nodo lo agrega. Si no cumple eso, la prueba de la credencial falla y el nodo no manda nada.
 3. Al guardar, n8n prueba la credencial con `GET /api/v1/me` («Ver mi cuenta»). **Esa prueba pide el permiso
    `accounts:read`**: si tu clave no lo tiene, la prueba falla aunque la clave sirva para lo demás. Podés guardarla igual.
 
@@ -291,8 +295,10 @@ de esas campañas (`filters.campaign_ids`; con filtro, un evento sin campaña no
 
 ### Lo que necesitás
 
-- **Una URL `https` pública para n8n.** Funnelchat rechaza URLs `http`, direcciones internas y URLs con usuario y
-  contraseña. En self-hosted, configurá `WEBHOOK_URL` con tu dominio o usá un túnel.
+- **Una URL `https` pública para n8n** (con Producción o Staging). Funnelchat rechaza URLs `http`, direcciones
+  internas y URLs con usuario y contraseña. En self-hosted, configurá `WEBHOOK_URL` con tu dominio o usá un túnel. Con
+  una URL base personalizada (el sandbox), sirve también la URL local de n8n, como `http://localhost:5678`: el nodo no
+  filtra la URL, la decide la API.
 - **Una clave del titular de la cuenta**, con el permiso de lectura del área de cada evento que elegís (por ejemplo,
   `conversations:read` para `message.received`).
 - **Lugar en la cuenta:** hay un tope de 50 suscripciones por cuenta.
@@ -368,6 +374,47 @@ Enviar una plantilla»).
 Para buscar después ese contacto por teléfono, sacale el `+`: la API guarda el teléfono sin `+` y la búsqueda por
 `phone` no lo quita.
 
+## Probar con el sandbox
+
+[`funnelchat-sandbox`](https://github.com/Funnelchat20/funnelchat-sandbox) imita la API pública en tu máquina, con
+estado en memoria y webhooks firmados, y no tiene efectos reales: nada sale a WhatsApp. Está en su PR #1, sin mergear al
+16-10-2026; cómo levantarlo está en su README. Por defecto escucha en `http://localhost:4010`.
+
+1. **Levantá el sandbox**, por ejemplo con `npx funnelchat-sandbox` o
+   `docker run --rm -p 4010:4010 funnelchat-sandbox`. Su panel está en `http://localhost:4010/_sandbox`.
+2. **Creá una credencial Funnelchat API** para el sandbox:
+   - **Entorno**: **Personalizado**.
+   - **URL base**: `http://localhost:4010`. Si n8n corre en Docker y el sandbox en tu máquina,
+     `http://host.docker.internal:4010` (con Podman, `http://host.containers.internal:4010`).
+   - **Clave de API**: `1|fc_live_sandbox`. El sandbox acepta cualquier clave con la forma de una real, y todas tienen
+     todos los permisos.
+
+   La prueba de la credencial llama a `GET /api/v1/me` del sandbox.
+3. **Acciones.** Cualquier operación del nodo anda contra el sandbox. Contactos, conversaciones y mensajes, etiquetas,
+   campos personalizados, plantillas, números y suscripciones de webhooks guardan lo que hacés; el resto responde un
+   ejemplo armado de la especificación. El envío con clave ya está abierto en el sandbox, con la ventana de 24 horas y
+   los frenos contra spam de la API.
+4. **Disparador.** El sandbox acepta URLs `http` y locales, así que un n8n en `http://localhost:5678` recibe los
+   eventos. Activá el flujo con el **Funnelchat Trigger** y simulá un mensaje entrante:
+
+   ```bash
+   curl -s -X POST http://localhost:4010/_sandbox/inbound/message \
+     -H 'Content-Type: application/json' \
+     -d '{"phone": "5491100000000", "device_id": 3, "text": "Hola"}'
+   ```
+
+   El sandbox firma la entrega como la API, el nodo verifica la firma y el flujo arranca con el evento
+   `message.received`. Si n8n corre en Docker, configurale `WEBHOOK_URL` con una URL que el sandbox alcance (por
+   ejemplo `http://localhost:5678/` publicando ese puerto, o `http://host.docker.internal:5678/` si el sandbox también
+   corre en Docker).
+5. **Lo que el sandbox no te muestra:** con la API real, la URL de n8n tiene que ser `https` y pública (probalo con
+   `npx funnelchat-sandbox --require-https`), y hoy las suscripciones de accounts todavía están cerradas a claves (ver
+   el aviso del disparador).
+
+Probado el 16-10-2026 con n8n 2.25.7 y el sandbox en `feat/inicial` @ `7a1b3d8`. Contra el sandbox salieron bien la prueba
+de la credencial, un flujo con «Crear o actualizar un contacto» y «Listar etiquetas», y el ciclo completo del
+disparador: alta al activar, entrega firmada que arranca el flujo, `400` a una firma falsa y baja al desactivar.
+
 ## Cómo regenerar
 
 Las operaciones del nodo no se escriben a mano: salen de `spec/funnelchat.json` con `npm run generate`. Cuando el portal
@@ -408,8 +455,8 @@ npm run dev                   # levanta n8n en http://localhost:5678 con el nodo
   campos a partir de ella y `request.ts` arma los pedidos (ruta, consulta y cuerpo) y la paginación.
 - `nodes/FunnelchatTrigger/`: el disparador.
 - `nodes/shared/`: el transporte (clave, URL base, errores, `429`) y la verificación de la firma.
-- `test/`: la firma con los vectores del portal, el armado de pedidos y la paginación, y el ciclo crear, confirmar y
-  borrar suscripción del disparador.
+- `test/`: la firma con los vectores del portal, el armado de pedidos y la paginación, el ciclo crear, confirmar y
+  borrar suscripción del disparador, y la URL base personalizada.
 
 La interfaz está en español. Algunas reglas del linter de n8n exigen textos en inglés (por ejemplo, que la descripción
 de un booleano empiece con «Whether»); donde chocan, la excepción está marcada en el código con su motivo.
@@ -423,5 +470,6 @@ de un booleano empiece con «Whether»); donde chocan, la excepción está marca
 | Las suscripciones de webhooks (disparador y recurso Webhooks) | accounts `origin/main` @ `c34cba2c0` | Mergeadas y en producción, pero cerradas a claves de API en el portero |
 | El envío con clave (`conversations:send`) | conversations PR #2284 | Sin mergear: hoy los envíos responden `403 route_not_available` |
 | `device_id` en `message.received` | conversations PR #2284 y accounts PR #1016 | Sin mergear |
+| El sandbox local de «Probar con el sandbox» | funnelchat-sandbox `feat/inicial` @ `7a1b3d8` | PR funnelchat-sandbox #1, sin mergear |
 
 El detalle de cada fuente está en [`spec/PROCEDENCIA.md`](spec/PROCEDENCIA.md).
