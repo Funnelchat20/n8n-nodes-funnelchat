@@ -188,6 +188,9 @@ export class Funnelchat implements INodeType {
 						...(failure instanceof NodeApiError && failure.httpCode
 							? { httpCode: failure.httpCode }
 							: {}),
+						...(failure.context.requestId
+							? { requestId: failure.context.requestId as string }
+							: {}),
 					},
 					pairedItem: { item: itemIndex },
 				});

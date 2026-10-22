@@ -324,6 +324,91 @@ describe('ejecución del nodo con respuestas simuladas', () => {
 		expect(out.map((i) => (i.pairedItem as { item: number }).item)).toEqual([0, 1]);
 	});
 
+	it('el X-Request-Id de la respuesta va en el error y en el ítem de «continuar ante errores»', async () => {
+		const requestId = '0b3f5a1e-6c2d-4e8f-9a7b-1c2d3e4f5a6b';
+		const failing = () =>
+			executeContext({
+				params: { resource: 'tag', operation: 'tag.show', tag: '99' },
+				responses: [
+					{
+						status: 404,
+						headers: { 'x-request-id': requestId },
+						body: { error: 'not_found', message: 'No existe la etiqueta.' },
+					},
+				],
+			});
+		const error = (await node.execute.call(failing().ctx).catch((e: unknown) => e)) as NodeApiError;
+		expect(error.description).toContain(`X-Request-Id: ${requestId}`);
+		expect(error.context.requestId).toBe(requestId);
+
+		const { ctx } = executeContext({
+			continueOnFail: true,
+			params: { resource: 'tag', operation: 'tag.show', tag: '99' },
+			responses: [
+				{
+					status: 404,
+					headers: { 'X-Request-Id': requestId },
+					body: { error: 'not_found', message: 'No existe la etiqueta.' },
+				},
+			],
+		});
+		const [out] = await node.execute.call(ctx);
+		expect(out[0].json).toEqual({
+			error: 'not_found',
+			message: 'No existe la etiqueta.',
+			httpCode: '404',
+			requestId,
+		});
+	});
+
+	it('los errores propios de la entrada de la API (route_not_found) salen igual, con su id', async () => {
+		const { ctx } = executeContext({
+			params: { resource: 'tag', operation: 'tag.show', tag: '99' },
+			responses: [
+				{
+					status: 404,
+					headers: { 'x-request-id': 'edge-1' },
+					body: { error: 'route_not_found', message: 'La ruta no existe en la API.' },
+				},
+			],
+		});
+		const error = (await node.execute.call(ctx).catch((e: unknown) => e)) as NodeApiError;
+		expect(error.message).toBe('La ruta no existe en la API.');
+		expect(error.description).toContain('error: route_not_found');
+		expect(error.description).toContain('X-Request-Id: edge-1');
+	});
+
+	it('un 502 en una escritura avisa que puede haberse aplicado; en una lectura, no', async () => {
+		const edge = {
+			status: 502,
+			headers: { 'x-request-id': 'edge-2' },
+			body: { error: 'origin_unreachable', message: 'La API no está disponible en este momento.' },
+		};
+		const write = executeContext({
+			params: {
+				resource: 'tag',
+				operation: 'tag.store',
+				name: 'VIP',
+				useJsonBody: false,
+				additionalFields: {},
+			},
+			responses: [edge],
+		});
+		const writeError = (await node.execute
+			.call(write.ctx)
+			.catch((e: unknown) => e)) as NodeApiError;
+		expect(writeError.httpCode).toBe('502');
+		expect(writeError.description).toContain('revisá el estado antes de repetirlo');
+		expect(write.calls).toHaveLength(1);
+
+		const read = executeContext({
+			params: { resource: 'tag', operation: 'tag.show', tag: '99' },
+			responses: [edge],
+		});
+		const readError = (await node.execute.call(read.ctx).catch((e: unknown) => e)) as NodeApiError;
+		expect(readError.description).not.toContain('revisá el estado');
+	});
+
 	it('un campo obligatorio vacío es un error del nodo, no un pedido', async () => {
 		const { ctx, calls } = executeContext({
 			params: { resource: 'contact', operation: 'contact.show', contact: '' },

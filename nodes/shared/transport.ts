@@ -98,14 +98,24 @@ function parseBody(body: unknown): unknown {
 	}
 }
 
+/** The `X-Request-Id` of a response: every response of the API carries one, errors included, to quote to support. */
+export function requestIdOf(headers: IDataObject | undefined): string | undefined {
+	const value = header(headers, 'x-request-id')?.trim();
+	return value ? value : undefined;
+}
+
 /**
  * The API's error as an n8n error: `message` from the body's `message`, and the stable `error` code (plus the
- * validation details of a `422` and the `Retry-After` of a `429`) in the description.
+ * validation details of a `422`, the `Retry-After` of a `429` and the `X-Request-Id`) in the description.
+ *
+ * A `502` (the API could not reach its origin, or the origin failed) on a write is a timeout: the write may have been
+ * applied, so the description says to read the state before repeating it.
  */
 export function apiError(
 	node: INode,
 	response: FunnelchatResponse,
 	itemIndex?: number,
+	method?: IHttpRequestMethods,
 ): NodeApiError {
 	const body = parseBody(response.body);
 	const data =
@@ -113,6 +123,7 @@ export function apiError(
 	const code = typeof data.error === 'string' ? data.error : undefined;
 	const apiMessage =
 		typeof data.message === 'string' && data.message.trim() !== '' ? data.message : undefined;
+	const requestId = requestIdOf(response.headers);
 
 	const details: string[] = [];
 	if (code) details.push(`error: ${code}`);
@@ -126,9 +137,15 @@ export function apiError(
 	if (response.statusCode === 429 && wait !== undefined) {
 		details.push(`Volvé a intentar en ${wait} s (Retry-After).`);
 	}
+	if (response.statusCode === 502 && method !== undefined && method !== 'GET') {
+		details.push(
+			'Puede que el cambio se haya aplicado igual: revisá el estado antes de repetirlo.',
+		);
+	}
 	if (!apiMessage && typeof body === 'string' && body.trim() !== '') {
 		details.push(body.slice(0, 300));
 	}
+	if (requestId) details.push(`X-Request-Id: ${requestId} (citalo si consultás a soporte)`);
 
 	const errorResponse: JsonObject = {
 		...(data as JsonObject),
@@ -136,6 +153,7 @@ export function apiError(
 	};
 	if (code) errorResponse.error = code;
 	if (apiMessage) errorResponse.message = apiMessage;
+	if (requestId) errorResponse.requestId = requestId;
 
 	const error = new NodeApiError(node, errorResponse, {
 		message: apiMessage ?? `La API respondió ${response.statusCode}`,
@@ -146,6 +164,7 @@ export function apiError(
 	// Kept apart so the node can output them as they came with «Continue on fail».
 	error.context.apiError = code ?? null;
 	error.context.apiMessage = apiMessage ?? null;
+	error.context.requestId = requestId ?? null;
 	return error;
 }
 
@@ -205,6 +224,6 @@ export async function funnelchatApiRequest(
 			await wait(seconds * 1000);
 			continue;
 		}
-		throw apiError(this.getNode(), response, request.itemIndex);
+		throw apiError(this.getNode(), response, request.itemIndex, request.method);
 	}
 }
