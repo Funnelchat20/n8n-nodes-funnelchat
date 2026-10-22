@@ -20,7 +20,8 @@
 		"url": "https://github.com/Funnelchat20/n8n-nodes-funnelchat.git"
 	},
 	"bugs": {
-		"url": "https://github.com/Funnelchat20/n8n-nodes-funnelchat/issues"
+		"url": "https://github.com/Funnelchat20/n8n-nodes-funnelchat/issues",
+		"email": "soporte@funnelchat.com"
 	},
 	"scripts": {
 		"generate": "node scripts/generate.mjs",
