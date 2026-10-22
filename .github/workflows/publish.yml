@@ -7,20 +7,28 @@
 #
 # Based on the template scaffolded by `n8n-node release --init-workflow`
 # (@n8n/node-cli 0.52.4), with "v" tags, a check that the tag matches the
-# version in package.json, and the token passed through setup-node.
+# version in package.json, a skip when that version is already on npm, and
+# npm Trusted Publishing instead of a token.
 #
 # ─── ONE-TIME SETUP ────────────────────────────────────────────────────────────
 #
-# Add an npm token with publish permission on the @funnelchat-hq scope as the
-# NPM_TOKEN repository secret (Settings → Secrets and variables → Actions). Provenance is
-# signed by GitHub's OIDC infrastructure regardless of how npm authentication
-# is handled. The repository must be public for npm to accept provenance.
+# On npmjs.com, open the package settings and add a Trusted Publisher:
+# GitHub Actions, organization Funnelchat20, this repository, workflow
+# publish.yml, no environment. npm then accepts a publish only through an OIDC
+# token minted for this workflow, so no npm secret is stored in GitHub, and
+# provenance is generated automatically. The repository must be public for npm
+# to accept provenance.
 #
 # ─── RELEASE PROCESS ───────────────────────────────────────────────────────────
 #
 # Set the version in package.json, commit it on main, then tag and push:
 #
 #   git tag v0.1.0 && git push origin v0.1.0
+#
+# ─── DRY RUN ───────────────────────────────────────────────────────────────────
+#
+# Running the workflow by hand (workflow_dispatch) publishes nothing: it only
+# checks that npm accepts this workflow's OIDC token for the package.
 
 name: Publish
 
@@ -28,6 +36,13 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
+
+# Never two runs for the same tag at once; a queued run finds the version
+# already published and stops.
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   publish:
@@ -35,7 +50,8 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      # Required to mint an OIDC token for npm provenance attestation.
+      # Required to mint the OIDC token npm Trusted Publishing exchanges, and
+      # to sign the provenance attestation.
       id-token: write
       # Scoped down from the default (write) for least-privilege publishing.
       contents: read
@@ -50,10 +66,41 @@ jobs:
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org/'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Update npm
+        # Trusted Publishing needs npm 11.5.1 or newer. Not `latest`: npm 12
+        # may require Node versions the runners do not guarantee yet.
+        run: npm install -g npm@^11.5.1
+
+      - name: Check Trusted Publishing (dry run)
+        if: github.event_name == 'workflow_dispatch'
+        # Neither token is printed nor stored: the GitHub token is masked, and
+        # the npm token in the exchange response is discarded.
+        run: |
+          PACKAGE_NAME="$(node -p "require('./package.json').name")"
+          ENCODED_NAME="${PACKAGE_NAME//\//%2f}"
+          if [ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ] || [ -z "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ]; then
+            echo "::error::No OIDC token available: the job needs the id-token: write permission"
+            exit 1
+          fi
+          ID_TOKEN="$(curl -sS --fail \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=npm:registry.npmjs.org" | jq -r '.value // empty')"
+          if [ -z "$ID_TOKEN" ]; then
+            echo "::error::GitHub did not return an OIDC token"
+            exit 1
+          fi
+          echo "::add-mask::$ID_TOKEN"
+          HTTP_CODE="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+            -H "Authorization: Bearer $ID_TOKEN" \
+            "https://registry.npmjs.org/-/npm/v1/oidc/token/exchange/package/$ENCODED_NAME")"
+          if [ "${HTTP_CODE:0:1}" != "2" ]; then
+            echo "::error::Trusted publishing failed for $PACKAGE_NAME: HTTP $HTTP_CODE"
+            exit 1
+          fi
+          echo "Trusted publishing OK for $PACKAGE_NAME"
 
       - name: Tag matches package.json version
+        if: github.event_name == 'push'
         run: |
           PACKAGE_VERSION="$(node -p "require('./package.json').version")"
           TAG_VERSION="${GITHUB_REF_NAME#v}"
@@ -62,9 +109,24 @@ jobs:
             exit 1
           fi
 
+      - name: Version not published yet
+        id: published
+        if: github.event_name == 'push'
+        run: |
+          PACKAGE_NAME="$(node -p "require('./package.json').name")"
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          if [ "$(npm view "$PACKAGE_NAME@$PACKAGE_VERSION" version 2>/dev/null || true)" = "$PACKAGE_VERSION" ]; then
+            echo "::notice::$PACKAGE_NAME@$PACKAGE_VERSION is already on npm; nothing to publish"
+            echo "already=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        if: github.event_name == 'push' && steps.published.outputs.already != 'true'
+        run: npm ci
+
       - name: Release
+        if: github.event_name == 'push' && steps.published.outputs.already != 'true'
         # In GitHub Actions, `n8n-node release` runs lint and build, then
-        # `npm publish` with NPM_CONFIG_PROVENANCE=true.
+        # `npm publish` with NPM_CONFIG_PROVENANCE=true. npm authenticates
+        # through Trusted Publishing.
         run: npm run release
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

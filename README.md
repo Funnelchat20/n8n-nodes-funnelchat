@@ -558,8 +558,8 @@ FUNNELCHAT_SANDBOX_URL=http://127.0.0.1:4010 npm run test:e2e   # e2e against a 
 npm run dev                   # starts n8n on http://localhost:5678 with the node loaded
 ```
 
-**Publishing:** push a `vX.Y.Z` tag on `main` matching the `package.json` version, and GitHub Actions
-(`.github/workflows/publish.yml`) publishes it to npm with provenance.
+**Publishing:** a `vX.Y.Z` tag on `main`, matching the `package.json` version; GitHub Actions
+(`.github/workflows/publish.yml`) publishes it through npm Trusted Publishing.
 
 - `nodes/Funnelchat/`: the action node. `generated/operations.ts` is the generated table; `description.ts` builds the
   fields from it and `request.ts` builds the requests (route, query and body) and the pagination.
