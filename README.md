@@ -6,19 +6,24 @@ tus números o reaccionar a lo que pasa en tu cuenta.
 
 Trae tres piezas:
 
-- **Credencial «Funnelchat API»**: tu clave de API y el entorno (producción o staging).
+- **Credencial «Funnelchat API»**: tu clave de API y el entorno (producción, staging o una URL propia, como el sandbox).
 - **Nodo «Funnelchat»**: las operaciones de la API agrupadas como en el portal: contactos, conversaciones y mensajes,
-  plantillas, etiquetas, campos personalizados, grupos, números y webhooks. Se generan de la especificación unificada.
+  plantillas, formularios de WhatsApp, etiquetas, campos personalizados, grupos, números y webhooks. Se generan de la
+  especificación unificada y de lo que los dominios abrieron después.
 - **Nodo «Funnelchat Trigger»**: arranca un flujo con cada evento que Funnelchat manda por webhook, con la firma
   verificada.
 
 > [!IMPORTANT]
-> **Estado: v0, privado.** No está publicado en npm ni en el registro de nodos de n8n. La API v0 cambia sin aviso.
-> Hay partes que dependen de trabajo que todavía no está mergeado: están en [Qué depende de trabajo sin mergear](#qué-depende-de-trabajo-sin-mergear).
+> **Estado: 0.1.0, listo para publicar y todavía sin publicar** en npm ni en el registro de nodos de n8n. Está al día
+> con la API que corre en production el 22-10-2026 (accounts `v1.4.24`, conversations `v1.18.10`). La API pública es
+> v0 y puede cambiar: ver [Fuentes y lo que falta verificar](#fuentes-y-lo-que-falta-verificar).
+
+Documentación de la API: [portal de desarrolladores de Funnelchat](https://developers-portal.funnelchat.app/docs/).
 
 ## Contenido
 
 - [Instalación](#instalación)
+- [Ejemplo mínimo](#ejemplo-mínimo)
 - [Credencial](#credencial)
 - [Nodo «Funnelchat»](#nodo-funnelchat)
 - [Disparador «Funnelchat Trigger»](#disparador-funnelchat-trigger)
@@ -26,38 +31,69 @@ Trae tres piezas:
 - [Probar con el sandbox](#probar-con-el-sandbox)
 - [Cómo regenerar](#cómo-regenerar)
 - [Desarrollo](#desarrollo)
-- [Qué depende de trabajo sin mergear](#qué-depende-de-trabajo-sin-mergear)
+- [Fuentes y lo que falta verificar](#fuentes-y-lo-que-falta-verificar)
 
 ## Instalación
 
-### n8n self-hosted (hoy)
+### Desde n8n (nodos comunitarios)
 
-Mientras no esté publicado, se instala desde el código:
+En n8n self-hosted: **Settings → Community nodes → Install** y escribí `n8n-nodes-funnelchat`. n8n lo baja del registro
+público de npm y lo deja disponible en el panel de nodos: buscá «Funnelchat».
+
+En n8n Cloud solo aparecen los nodos que n8n verificó. El paquete está preparado para eso (modo estricto, sin
+dependencias en tiempo de ejecución, lint de n8n en verde), pero todavía no se envió a verificar.
+
+### Con npm, en la carpeta de nodos de n8n
 
 ```bash
-git clone git@github.com:Funnelchat20/n8n-nodes-funnelchat.git
+mkdir -p ~/.n8n/nodes && cd ~/.n8n/nodes
+npm init -y                       # solo la primera vez
+npm install n8n-nodes-funnelchat
+```
+
+Reiniciá n8n. Con Docker, esa carpeta es `/home/node/.n8n/nodes` dentro del volumen de n8n. Se probó con n8n 2.25.7
+(imagen `n8nio/n8n`).
+
+### Desde el código
+
+```bash
+git clone https://github.com/Funnelchat20/n8n-nodes-funnelchat.git
 cd n8n-nodes-funnelchat
 npm ci
 npm run build
 npm pack            # genera n8n-nodes-funnelchat-0.1.0.tgz
 ```
 
-En el servidor de n8n, instalá ese archivo en la carpeta de paquetes de nodos de n8n y reiniciá n8n:
+Y en la carpeta de nodos de n8n, `npm install /ruta/a/n8n-nodes-funnelchat-0.1.0.tgz`.
 
-```bash
-mkdir -p ~/.n8n/nodes && cd ~/.n8n/nodes
-npm init -y              # solo la primera vez
-npm install /ruta/a/n8n-nodes-funnelchat-0.1.0.tgz
+## Ejemplo mínimo
+
+Un flujo que le manda un mensaje a un contacto y guarda el id del mensaje:
+
+1. Creá la credencial **Funnelchat API** con tu clave (ver [Credencial](#credencial)).
+2. Agregá el nodo **Funnelchat** — Recurso «Conversaciones y mensajes», operación «Enviar un mensaje a un contacto»:
+   - ID del contacto (en la ruta y en el cuerpo): `2001`
+   - ID del número: el id del número que envía, de «Números → Listar números».
+   - Campos adicionales → Teléfono: el del contacto, `5491100000000`; Texto: `Hola`; Referencia propia: `pedido-981`.
+3. Ejecutalo. Sale un ítem con el mensaje en cola:
+
+```json
+{
+  "id": 1001,
+  "contact_id": 2001,
+  "device_id": 7,
+  "direction": "outbound",
+  "type": "text",
+  "status": "queued",
+  "error": null,
+  "client_reference": "pedido-981",
+  "created_at": "2026-10-22T13:05:00Z",
+  "updated_at": "2026-10-22T13:05:00Z"
+}
 ```
 
-Con Docker, esa carpeta es `/home/node/.n8n/nodes` dentro del volumen de n8n. Después de reiniciar, buscá «Funnelchat»
-en el panel de nodos. Así se probó con n8n 2.25.7 (imagen `n8nio/n8n`).
-
-### Nodos comunitarios (cuando esté publicado)
-
-En n8n self-hosted: **Settings → Community nodes → Install**, con el nombre `n8n-nodes-funnelchat`. En n8n Cloud solo
-aparecen los nodos que n8n verificó; este paquete está preparado para eso (modo estricto, sin dependencias en tiempo de
-ejecución), pero todavía no se envió.
+El resultado (`sent`, `delivered`, `read` o `failed`) llega después: con el **Funnelchat Trigger** y el evento
+`message.status_changed`, que trae tu `client_reference`, o leyendo el mensaje con «Ver un mensaje».
 
 ## Credencial
 
@@ -74,7 +110,7 @@ ejecución), pero todavía no se envió.
    `accounts:read`**: si tu clave no lo tiene, la prueba falla aunque la clave sirva para lo demás. Podés guardarla igual.
 
 Cada operación del nodo dice qué permiso pide (`conversations:read`, `conversations:write`, `conversations:send`,
-`communities:read`, `accounts:read`, `accounts:write` o `accounts:operate`). Si falta, la API responde
+`communities:read`, `accounts:read`, `accounts:write`, `accounts:operate`, `webhooks:read` o `webhooks:write`). Si falta, la API responde
 `403 permission_denied` y el nodo muestra el `message`, que dice cuál falta. Todas las claves son `fc_live_`: lo que hace
 el nodo actúa sobre datos y números reales.
 
@@ -90,13 +126,28 @@ para qué sirve y qué permiso pide.
   completo, tal como lo describe la referencia del portal. Sirve para mandar `null` o estructuras complejas.
 - **Listados.** Los listados paginados tienen **Devolver todo**: si está apagado, trae hasta el **Límite**. El nodo pide
   las páginas solo (por número de página o por cursor, según la ruta) y devuelve un ítem por elemento.
-- **Respuestas.** Un objeto sale como un ítem; una respuesta sin cuerpo (`204`) sale como `{ "success": true }`.
-- **Errores.** El error del nodo lleva el `message` de la API y, en la descripción, su `error` (código estable). Un `422`
-  lista los campos con problemas. Un `429` con `Retry-After` de hasta 60 segundos se reintenta solo, hasta 3 veces; si
-  la espera es más larga, el error dice cuánto esperar. Con **Continue On Fail**, el ítem sale como
-  `{ "error": "<código>", "message": "<texto>", "httpCode": "<estado>" }`.
-- **Avisos (⚠).** Algunas operaciones muestran un aviso arriba de los campos: la nota del portal (por ejemplo, que el
-  envío con clave todavía no está abierto), que la operación sale de código sin mergear o que es irreversible.
+- **Respuestas.** Un objeto sale como un ítem; una respuesta sin cuerpo (`204`, `202`) sale como
+  `{ "success": true }`.
+- **Envíos.** Con una clave, un envío (mensaje, plantilla, tarjeta de contacto, formulario) responde `200` con el
+  **mensaje en cola** (`status: "queued"`) y su `id`, y el nodo devuelve ese mensaje como ítem (uno por mensaje en la
+  tarjeta de contacto; uno por destino en el reenvío). **Referencia propia** (`client_reference`, hasta 64 caracteres
+  ASCII sin espacios) vuelve en el mensaje y en `message.status_changed`. Antes de salir, cada envío pasa las guardas de
+  WhatsApp: ventana de 24 horas (`422 window_closed`, salvo plantillas), ritmo (`429 rate_limited`), antibloqueo
+  (`422 antiblock_duplicate_content`, `antiblock_unanswered_limit`) y contactos activos del mes
+  (`429 mac_lockout_24h`, `mac_limit_reached`).
+- **Archivo por URL.** En «Enviar un mensaje a un contacto» y «Enviar un mensaje», **Archivo** acepta una URL, también
+  firmada o sin extensión: en ese caso indicá **Tipo de archivo** (`image`, `video`, `audio`, `document` o `sticker`)
+  y, para un documento, **Nombre del archivo**. Si falta, la API responde `422` en `file_type` o `file_name`; una
+  extensión que WhatsApp no admite, `415`.
+- **Errores.** El error del nodo lleva el `message` de la API y, en la descripción, su `error` (código estable) y el
+  **`X-Request-Id`** de la respuesta: citalo si consultás a soporte. Un `422` lista los campos con problemas. Un `429`
+  con `Retry-After` de hasta 60 segundos se reintenta solo, hasta 3 veces; si la espera es más larga, el error dice
+  cuánto esperar. La entrada de la API tiene errores propios: `404 route_not_found`, `502 origin_unreachable` y
+  `500 edge_misconfigured`. **Un `502` en una escritura se trata como un timeout**: puede haberse aplicado, así que
+  leé el estado antes de repetirla (no actives **Retry On Fail** en envíos). Con **Continue On Fail**, el ítem sale
+  como `{ "error": "<código>", "message": "<texto>", "httpCode": "<estado>", "requestId": "<X-Request-Id>" }`.
+- **Avisos (⚠).** Algunas operaciones muestran un aviso arriba de los campos: lo que el código de la API exige y la
+  especificación no dice, que una ruta todavía no está abierta a claves o que la operación es irreversible.
 
 El nodo también se puede usar como herramienta de un agente de IA de n8n.
 
@@ -104,7 +155,7 @@ El nodo también se puede usar como herramienta de un agente de IA de n8n.
 
 <!-- operaciones:inicio (generado por npm run generate) -->
 
-128 operaciones generadas de la especificación (sha256 `8bbbae569b4c`). Las marcadas con ⚠ tienen un aviso en el nodo (nota del portal, fuente sin mergear u operación irreversible).
+128 operaciones generadas de la especificación (sha256 `8bbbae569b4c`) y sus suplementos. Las marcadas con ⚠ tienen un aviso en el nodo (lo que el código exige y la especificación no dice, una ruta cerrada a claves u operación irreversible).
 
 <details><summary><strong>Contactos</strong> (15)</summary>
 
@@ -304,7 +355,10 @@ El nodo también se puede usar como herramienta de un agente de IA de n8n.
 ### Cómo funciona
 
 1. Elegís los **Eventos** de la lista. La lista sale del catálogo de Funnelchat (`GET /api/v1/webhooks/events`): muestra
-   los tipos que se pueden suscribir y marca los que todavía no se emiten (`planned`).
+   los tipos que se pueden suscribir, el permiso de lectura que pide cada uno y marca los que todavía no se emiten
+   (`planned`). Si la clave no puede leer el catálogo (pide `accounts:read`), muestra la lista que trae el nodo, copiada
+   del catálogo de accounts `v1.4.24`: 53 tipos, entre ellos `message.received`, `message.status_changed`,
+   `whatsapp_form.completed`, `group.message_received`, `group_action.completed` y `group.reaction_added`.
 2. Al **activar** el flujo, el nodo crea una suscripción en Funnelchat (`POST /api/v1/webhooks`) con la URL de n8n,
    esos eventos y la descripción `n8n · <nombre del flujo>`, y guarda el `id` y el secreto que Funnelchat devuelve una
    sola vez.
@@ -326,15 +380,10 @@ de esas campañas (`filters.campaign_ids`; con filtro, un evento sin campaña no
   internas y URLs con usuario y contraseña. En self-hosted, configurá `WEBHOOK_URL` con tu dominio o usá un túnel. Con
   una URL base personalizada (el sandbox), sirve también la URL local de n8n, como `http://localhost:5678`: el nodo no
   filtra la URL, la decide la API.
-- **Una clave del titular de la cuenta**, con el permiso de lectura del área de cada evento que elegís (por ejemplo,
-  `conversations:read` para `message.received`).
+- **Una clave del titular de la cuenta**, con `webhooks:read` y `webhooks:write` y el permiso de lectura del área de
+  cada evento que elegís (por ejemplo, `conversations:read` para `message.received`, `communities:read` para los de
+  grupos). Sin el de un área, el alta responde `422` en `events`.
 - **Lugar en la cuenta:** hay un tope de 50 suscripciones por cuenta.
-
-> [!WARNING]
-> **Hoy el disparador no se puede activar con una clave de API.** Las rutas de suscripción (`/api/v1/webhooks`) existen
-> en accounts y las usa el panel, pero en accounts `origin/main` @ `c34cba2c0` no están habilitadas para claves en el
-> portero (`config/platform-gate.php`): una clave recibe `403 route_not_available` y el nodo muestra ese error al
-> activar. Funciona cuando accounts las sume a su lista `allowed`.
 
 ### Qué llega al flujo
 
@@ -349,7 +398,8 @@ Un ítem por entrega, con el sobre del evento tal como lo manda Funnelchat:
   "data": {
     "message": { "id": 1001, "type": "text", "text": "Hola, quiero más información", "media": null },
     "contact": { "id": 2001, "name": "Contacto de ejemplo", "phone": "+5491100000000" },
-    "receiver": { "phone": "+5491100000001" }
+    "receiver": { "phone": "+5491100000001" },
+    "device_id": 4521
   }
 }
 ```
@@ -372,20 +422,26 @@ del portal (`snippets/verificar-firma.js`) y los tests usan sus mismos vectores 
 1. **Funnelchat Trigger** — Eventos: «Mensaje recibido (message.received)».
 2. **If** (opcional) — seguí solo si `{{ $json.data.message.type }}` es `text`.
 3. **Funnelchat** — Recurso «Conversaciones y mensajes», operación «Enviar un mensaje a un contacto»:
-   - ID del contacto (en la ruta): `{{ $json.data.contact.id }}`
-   - ID del número: el id del número que responde, de «Números → Listar números».
-   - ID del contacto (en el cuerpo): `{{ $json.data.contact.id }}`
-   - Campos adicionales → Teléfono: `{{ $json.data.contact.phone }}`. La especificación no lo marca como obligatorio,
-     pero conversations pide `phone` o `whatsapp_id` además de `contact_id` (lo dice su código, `SendMessageRequest`).
+   - ID del contacto (en la ruta y en el cuerpo): `{{ $json.data.contact.id }}`
+   - ID del número: `{{ $json.data.device_id }}` (puede venir `null`; entonces, el id de «Números → Listar números»).
+   - Campos adicionales → Teléfono: `{{ $json.data.contact.phone }}`. Con una clave es obligatorio (o ID de WhatsApp)
+     y tiene que ser el del contacto: si no, `422 recipient_mismatch`.
    - Campos adicionales → Texto: `¡Gracias por escribirnos! Te respondemos en un rato.`
 
 Respondé dentro de la ventana de 24 horas del contacto: fuera de ella, WhatsApp pide una plantilla («Plantillas →
-Enviar una plantilla»).
+Enviar una plantilla») y el envío responde `422 window_closed`.
 
-> [!NOTE]
-> El envío con clave depende de conversations PR #2284 (sin mergear): hasta que se despliegue, «Enviar un mensaje a un
-> contacto» responde `403 route_not_available`. Ese PR y accounts PR #1016 (también sin mergear) suman `device_id` a
-> `message.received`; cuando estén, el ID del número puede ser `{{ $json.data.device_id }}`.
+### Mandar un formulario de WhatsApp y recibir las respuestas
+
+1. **Funnelchat** — Recurso «Formularios de WhatsApp», operación «Enviar un formulario a un contacto»: ID del contacto,
+   **ID del formulario** (el `family_id` de «Listar formularios», no el id de una versión) y el ID de un número donde
+   esté publicado. Sale el mensaje en cola, de tipo `whatsapp_form`.
+2. En otro flujo, **Funnelchat Trigger** con el evento «Formulario de WhatsApp completado
+   (whatsapp_form.completed)»: llega con `data.form`, `data.contact_id`, `data.message_id` (el id que devolvió el
+   envío) y `data.answers`, una lista de `{key, label, value}`.
+
+Los formularios se arman, validan en Meta y publican con las demás operaciones del recurso («Crear un formulario»,
+«Guardar un formulario», «Validar un formulario en Meta», «Publicar un formulario»).
 
 ### Crear un contacto desde un formulario
 
@@ -435,8 +491,7 @@ estado en memoria y webhooks firmados, y no tiene efectos reales: nada sale a Wh
    ejemplo `http://localhost:5678/` publicando ese puerto, o `http://host.docker.internal:5678/` si el sandbox también
    corre en Docker).
 5. **Lo que el sandbox no te muestra:** con la API real, la URL de n8n tiene que ser `https` y pública (probalo con
-   `npx funnelchat-sandbox --require-https`), y hoy las suscripciones de accounts todavía están cerradas a claves (ver
-   el aviso del disparador).
+   `npx funnelchat-sandbox --require-https`).
 
 Probado el 16-10-2026 con n8n 2.25.7 y el sandbox en `feat/inicial` @ `7a1b3d8`. Contra el sandbox salieron bien la prueba
 de la credencial, un flujo con «Crear o actualizar un contacto» y «Listar etiquetas», y el ciclo completo del
@@ -461,9 +516,14 @@ cada recurso, los nombres en español de los campos (los que no figuran se muest
 `operationNotes`, avisos de lo que el código de un dominio exige y su especificación no dice. Al regenerar, revisá si
 esos avisos siguen haciendo falta.
 
-- **Suplementos.** `spec/suplementos/` tiene lo que la especificación todavía no trae (hoy, las suscripciones de webhooks
-  de accounts). Si una especificación nueva incluye esas rutas, el generador usa las de la especificación y avisa que el
-  suplemento sobra: sacalo del config.
+- **Suplementos.** `spec/suplementos/` tiene lo que la especificación todavía no trae: las suscripciones de webhooks de
+  accounts y, de conversations `v1.18.10`, el envío con clave, la lectura de un mensaje y los formularios. Si una
+  especificación nueva incluye una ruta de un suplemento común, el generador usa la de la especificación y avisa que
+  sobra. Un suplemento con `"reemplaza": true` (el de conversations) gana sobre la especificación, con el mismo
+  `operationId`, y el generador lo avisa en cada corrida: cuando la especificación lo traiga al día, sacalo del config.
+- **Catálogo de eventos.** `spec/eventos-webhooks.json` es una copia de `GET /api/v1/webhooks/events` (la lista de
+  respaldo del disparador). Reemplazala por una copia nueva (por ejemplo `snapshots/accounts/events.json` del portal),
+  anotala en `spec/PROCEDENCIA.md` y regenerá.
 - **Ojo con los cambios de `operationId`.** El valor de cada operación en n8n es su `operationId`. Si la especificación
   lo cambia, los flujos guardados con la operación vieja dejan de encontrarla.
 
@@ -488,15 +548,15 @@ npm run dev                   # levanta n8n en http://localhost:5678 con el nodo
 La interfaz está en español. Algunas reglas del linter de n8n exigen textos en inglés (por ejemplo, que la descripción
 de un booleano empiece con «Whether»); donde chocan, la excepción está marcada en el código con su motivo.
 
-## Qué depende de trabajo sin mergear
+## Fuentes y lo que falta verificar
 
-| Qué | De dónde sale | Estado al 16-10-2026 |
+| Qué | De dónde sale | Estado al 22-10-2026 |
 |---|---|---|
-| La especificación unificada (todas las operaciones del nodo) | developers-portal `feat/openapi-unificada` @ `0ef4abb` | PR developers-portal #11, sin mergear |
-| El algoritmo y los vectores de la firma, el sobre de los eventos | developers-portal `feat/armar-funnelchat-portal` @ `dd7cd42` | Rama sin mergear |
-| Las suscripciones de webhooks (disparador y recurso Webhooks) | accounts `origin/main` @ `c34cba2c0` | Mergeadas y en producción, pero cerradas a claves de API en el portero |
-| El envío con clave (`conversations:send`) | conversations PR #2284 | Sin mergear: hoy los envíos responden `403 route_not_available` |
-| `device_id` en `message.received` | conversations PR #2284 y accounts PR #1016 | Sin mergear |
-| El sandbox local de «Probar con el sandbox» | funnelchat-sandbox `feat/inicial` @ `7a1b3d8` | PR funnelchat-sandbox #1, sin mergear |
+| La especificación unificada (la mayoría de las operaciones) | developers-portal, la misma que publica el portal (instantánea de los dominios del 13-10) | Publicada; el portal la regenera desde los tags de production |
+| Envío con clave, mensaje por id y formularios | conversations tag `v1.18.10` (production), leído del código | Abierto a claves. Los `operationId` nuevos no están verificados contra una especificación generada |
+| Las suscripciones de webhooks (disparador y recurso Webhooks) | accounts tag `v1.4.24` (production), leído del código | Abiertas a claves con `webhooks:read` / `webhooks:write` |
+| El catálogo de eventos de respaldo del disparador | accounts tag `v1.4.24`, extraído del código | 54 tipos, 49 emitiéndose |
+| El algoritmo y los vectores de la firma, el sobre de los eventos | developers-portal (`snippets/verificar-firma.js`, `tests/test_firmas.py`) | Publicados |
+| El sandbox local de «Probar con el sandbox» | funnelchat-sandbox `feat/inicial` | PR funnelchat-sandbox #1, sin mergear |
 
 El detalle de cada fuente está en [`spec/PROCEDENCIA.md`](spec/PROCEDENCIA.md).

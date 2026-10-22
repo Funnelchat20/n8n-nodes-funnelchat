@@ -350,7 +350,8 @@ function buildOperation(ctx, doc, path, method, op, resource, source) {
 	}
 	const flag = op['x-portal-v0'];
 	// The portal note of a flag whose notice is empty is out of date too (it is the same note), so it is dropped.
-	const note = op['x-fc-nota'] ?? (PORTAL_FLAG_NOTES[flag] === '' ? undefined : portalNote(op.description));
+	const note =
+		op['x-fc-nota'] ?? (PORTAL_FLAG_NOTES[flag] === '' ? undefined : portalNote(op.description));
 	if (note) notices.push(cleanText(note));
 	if (flag && PORTAL_FLAG_NOTES[flag]) notices.push(PORTAL_FLAG_NOTES[flag]);
 	if (flag && !(flag in PORTAL_FLAG_NOTES))
@@ -612,8 +613,8 @@ export function generateEvents(root = ROOT) {
 function renderReadmeBlock(resources, operations, source) {
 	const lines = [README_START, ''];
 	lines.push(
-		`${operations.length} operaciones generadas de la especificación (sha256 \`${source.sha256.slice(0, 12)}\`). ` +
-			'Las marcadas con ⚠ tienen un aviso en el nodo (nota del portal, fuente sin mergear u operación irreversible).',
+		`${operations.length} operaciones generadas de la especificación (sha256 \`${source.sha256.slice(0, 12)}\`) y sus suplementos. ` +
+			'Las marcadas con ⚠ tienen un aviso en el nodo (lo que el código exige y la especificación no dice, una ruta cerrada a claves u operación irreversible).',
 		'',
 	);
 	for (const r of resources) {
