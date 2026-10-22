@@ -247,5 +247,69 @@ describe.skipIf(!SANDBOX)('e2e contra el sandbox', () => {
 			expect(await methods.delete.call(ctx)).toBe(true);
 			expect(staticData.subscriptions).toBeUndefined();
 		});
+
+		it('formulario: crear, publicar, enviar y recibir whatsapp_form.completed', async () => {
+			hook.deliveries.length = 0;
+			const staticData: IDataObject = {};
+			const methods = new FunnelchatTrigger().webhookMethods.default;
+			const ctx = hookContext(staticData, ['whatsapp_form.completed']);
+			expect(await methods.create.call(ctx)).toBe(true);
+
+			// Forms only go out from the official number (3), inside the 24-hour window.
+			const [created] = await run({
+				resource: 'form',
+				operation: 'whatsappForm.store',
+				device_id: '3',
+				template_key: 'lead',
+				useJsonBody: false,
+				additionalFields: {},
+			});
+			const form = created.data as IDataObject;
+			await run({ resource: 'form', operation: 'whatsappForm.publish', id: String(form.id) });
+			const window = await fetch(`${SANDBOX}/_sandbox/window`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ contact_id: CONTACT, device_id: 3, open: true }),
+			});
+			expect(window.ok).toBe(true);
+
+			const [sent] = await run({
+				resource: 'form',
+				operation: 'whatsappFormSend.store',
+				contact: String(CONTACT),
+				form_id: String(form.family_id),
+				device_id: '3',
+				useJsonBody: false,
+				additionalFields: { client_reference: 'e2e-form-1' },
+			});
+			expect(sent).toMatchObject({
+				type: 'whatsapp_form',
+				status: 'queued',
+				client_reference: 'e2e-form-1',
+			});
+
+			const complete = await fetch(`${SANDBOX}/_sandbox/forms/complete`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ message_id: sent.id }),
+			});
+			expect(complete.ok).toBe(true);
+			const delivery = await until('whatsapp_form.completed', () =>
+				hook.deliveries.find(
+					(d) =>
+						(JSON.parse(d.raw.toString('utf8')) as IDataObject).type === 'whatsapp_form.completed',
+				),
+			);
+			const result = await deliver(staticData, delivery);
+			const event = result.workflowData?.[0][0].json as IDataObject;
+			expect(event.data).toMatchObject({
+				form: { id: form.family_id },
+				message_id: sent.id,
+				contact_id: CONTACT,
+			});
+			expect(Array.isArray((event.data as IDataObject).answers)).toBe(true);
+
+			expect(await methods.delete.call(ctx)).toBe(true);
+		});
 	});
 });
