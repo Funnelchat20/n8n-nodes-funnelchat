@@ -3,7 +3,7 @@
 	"version": "0.1.0",
 	"description": "Nodo comunitario de n8n para la API pública de Funnelchat: acciones sobre contactos, conversaciones, plantillas, grupos, números y webhooks, y un disparador por webhooks firmados.",
 	"license": "MIT",
-	"homepage": "https://github.com/Funnelchat20/n8n-nodes-funnelchat",
+	"homepage": "https://developers-portal.funnelchat.app/docs/",
 	"keywords": [
 		"n8n-community-node-package",
 		"n8n",
@@ -19,7 +19,9 @@
 		"type": "git",
 		"url": "https://github.com/Funnelchat20/n8n-nodes-funnelchat.git"
 	},
-	"private": true,
+	"bugs": {
+		"url": "https://github.com/Funnelchat20/n8n-nodes-funnelchat/issues"
+	},
 	"scripts": {
 		"generate": "node scripts/generate.mjs",
 		"build": "n8n-node build",
@@ -35,6 +37,9 @@
 	"files": [
 		"dist"
 	],
+	"engines": {
+		"node": ">=20.15"
+	},
 	"n8n": {
 		"n8nNodesApiVersion": 1,
 		"strict": true,
