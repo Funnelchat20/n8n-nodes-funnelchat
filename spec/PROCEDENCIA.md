@@ -16,12 +16,15 @@ instantánea nueva y se vuelve a generar (ver «Cómo regenerar» en el README).
 | SHA-256 | `8bbbae569b4cab520884db98f28204156c1bd6c629578bee609343c193e0dadb` |
 | Copiado | 2026-10-16 |
 
-Lo que esta instantánea **todavía no trae** (15-10 a la mañana):
+Es también la que el portal publica hoy (`https://developers-portal.funnelchat.app/specs/funnelchat.json`, mismo
+SHA-256, verificado el 2026-10-22). Lo que **todavía no trae** y cubren los suplementos y el catálogo de abajo:
 
-- el envío de mensajes con clave (conversations PR #2284, sin mergear): las rutas de envío figuran con la nota del
-  portal `send_pending` y hoy responden `403 route_not_available` a cualquier clave;
-- `message.status_changed` como evento activo;
-- las suscripciones de webhooks unificadas de accounts (`/api/v1/webhooks`), que vienen en el suplemento de abajo.
+- el envío con clave abierto (las rutas figuran con la nota `send_pending`, «está en camino»), su respuesta `200` con
+  el mensaje, `client_reference`, `file_type` y `file_name`, la lectura de un mensaje y los formularios de WhatsApp
+  (conversations `v1.18.10`);
+- las suscripciones de webhooks unificadas de accounts (`/api/v1/webhooks`) y su acceso con clave (accounts
+  `v1.4.24`);
+- el catálogo de eventos actual (`message.status_changed`, `whatsapp_form.completed`, los de grupos).
 
 ## `suplementos/accounts-webhook-subscriptions.json` — suscripciones de webhooks de accounts
 
@@ -47,6 +50,33 @@ exige que la clave sea del titular de la cuenta y el permiso de lectura del áre
 (`Http/Controllers/Concerns/RejectsUnreadableAreas.php` y `StoreWebhookSubscriptionRequest::after`): sin él, el alta o el
 cambio de eventos responde `422` en `events`, y ver, cambiar, borrar o probar responde `403 permission_denied`.
 `GET /api/v1/webhooks/events` sigue pidiendo `accounts:read`.
+
+## `suplementos/conversations-v1.18.10.json` — envíos con clave, mensaje por id y formularios
+
+La instantánea del portal es del 13-10, anterior a lo que conversations abrió a las claves. Este suplemento trae, del
+código del tag que corre en production:
+
+- **Reemplaza** (`"reemplaza": true`) las cinco operaciones de envío que la instantánea ya tenía, con el mismo
+  `operationId`, ruta y campos: `conversation.sendMessage`, `message.sendMessage`, `forwardMessage.store`,
+  `contactCard.store` y `messageTemplate.send`. Les suma `client_reference` (y a las dos primeras `file_type` y
+  `file_name`) y la respuesta `200` con el mensaje en cola. El generador se niega si un reemplazo cambia el
+  `operationId`, y avisa en cada regeneración qué operaciones reemplaza.
+- **Suma** `GET /api/v1/contacts/{contact}/messages/{message}` (`showMessage`), las 18 rutas de formularios de WhatsApp
+  abiertas a claves (`whatsappForm.*`) y `POST /api/v1/contacts/{contact}/message/form` (`whatsappFormSend.store`).
+  Esos `operationId` siguen la forma de Scramble (`clase.método`) pero **no están verificados** contra una
+  especificación generada: si la del portal los nombra distinto, al cambiar de suplemento a especificación los flujos
+  guardados con esas operaciones dejan de encontrarlas.
+
+| Dato | Valor |
+|---|---|
+| Repo | `conversations` (Funnelchat20), solo lectura |
+| Commit | tag `v1.18.10` @ `a580a3d0020c98d9777c4f05437454c52af7ee55` (2026-10-22 01:29 -05:00), el que corre en production |
+| Acceso de las claves | `back/config/platform-gate.php`: listas `send` y `allowed` (envíos, `GET contacts/{contact}/messages/{message}`, formularios). Encuesta y evento (`message/poll`, `message/event`) siguen afuera: `403 route_not_available` |
+| Cuerpos | `Message/Http/Requests/SendMessageRequest.php`, `SendDirectMessageRequest.php`, `ForwardMessageRequest.php`, `StoreContactCardRequest.php`, `MessageTemplateController.php`; `Message/Support/ClientReference.php` y `SendFileType.php`; `WhatsappForm/Http/Requests/*.php` |
+| Respuestas | `Message/Http/Resources/PublicMessageResource.php`, `Message/Support/ApiKeySendResponse.php`, `ShowMessageController.php`, `WhatsappForm/Http/Controllers/WhatsappFormController.php` y `WhatsappFormSendController.php` |
+| Cómo | Las cinco operaciones reemplazadas se copiaron de `funnelchat.json` (con sus referencias resueltas) y se les sumó lo nuevo; las demás se escribieron a mano. Con un script de un solo uso, 2026-10-22 |
+
+Cuando el portal publique una instantánea que traiga todo esto, sacá el suplemento del config y regenerá.
 
 ## `eventos-webhooks.json` — catálogo de eventos de los webhooks
 

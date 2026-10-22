@@ -2,7 +2,10 @@
 	"$comment": "Configuración de scripts/generate.mjs. Qué etiquetas (tags) de la especificación entran en cada recurso del nodo, en qué orden, y los nombres en español de los campos. Las operaciones, sus nombres (summary) y sus campos salen de la especificación; acá solo se agrupa y se traduce.",
 	"spec": "spec/funnelchat.json",
 	"provenance": "spec/PROCEDENCIA.md",
-	"supplements": ["spec/suplementos/accounts-webhook-subscriptions.json"],
+	"supplements": [
+		"spec/suplementos/accounts-webhook-subscriptions.json",
+		"spec/suplementos/conversations-v1.18.10.json"
+	],
 	"output": "nodes/Funnelchat/generated/operations.ts",
 	"eventCatalog": "spec/eventos-webhooks.json",
 	"eventsOutput": "nodes/FunnelchatTrigger/generated/events.ts",
@@ -29,6 +32,11 @@
 			"value": "template",
 			"name": "Plantillas",
 			"tags": ["MessageTemplate"]
+		},
+		{
+			"value": "form",
+			"name": "Formularios de WhatsApp",
+			"tags": ["WhatsappForm"]
 		},
 		{
 			"value": "tag",
@@ -72,7 +80,10 @@
 	],
 	"excludeOperations": [],
 	"operationNotes": {
-		"conversation.sendMessage": "La especificación no lo marca, pero conversations exige phone o whatsapp_id además de contact_id (SendMessageRequest: required_without, origin/main @ 22f921605): agregá Teléfono o ID de WhatsApp en Campos adicionales."
+		"interactiveMessage.storePoll": "No está abierta a claves en conversations v1.18.10 (fuera del allowed de config/platform-gate.php): una clave recibe 403 route_not_available.",
+		"interactiveMessage.storeEvent": "No está abierta a claves en conversations v1.18.10 (fuera del allowed de config/platform-gate.php): una clave recibe 403 route_not_available.",
+		"messageReaction.update": "Con una clave responde 202 sin cuerpo: la reacción no es un mensaje con id. Si el proveedor no la admite, 422 con reason provider_unsupported.",
+		"messageReaction.destroy": "Con una clave responde 202 sin cuerpo: la reacción no es un mensaje con id. Si el proveedor no la admite, 422 con reason provider_unsupported."
 	},
 	"labels": {
 		"active_conversation": "Conversación activa",
@@ -223,15 +234,50 @@
 		"waba_id": "WABA ID",
 		"whatsApp_business_app": "App WhatsApp Business",
 		"whatsapp_id": "ID de WhatsApp",
-		"withContactCount": "Incluir cantidad de contactos"
+		"withContactCount": "Incluir cantidad de contactos",
+		"client_reference": "Referencia propia",
+		"file_type": "Tipo de archivo",
+		"file_name": "Nombre del archivo",
+		"form_id": "ID del formulario",
+		"button_text": "Texto del botón",
+		"template_key": "Plantilla de formulario",
+		"device_ids": "IDs de otros números",
+		"definition": "Definición (JSON)",
+		"expected_updated_at": "Fecha de la última lectura (updated_at)",
+		"q": "Buscar",
+		"version_id": "ID de la versión",
+		"origin": "Origen",
+		"familyId": "ID del formulario",
+		"runId": "ID de la respuesta"
 	},
 	"labelsByOperationPrefix": {
-		"contactNote": { "body": "Texto de la nota", "note": "ID de la nota" },
-		"webhookEndpoint": { "id": "ID del webhook" },
-		"webhookEndpointEvent": { "id": "ID del webhook" },
-		"webhookDelivery": { "id": "ID del webhook" },
-		"webhookSubscription": { "id": "ID de la suscripción" },
-		"webhookSubscriptionDelivery": { "id": "ID de la suscripción" },
-		"webhookSubscriptionTest": { "id": "ID de la suscripción" }
+		"contactNote": {
+			"body": "Texto de la nota",
+			"note": "ID de la nota"
+		},
+		"webhookEndpoint": {
+			"id": "ID del webhook"
+		},
+		"webhookEndpointEvent": {
+			"id": "ID del webhook"
+		},
+		"webhookDelivery": {
+			"id": "ID del webhook"
+		},
+		"webhookSubscription": {
+			"id": "ID de la suscripción"
+		},
+		"webhookSubscriptionDelivery": {
+			"id": "ID de la suscripción"
+		},
+		"webhookSubscriptionTest": {
+			"id": "ID de la suscripción"
+		},
+		"whatsappForm": {
+			"id": "ID de la versión del formulario"
+		},
+		"showMessage": {
+			"message": "ID del mensaje"
+		}
 	}
 }

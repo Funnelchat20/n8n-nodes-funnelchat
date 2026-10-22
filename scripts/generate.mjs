@@ -32,8 +32,10 @@ const RESERVED_NAMES = new Set([
 ]);
 const README_START = '<!-- operaciones:inicio (generado por npm run generate) -->';
 const README_END = '<!-- operaciones:fin -->';
+// Portal flags of the specification and the notice they add (an empty one adds none). `send_pending` is from the
+// 13-10 snapshot: sending with a key is open in conversations v1.18.10, the one in production.
 const PORTAL_FLAG_NOTES = {
-	send_pending: 'El envío con clave llega con conversations PR #2284, sin mergear al 16-10-2026.',
+	send_pending: '',
 };
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -346,11 +348,12 @@ function buildOperation(ctx, doc, path, method, op, resource, source) {
 				: 'Operación irreversible.',
 		);
 	}
-	const note = op['x-fc-nota'] ?? portalNote(op.description);
-	if (note) notices.push(cleanText(note));
 	const flag = op['x-portal-v0'];
+	// The portal note of a flag whose notice is empty is out of date too (it is the same note), so it is dropped.
+	const note = op['x-fc-nota'] ?? (PORTAL_FLAG_NOTES[flag] === '' ? undefined : portalNote(op.description));
+	if (note) notices.push(cleanText(note));
 	if (flag && PORTAL_FLAG_NOTES[flag]) notices.push(PORTAL_FLAG_NOTES[flag]);
-	if (flag && !PORTAL_FLAG_NOTES[flag])
+	if (flag && !(flag in PORTAL_FLAG_NOTES))
 		warnings.push(`${operationId}: x-portal-v0 «${flag}» sin nota conocida`);
 	// What the code of a domain requires and its specification does not say (checked by reading the code).
 	const extra = config.operationNotes?.[operationId];
@@ -441,10 +444,30 @@ export function generate(root = ROOT) {
 		const sup = readJson(root, file);
 		const info = sup['x-fc-suplemento'] ?? {};
 		const record = { id: info.id ?? file, source: info.fuente ?? file, used: 0, ignored: 0 };
+		if (info.reemplaza) record.replaced = 0;
 		for (const [path, item] of Object.entries(sup.paths ?? {})) {
 			for (const method of METHODS) {
 				if (!item[method]) continue;
 				const key = `${method.toUpperCase()} ${path}`;
+				// A supplement that `reemplaza` is newer than the specification: its operation wins, with the same
+				// operationId so saved workflows keep finding it.
+				if (seen.has(key) && info.reemplaza) {
+					const index = entries.findIndex(
+						(e) => e.source === 'spec' && e.path === path && e.method === method,
+					);
+					const previous = entries[index].op.operationId;
+					if (previous !== item[method].operationId) {
+						throw new Error(
+							`${record.id}: ${key} reemplaza a ${previous} con otro operationId (${item[method].operationId})`,
+						);
+					}
+					entries[index] = { doc: sup, path, method, op: item[method], source: record.id };
+					record.replaced++;
+					warnings.push(
+						`${record.id}: ${key} reemplaza a la de la especificación (sacá el suplemento cuando la especificación la traiga al día)`,
+					);
+					continue;
+				}
 				if (seen.has(key)) {
 					record.ignored++;
 					warnings.push(

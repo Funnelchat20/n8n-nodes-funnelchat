@@ -80,5 +80,11 @@ export interface SpecSource {
 	title: string;
 	sha256: string;
 	description: string;
-	supplements: Array<{ id: string; source: string; used: number; ignored: number }>;
+	supplements: Array<{
+		id: string;
+		source: string;
+		used: number;
+		ignored: number;
+		replaced?: number;
+	}>;
 }

@@ -1,0 +1,1791 @@
+{
+	"x-fc-suplemento": {
+		"id": "conversations-v1.18.10",
+		"titulo": "Envíos con clave, mensaje por id y formularios de WhatsApp de conversations",
+		"fuente": "conversations tag v1.18.10 @ a580a3d0020c98d9777c4f05437454c52af7ee55 (2026-10-22 01:29 -05:00, el que corre en production), solo lectura",
+		"reemplaza": true,
+		"archivos": [
+			"back/config/platform-gate.php",
+			"back/routes/api/messages.php",
+			"back/routes/api/whatsapp-forms.php",
+			"back/app/Modules/Message/Http/Requests/SendMessageRequest.php",
+			"back/app/Modules/Message/Http/Requests/SendDirectMessageRequest.php",
+			"back/app/Modules/Message/Http/Requests/ForwardMessageRequest.php",
+			"back/app/Modules/Message/Http/Requests/StoreContactCardRequest.php",
+			"back/app/Modules/Message/Http/Controllers/MessageTemplateController.php",
+			"back/app/Modules/Message/Http/Controllers/ShowMessageController.php",
+			"back/app/Modules/Message/Http/Resources/PublicMessageResource.php",
+			"back/app/Modules/Message/Support/ApiKeySendResponse.php",
+			"back/app/Modules/Message/Support/ClientReference.php",
+			"back/app/Modules/Message/Support/SendFileType.php",
+			"back/app/Modules/WhatsappForm/Http/Controllers/WhatsappFormController.php",
+			"back/app/Modules/WhatsappForm/Http/Controllers/WhatsappFormSendController.php",
+			"back/app/Modules/WhatsappForm/Http/Requests/*.php"
+		],
+		"motivo": "La especificación unificada del portal (instantánea del 13-10) es anterior al envío con clave, a la lectura de un mensaje y a los formularios. Las cinco operaciones de envío que ya estaban se reemplazan (mismo operationId, ruta y campos, más los nuevos y la respuesta 200); las demás son nuevas. Los operationId nuevos siguen la forma de Scramble (clase.método) y no están verificados contra una especificación generada. Cuando el portal publique una instantánea que los traiga, sacá este suplemento del config."
+	},
+	"tags": [
+		{
+			"name": "WhatsappForm",
+			"x-displayName": "Formularios de WhatsApp",
+			"description": "Formularios nativos de WhatsApp: se arman, se publican en uno o más números, se envían a un contacto y sus respuestas llegan con el aviso whatsapp_form.completed."
+		}
+	],
+	"paths": {
+		"/api/v1/contacts/{contact}/message": {
+			"post": {
+				"operationId": "conversation.sendMessage",
+				"summary": "Enviar un mensaje a un contacto",
+				"tags": [
+					"Conversation"
+				],
+				"parameters": [
+					{
+						"name": "contact",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"phone": {
+										"type": "string",
+										"minLength": 1
+									},
+									"whatsapp_id": {
+										"type": "string",
+										"minLength": 1
+									},
+									"device_id": {
+										"type": "integer"
+									},
+									"text": {
+										"type": "string"
+									},
+									"contact_id": {
+										"type": "integer"
+									},
+									"file": {
+										"type": "string",
+										"maxLength": 4096,
+										"description": "URL http(s) del archivo (también firmada o sin extensión, con Tipo de archivo) o el nombre de un archivo ya subido."
+									},
+									"temporal_uuid": {
+										"type": "string"
+									},
+									"note": {
+										"type": "boolean"
+									},
+									"options": {
+										"type": "array",
+										"items": {
+											"type": "object",
+											"properties": {
+												"id": {
+													"type": "string",
+													"minLength": 1,
+													"maxLength": 200
+												},
+												"label": {
+													"type": "string",
+													"pattern": "\\S",
+													"minLength": 1
+												}
+											}
+										},
+										"minItems": 1,
+										"maxItems": 10
+									},
+									"reference_message_uid": {
+										"type": [
+											"string",
+											"null"
+										],
+										"maxLength": 255
+									},
+									"link_preview": {
+										"type": "boolean"
+									},
+									"link_preview_meta": {
+										"type": "object",
+										"properties": {
+											"url": {
+												"type": "string",
+												"format": "uri",
+												"maxLength": 2048
+											},
+											"title": {
+												"type": [
+													"string",
+													"null"
+												],
+												"maxLength": 200
+											},
+											"description": {
+												"type": [
+													"string",
+													"null"
+												],
+												"maxLength": 500
+											},
+											"image_url": {
+												"type": [
+													"string",
+													"null"
+												],
+												"format": "uri",
+												"maxLength": 2048
+											},
+											"domain": {
+												"type": "string",
+												"maxLength": 253
+											}
+										}
+									},
+									"file_type": {
+										"type": [
+											"string",
+											"null"
+										],
+										"enum": [
+											"image",
+											"video",
+											"audio",
+											"document",
+											"sticker",
+											null
+										],
+										"description": "Qué es el archivo, cuando Archivo es una URL que no muestra su extensión (por ejemplo una URL firmada). Sin él, una URL así responde 422 en file_type."
+									},
+									"file_name": {
+										"type": [
+											"string",
+											"null"
+										],
+										"maxLength": 255,
+										"description": "Nombre con el que llega el documento (sin / \\ ? #). Hace falta para un document cuya URL no termina en una extensión conocida."
+									},
+									"client_reference": {
+										"type": [
+											"string",
+											"null"
+										],
+										"maxLength": 64,
+										"description": "Tu identificador para este envío (1 a 64 caracteres ASCII visibles, sin espacios). Vuelve en el mensaje y en el aviso message.status_changed, para relacionarlos con tu sistema."
+									}
+								},
+								"required": [
+									"device_id",
+									"contact_id"
+								],
+								"title": "SendMessageRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "El mensaje en cola.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"message": {
+											"$ref": "#/components/schemas/SupPublicMessage"
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				"x-fc-permission": "conversations:send",
+				"x-fc-proposito": "Usalo para enviarle a un contacto un mensaje de texto o un archivo desde uno de tus números, con opción de responder a un mensaje previo, sumar opciones o vista previa de link.",
+				"x-fc-domain": "conversations",
+				"x-fc-nota": "Con una clave responde 200 con el mensaje en cola (status queued) y su id; el resultado llega después en el aviso message.status_changed. Pasan las guardas de WhatsApp: ventana de 24 horas (422 window_closed), ritmo (429 rate_limited) y antibloqueo (422 antiblock_…). Con una clave, Teléfono o ID de WhatsApp es obligatorio y tiene que ser el del contacto (si no, 422 recipient_mismatch). Si el contacto agotó los contactos activos del mes, 429 mac_lockout_24h.",
+				"x-fc-reemplaza": "spec"
+			}
+		},
+		"/api/v1/message/send-message": {
+			"post": {
+				"operationId": "message.sendMessage",
+				"summary": "Enviar un mensaje",
+				"tags": [
+					"Message"
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"device_id": {
+										"type": "integer"
+									},
+									"text": {
+										"type": "string"
+									},
+									"contact_id": {
+										"type": "integer"
+									},
+									"file": {
+										"type": "string",
+										"maxLength": 4096,
+										"description": "URL http(s) del archivo (también firmada o sin extensión, con Tipo de archivo) o el nombre de un archivo ya subido."
+									},
+									"temporal_uuid": {
+										"type": "string"
+									},
+									"local_id": {
+										"type": [
+											"string",
+											"null"
+										],
+										"maxLength": 255
+									},
+									"note": {
+										"type": "boolean"
+									},
+									"file_type": {
+										"type": [
+											"string",
+											"null"
+										],
+										"enum": [
+											"image",
+											"video",
+											"audio",
+											"document",
+											"sticker",
+											null
+										],
+										"description": "Qué es el archivo, cuando Archivo es una URL que no muestra su extensión (por ejemplo una URL firmada). Sin él, una URL así responde 422 en file_type."
+									},
+									"file_name": {
+										"type": [
+											"string",
+											"null"
+										],
+										"maxLength": 255,
+										"description": "Nombre con el que llega el documento (sin / \\ ? #). Hace falta para un document cuya URL no termina en una extensión conocida."
+									},
+									"client_reference": {
+										"type": [
+											"string",
+											"null"
+										],
+										"maxLength": 64,
+										"description": "Tu identificador para este envío (1 a 64 caracteres ASCII visibles, sin espacios). Vuelve en el mensaje y en el aviso message.status_changed, para relacionarlos con tu sistema."
+									}
+								},
+								"required": [
+									"device_id",
+									"contact_id"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "El mensaje en cola.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"message": {
+											"$ref": "#/components/schemas/SupPublicMessage"
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				"x-fc-permission": "conversations:send",
+				"x-fc-proposito": "Sirve para enviar un mensaje de texto o un archivo a un contacto, indicando en el cuerpo el `contact_id` y el número desde el que sale.",
+				"x-fc-domain": "conversations",
+				"x-fc-nota": "Con una clave responde 200 con el mensaje en cola (status queued) y su id; el resultado llega después en el aviso message.status_changed. Pasan las guardas de WhatsApp: ventana de 24 horas (422 window_closed), ritmo (429 rate_limited) y antibloqueo (422 antiblock_…).",
+				"x-fc-reemplaza": "spec"
+			}
+		},
+		"/api/v1/contacts/{contact}/messages/{message}/forward": {
+			"post": {
+				"operationId": "forwardMessage.store",
+				"summary": "Reenviar un mensaje",
+				"tags": [
+					"ForwardMessage"
+				],
+				"parameters": [
+					{
+						"name": "contact",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						}
+					},
+					{
+						"name": "message",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"targets": {
+										"type": "array",
+										"items": {
+											"type": "object",
+											"properties": {
+												"contact_id": {
+													"type": "integer"
+												},
+												"device_id": {
+													"type": "integer"
+												}
+											},
+											"required": [
+												"contact_id",
+												"device_id"
+											]
+										},
+										"minItems": 1,
+										"maxItems": 5,
+										"uniqueItems": true
+									},
+									"client_reference": {
+										"type": [
+											"string",
+											"null"
+										],
+										"maxLength": 64,
+										"description": "Tu identificador para este envío (1 a 64 caracteres ASCII visibles, sin espacios). Vuelve en el mensaje y en el aviso message.status_changed, para relacionarlos con tu sistema."
+									}
+								},
+								"required": [
+									"targets"
+								],
+								"title": "ForwardMessageRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Un resultado por destino, en el orden pedido.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "array",
+									"items": {
+										"type": "object",
+										"properties": {
+											"contact_id": {
+												"type": "integer"
+											},
+											"mode": {
+												"type": "string",
+												"enum": [
+													"internal",
+													"native"
+												]
+											},
+											"status": {
+												"type": "string",
+												"enum": [
+													"queued",
+													"blocked"
+												]
+											},
+											"reason": {
+												"type": [
+													"string",
+													"null"
+												]
+											},
+											"message": {
+												"anyOf": [
+													{
+														"$ref": "#/components/schemas/SupPublicMessage"
+													},
+													{
+														"type": "null"
+													}
+												]
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				"x-fc-permission": "conversations:send",
+				"x-fc-proposito": "Usalo para reenviar un mensaje de una conversación a otros contactos, eligiendo desde qué número sale cada envío; la respuesta indica el resultado por destino.",
+				"x-fc-domain": "conversations",
+				"x-fc-nota": "Con una clave responde 200 con un resultado por destino: queued con su mensaje, o blocked con el motivo (reason).",
+				"x-fc-reemplaza": "spec"
+			}
+		},
+		"/api/v1/contacts/{contact}/message/contact-card": {
+			"post": {
+				"operationId": "contactCard.store",
+				"summary": "Enviar una tarjeta de contacto",
+				"tags": [
+					"ContactCard"
+				],
+				"parameters": [
+					{
+						"name": "contact",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"device_id": {
+										"type": "integer"
+									},
+									"contact_card_ids": {
+										"type": "array",
+										"items": {
+											"type": "integer"
+										},
+										"minItems": 1,
+										"maxItems": 5,
+										"uniqueItems": true
+									},
+									"client_reference": {
+										"type": [
+											"string",
+											"null"
+										],
+										"maxLength": 64,
+										"description": "Tu identificador para este envío (1 a 64 caracteres ASCII visibles, sin espacios). Vuelve en el mensaje y en el aviso message.status_changed, para relacionarlos con tu sistema."
+									}
+								},
+								"required": [
+									"device_id",
+									"contact_card_ids"
+								],
+								"title": "StoreContactCardRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Un mensaje por tarjeta, en cola.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"messages": {
+											"type": "array",
+											"items": {
+												"$ref": "#/components/schemas/SupPublicMessage"
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				"x-fc-permission": "conversations:send",
+				"x-fc-proposito": "Sirve para compartirle a un contacto una o más tarjetas de contacto desde uno de tus números, por ejemplo para pasarle el contacto de un vendedor o de soporte.",
+				"x-fc-domain": "conversations",
+				"x-fc-nota": "Con una clave responde 200 con un mensaje en cola por tarjeta (status queued); el resultado llega después en el aviso message.status_changed. Pasan las guardas de WhatsApp: ventana de 24 horas (422 window_closed), ritmo (429 rate_limited) y antibloqueo (422 antiblock_…).",
+				"x-fc-reemplaza": "spec"
+			}
+		},
+		"/api/v1/devices/{device}/templates/{template}/send-template": {
+			"post": {
+				"operationId": "messageTemplate.send",
+				"summary": "Enviar una plantilla",
+				"tags": [
+					"MessageTemplate"
+				],
+				"parameters": [
+					{
+						"name": "device",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						}
+					},
+					{
+						"name": "template",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"phone": {
+										"type": "string"
+									},
+									"contact_id": {
+										"type": "integer"
+									},
+									"template_variables": {
+										"type": "object",
+										"properties": {
+											"body": {
+												"type": "array",
+												"items": {
+													"type": [
+														"string",
+														"null"
+													]
+												}
+											}
+										}
+									},
+									"client_reference": {
+										"type": [
+											"string",
+											"null"
+										],
+										"maxLength": 64,
+										"description": "Tu identificador para este envío (1 a 64 caracteres ASCII visibles, sin espacios). Vuelve en el mensaje y en el aviso message.status_changed, para relacionarlos con tu sistema."
+									}
+								},
+								"required": [
+									"phone",
+									"contact_id"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "El mensaje en cola.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"message": {
+											"$ref": "#/components/schemas/SupPublicMessage"
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				"x-fc-permission": "conversations:send",
+				"x-fc-proposito": "Sirve para enviar una plantilla desde uno de tus números a un teléfono o contacto, completando sus variables, por ejemplo un aviso, un recordatorio o una confirmación.",
+				"x-fc-domain": "conversations",
+				"x-fc-nota": "Con una clave responde 200 con el mensaje en cola (status queued) y su id; el resultado llega en el aviso message.status_changed. Una plantilla no pide la ventana de 24 horas.",
+				"x-fc-reemplaza": "spec"
+			}
+		},
+		"/api/v1/contacts/{contact}/messages/{message}": {
+			"get": {
+				"operationId": "showMessage",
+				"summary": "Ver un mensaje",
+				"tags": [
+					"Message"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:read",
+				"x-fc-proposito": "Usalo para consultar el estado de un mensaje por su id (el que devolvió el envío): queued, sent, delivered, read o failed, con el error y tu client_reference.",
+				"parameters": [
+					{
+						"name": "contact",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Contacto del mensaje."
+					},
+					{
+						"name": "message",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Id del mensaje."
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "El mensaje, sin envoltorio.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/SupPublicMessage"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "No existe o no es de la cuenta."
+					}
+				}
+			}
+		},
+		"/api/v1/forms": {
+			"get": {
+				"operationId": "whatsappForm.index",
+				"summary": "Listar formularios",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:read",
+				"x-fc-proposito": "Usalo para ver los formularios de WhatsApp de la cuenta, uno por formulario con su versión actual, envíos y respuestas.",
+				"parameters": [
+					{
+						"name": "q",
+						"in": "query",
+						"schema": {
+							"type": "string"
+						},
+						"description": "Busca por nombre."
+					},
+					{
+						"name": "status",
+						"in": "query",
+						"schema": {
+							"type": "string",
+							"enum": [
+								"draft",
+								"published",
+								"deprecated"
+							]
+						},
+						"description": "Estado."
+					},
+					{
+						"name": "device_id",
+						"in": "query",
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Solo los de este número."
+					},
+					{
+						"name": "per_page",
+						"in": "query",
+						"schema": {
+							"type": "integer"
+						}
+					},
+					{
+						"name": "page",
+						"in": "query",
+						"schema": {
+							"type": "integer"
+						}
+					}
+				],
+				"x-fc-listing": {
+					"per_page_default": 25,
+					"per_page_max": 100,
+					"size_params": [
+						"per_page"
+					]
+				},
+				"responses": {
+					"200": {
+						"description": "Formularios, paginados.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"data": {
+											"type": "array",
+											"items": {
+												"type": "object"
+											}
+										},
+										"links": {
+											"type": "object"
+										},
+										"meta": {
+											"type": "object",
+											"properties": {
+												"current_page": {
+													"type": "integer"
+												},
+												"last_page": {
+													"type": "integer"
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"post": {
+				"operationId": "whatsappForm.store",
+				"summary": "Crear un formulario",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:write",
+				"x-fc-proposito": "Usalo para crear un formulario en borrador desde una plantilla (blank lo arranca vacío) para uno o más números. Después se edita, se valida y se publica.",
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": [
+									"device_id",
+									"template_key"
+								],
+								"properties": {
+									"device_id": {
+										"type": "integer",
+										"description": "Número principal del formulario."
+									},
+									"device_ids": {
+										"type": "array",
+										"items": {
+											"type": "integer"
+										},
+										"description": "Otros números (hasta 50)."
+									},
+									"template_key": {
+										"type": "string",
+										"description": "Clave de la plantilla de formulario (de Listar plantillas de formulario); blank para empezar vacío."
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"description": "El formulario creado, su lint y sus números.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/templates": {
+			"get": {
+				"operationId": "whatsappForm.templates",
+				"summary": "Listar plantillas de formulario",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:read",
+				"x-fc-proposito": "Usalo para ver con qué plantillas se puede crear un formulario.",
+				"responses": {
+					"200": {
+						"description": "Plantillas.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"data": {
+											"type": "array",
+											"items": {
+												"type": "object",
+												"properties": {
+													"key": {
+														"type": "string"
+													},
+													"title": {
+														"type": "string"
+													},
+													"description": {
+														"type": "string"
+													},
+													"category": {
+														"type": "string"
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/{id}": {
+			"get": {
+				"operationId": "whatsappForm.show",
+				"summary": "Ver un formulario",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:read",
+				"x-fc-proposito": "Usalo para ver una versión de un formulario con su definición, su lint, sus versiones y sus números.",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones)."
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "{data, lint, versions, numbers}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			},
+			"put": {
+				"operationId": "whatsappForm.update",
+				"summary": "Guardar un formulario",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:write",
+				"x-fc-proposito": "Usalo para guardar la definición de un borrador (pantallas y preguntas). Un formulario publicado no se edita: creá una versión nueva.",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones)."
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": [
+									"definition"
+								],
+								"properties": {
+									"name": {
+										"type": "string",
+										"description": "Nombre (hasta 120 caracteres)."
+									},
+									"definition": {
+										"type": "object",
+										"description": "La definición completa: {screens: [...]}, como la devuelve Ver un formulario."
+									},
+									"expected_updated_at": {
+										"type": [
+											"string",
+											"null"
+										],
+										"description": "El updated_at que leíste; si cambió en el medio, 409 STALE."
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "{data, lint}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			},
+			"delete": {
+				"operationId": "whatsappForm.destroy",
+				"summary": "Eliminar un borrador de formulario",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:write",
+				"x-fc-proposito": "Usalo para borrar una versión en borrador. Una publicada responde 409 PUBLISHED.",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones)."
+					}
+				],
+				"responses": {
+					"204": {
+						"description": "Borrado."
+					}
+				}
+			}
+		},
+		"/api/v1/forms/{id}/numbers": {
+			"get": {
+				"operationId": "whatsappForm.numbersIndex",
+				"summary": "Ver los números de un formulario",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:read",
+				"x-fc-proposito": "Usalo para ver en qué números está el formulario y el estado de su publicación en cada uno.",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones)."
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "{numbers}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			},
+			"post": {
+				"operationId": "whatsappForm.addNumber",
+				"summary": "Agregar un número a un formulario",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:write",
+				"x-fc-proposito": "Usalo para sumar un número al formulario; si ya está publicado, se publica también en ese número.",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones)."
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": [
+									"device_id"
+								],
+								"properties": {
+									"device_id": {
+										"type": "integer",
+										"description": "Número a agregar."
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "{numbers}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/{id}/numbers/{deviceId}": {
+			"delete": {
+				"operationId": "whatsappForm.removeNumber",
+				"summary": "Quitar un número de un formulario",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:write",
+				"x-fc-proposito": "Usalo para sacar un número del formulario. El número principal no se puede quitar (422 PRIMARY_NUMBER).",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones)."
+					},
+					{
+						"name": "deviceId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Número a quitar."
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "{numbers}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/{id}/numbers/retry": {
+			"post": {
+				"operationId": "whatsappForm.retryNumbers",
+				"summary": "Reintentar la publicación en los números",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:write",
+				"x-fc-proposito": "Usalo para reintentar la publicación en los números donde falló.",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones)."
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "{numbers}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/{id}/versions": {
+			"post": {
+				"operationId": "whatsappForm.storeVersion",
+				"summary": "Crear una versión nueva de un formulario",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:write",
+				"x-fc-proposito": "Usalo para editar un formulario publicado: crea un borrador nuevo a partir de él, o devuelve el borrador que ya existía (created: false).",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones)."
+					}
+				],
+				"responses": {
+					"201": {
+						"description": "{data, created, lint, numbers}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/{id}/sync": {
+			"post": {
+				"operationId": "whatsappForm.sync",
+				"summary": "Validar un formulario en Meta",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:write",
+				"x-fc-proposito": "Usalo para subir el borrador a Meta y traer sus errores de validación antes de publicar.",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones)."
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "{data, lint, numbers}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/{id}/publish": {
+			"post": {
+				"operationId": "whatsappForm.publish",
+				"summary": "Publicar un formulario",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:write",
+				"x-fc-proposito": "Usalo para publicar el borrador en sus números. Con errores responde 422 LINT; si Meta lo rechaza, 502 META.",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones)."
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "{data, lint, numbers}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/families/{familyId}/definition": {
+			"get": {
+				"operationId": "whatsappForm.definition",
+				"summary": "Ver la definición publicada de un formulario",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:read",
+				"x-fc-proposito": "Usalo para leer la definición de la versión vigente de un formulario.",
+				"parameters": [
+					{
+						"name": "familyId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Id del formulario (family_id), el mismo en todas sus versiones."
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "{data}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/families/{familyId}/versions": {
+			"get": {
+				"operationId": "whatsappForm.versions",
+				"summary": "Listar las versiones de un formulario",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:read",
+				"x-fc-proposito": "Usalo para ver todas las versiones de un formulario con su estado y sus respuestas.",
+				"parameters": [
+					{
+						"name": "familyId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Id del formulario (family_id), el mismo en todas sus versiones."
+					},
+					{
+						"name": "perPage",
+						"in": "query",
+						"schema": {
+							"type": "integer"
+						}
+					},
+					{
+						"name": "page",
+						"in": "query",
+						"schema": {
+							"type": "integer"
+						}
+					}
+				],
+				"x-fc-listing": {
+					"per_page_default": 25,
+					"per_page_max": 100,
+					"size_params": [
+						"perPage"
+					]
+				},
+				"responses": {
+					"200": {
+						"description": "Versiones.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"data": {
+											"type": "array",
+											"items": {
+												"type": "object"
+											}
+										},
+										"links": {
+											"type": "object"
+										},
+										"meta": {
+											"type": "object",
+											"properties": {
+												"current_page": {
+													"type": "integer"
+												},
+												"last_page": {
+													"type": "integer"
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/families/{familyId}/responses": {
+			"get": {
+				"operationId": "whatsappForm.responses",
+				"summary": "Listar las respuestas de un formulario",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:read",
+				"x-fc-proposito": "Usalo para traer las respuestas de un formulario, de todas sus versiones, con el contacto y los valores de cada campo.",
+				"parameters": [
+					{
+						"name": "familyId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Id del formulario (family_id), el mismo en todas sus versiones."
+					},
+					{
+						"name": "from",
+						"in": "query",
+						"schema": {
+							"type": "string",
+							"format": "date"
+						},
+						"description": "Desde esta fecha."
+					},
+					{
+						"name": "to",
+						"in": "query",
+						"schema": {
+							"type": "string",
+							"format": "date"
+						},
+						"description": "Hasta esta fecha."
+					},
+					{
+						"name": "version_id",
+						"in": "query",
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Solo esta versión."
+					},
+					{
+						"name": "origin",
+						"in": "query",
+						"schema": {
+							"type": "string"
+						},
+						"description": "Origen del envío (por ejemplo api o automation)."
+					},
+					{
+						"name": "status",
+						"in": "query",
+						"schema": {
+							"type": "string",
+							"enum": [
+								"completed",
+								"pending",
+								"not_sent",
+								"unfinished"
+							]
+						},
+						"description": "Estado de la respuesta."
+					},
+					{
+						"name": "search",
+						"in": "query",
+						"schema": {
+							"type": "string"
+						},
+						"description": "Busca por contacto."
+					},
+					{
+						"name": "per_page",
+						"in": "query",
+						"schema": {
+							"type": "integer"
+						}
+					},
+					{
+						"name": "page",
+						"in": "query",
+						"schema": {
+							"type": "integer"
+						}
+					}
+				],
+				"x-fc-listing": {
+					"per_page_default": 25,
+					"per_page_max": 100,
+					"size_params": [
+						"per_page"
+					]
+				},
+				"responses": {
+					"200": {
+						"description": "Respuestas, paginadas.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"data": {
+											"type": "array",
+											"items": {
+												"type": "object"
+											}
+										},
+										"links": {
+											"type": "object"
+										},
+										"meta": {
+											"type": "object",
+											"properties": {
+												"current_page": {
+													"type": "integer"
+												},
+												"last_page": {
+													"type": "integer"
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/families/{familyId}/responses/{runId}": {
+			"get": {
+				"operationId": "whatsappForm.response",
+				"summary": "Ver una respuesta de un formulario",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:read",
+				"x-fc-proposito": "Usalo para ver una respuesta completa: cada respuesta del contacto, los tiempos del envío y lo que hizo el formulario.",
+				"parameters": [
+					{
+						"name": "familyId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Id del formulario (family_id), el mismo en todas sus versiones."
+					},
+					{
+						"name": "runId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Id de la respuesta."
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "{data}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/families/{familyId}/metrics": {
+			"get": {
+				"operationId": "whatsappForm.metrics",
+				"summary": "Ver las métricas de un formulario",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:read",
+				"x-fc-proposito": "Usalo para ver cuántos formularios se enviaron, entregaron, leyeron y completaron, y las tasas.",
+				"parameters": [
+					{
+						"name": "familyId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Id del formulario (family_id), el mismo en todas sus versiones."
+					},
+					{
+						"name": "from",
+						"in": "query",
+						"schema": {
+							"type": "string",
+							"format": "date"
+						},
+						"description": "Desde esta fecha."
+					},
+					{
+						"name": "to",
+						"in": "query",
+						"schema": {
+							"type": "string",
+							"format": "date"
+						},
+						"description": "Hasta esta fecha."
+					},
+					{
+						"name": "version_id",
+						"in": "query",
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Solo esta versión."
+					},
+					{
+						"name": "origin",
+						"in": "query",
+						"schema": {
+							"type": "string"
+						},
+						"description": "Origen del envío (por ejemplo api o automation)."
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "{data}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/contacts/{contact}/message/form": {
+			"post": {
+				"operationId": "whatsappFormSend.store",
+				"summary": "Enviar un formulario a un contacto",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:send",
+				"x-fc-proposito": "Usalo para mandarle a un contacto un formulario publicado. Cuando lo completa llega el aviso whatsapp_form.completed con sus respuestas.",
+				"parameters": [
+					{
+						"name": "contact",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Contacto."
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": [
+									"form_id",
+									"device_id"
+								],
+								"properties": {
+									"form_id": {
+										"type": "integer",
+										"description": "Id del formulario (family_id), no el de una versión: se envía la versión publicada."
+									},
+									"device_id": {
+										"type": "integer",
+										"description": "Número que lo envía; el formulario tiene que estar publicado en él."
+									},
+									"text": {
+										"type": "string",
+										"description": "Texto del mensaje (hasta 1024 caracteres). Por defecto, el nombre del formulario."
+									},
+									"button_text": {
+										"type": "string",
+										"description": "Texto del botón (hasta 30 caracteres, sin emojis). Por defecto «Abrir»."
+									},
+									"client_reference": {
+										"type": [
+											"string",
+											"null"
+										],
+										"maxLength": 64,
+										"description": "Tu identificador para este envío (1 a 64 caracteres ASCII visibles, sin espacios). Vuelve en el mensaje y en el aviso message.status_changed, para relacionarlos con tu sistema."
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "El mensaje en cola, type whatsapp_form.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"message": {
+											"$ref": "#/components/schemas/SupPublicMessage"
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				"x-fc-nota": "Con una clave responde 200 con el mensaje en cola (status queued) y su id; el resultado llega después en el aviso message.status_changed. Pasan las guardas de WhatsApp: ventana de 24 horas (422 window_closed), ritmo (429 rate_limited) y antibloqueo (422 antiblock_…). Errores propios: 404 form_not_found y 422 form_not_published, form_not_on_number, number_not_eligible."
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"SupPublicMessage": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "integer",
+						"description": "Id del mensaje."
+					},
+					"contact_id": {
+						"type": "integer",
+						"description": "Contacto."
+					},
+					"device_id": {
+						"type": "integer",
+						"description": "Número."
+					},
+					"direction": {
+						"type": "string",
+						"enum": [
+							"outbound",
+							"inbound"
+						]
+					},
+					"type": {
+						"type": "string",
+						"description": "Tipo público del mensaje (text, image, document, contact, template, whatsapp_form…)."
+					},
+					"status": {
+						"type": [
+							"string",
+							"null"
+						],
+						"enum": [
+							"queued",
+							"sent",
+							"delivered",
+							"read",
+							"failed",
+							null
+						]
+					},
+					"error": {
+						"type": [
+							"object",
+							"null"
+						],
+						"properties": {
+							"code": {
+								"type": [
+									"integer",
+									"null"
+								]
+							},
+							"title": {
+								"type": [
+									"string",
+									"null"
+								]
+							},
+							"reason": {
+								"type": [
+									"string",
+									"null"
+								]
+							}
+						}
+					},
+					"client_reference": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"created_at": {
+						"type": "string",
+						"format": "date-time"
+					},
+					"updated_at": {
+						"type": "string",
+						"format": "date-time"
+					}
+				}
+			}
+		}
+	}
+}

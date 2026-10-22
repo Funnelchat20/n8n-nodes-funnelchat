@@ -90,6 +90,53 @@ describe('armado de pedidos (buildRequest)', () => {
 		});
 	});
 
+	it('Enviar un mensaje a un contacto: archivo por URL con tipo, nombre y referencia propia', () => {
+		const built = buildRequest(op('conversation.sendMessage'), {
+			contact: '2001',
+			device_id: '7',
+			contact_id: 2001,
+			phone: '5491100000000',
+			file: 'https://cdn.example.com/f?id=9&firma=abc',
+			file_type: 'document',
+			file_name: 'factura.pdf',
+			client_reference: 'pedido-981',
+		});
+		expect(built.body).toEqual({
+			device_id: 7,
+			contact_id: 2001,
+			phone: '5491100000000',
+			file: 'https://cdn.example.com/f?id=9&firma=abc',
+			file_type: 'document',
+			file_name: 'factura.pdf',
+			client_reference: 'pedido-981',
+		});
+	});
+
+	it('Enviar un formulario a un contacto: form_id y device_id como enteros', () => {
+		const built = buildRequest(op('whatsappFormSend.store'), {
+			contact: '2001',
+			form_id: '8001',
+			device_id: '7',
+			button_text: 'Completar',
+		});
+		expect(built).toEqual({
+			method: 'POST',
+			path: '/api/v1/contacts/2001/message/form',
+			query: [],
+			body: { form_id: 8001, device_id: 7, button_text: 'Completar' },
+		});
+	});
+
+	it('Ver un mensaje y las rutas de formularios por versión y por formulario', () => {
+		expect(url('showMessage', { contact: '2001', message: '1001' })).toBe(
+			'GET /api/v1/contacts/2001/messages/1001',
+		);
+		expect(url('whatsappForm.publish', { id: '8105' })).toBe('POST /api/v1/forms/8105/publish');
+		expect(
+			url('whatsappForm.responses', { familyId: '8001', status: 'completed', from: '2026-10-01' }),
+		).toBe('GET /api/v1/forms/families/8001/responses?from=2026-10-01&status=completed');
+	});
+
 	it('un id que no es número se rechaza antes de llamar a la API', () => {
 		expect(() =>
 			buildRequest(op('conversation.sendMessage'), {
@@ -251,6 +298,107 @@ describe('ejecución del nodo con respuestas simuladas', () => {
 		const [removed] = await node.execute.call(remove.ctx);
 		expect(requestLine(remove.calls[0])).toBe('DELETE /api/v1/contacts/10/notes/3');
 		expect(removed[0].json).toEqual({ success: true });
+	});
+
+	it('un envío devuelve el mensaje en cola, no el sobre', async () => {
+		const queued = {
+			id: 1001,
+			contact_id: 2001,
+			device_id: 7,
+			direction: 'outbound',
+			type: 'text',
+			status: 'queued',
+			error: null,
+			client_reference: 'pedido-981',
+			created_at: '2026-10-22T13:05:00Z',
+			updated_at: '2026-10-22T13:05:00Z',
+		};
+		const { ctx, calls } = executeContext({
+			params: {
+				resource: 'conversation',
+				operation: 'conversation.sendMessage',
+				contact: '2001',
+				device_id: '7',
+				contact_id: '2001',
+				useJsonBody: false,
+				additionalFields: { phone: '5491100000000', text: 'Hola', client_reference: 'pedido-981' },
+			},
+			responses: [{ body: { message: queued } }],
+		});
+		const [out] = await node.execute.call(ctx);
+		expect(requestLine(calls[0])).toBe('POST /api/v1/contacts/2001/message');
+		expect(calls[0].options.body).toMatchObject({ client_reference: 'pedido-981' });
+		expect(out.map((i) => i.json)).toEqual([queued]);
+	});
+
+	it('una tarjeta de contacto devuelve un ítem por mensaje; un reenvío, uno por destino', async () => {
+		const card = executeContext({
+			params: {
+				resource: 'conversation',
+				operation: 'contactCard.store',
+				contact: '2001',
+				device_id: '7',
+				contact_card_ids: '2002, 2003',
+				useJsonBody: false,
+				additionalFields: {},
+			},
+			responses: [
+				{
+					body: {
+						messages: [
+							{ id: 1, type: 'contact' },
+							{ id: 2, type: 'contact' },
+						],
+					},
+				},
+			],
+		});
+		const [cards] = await node.execute.call(card.ctx);
+		expect(card.calls[0].options.body).toEqual({ device_id: 7, contact_card_ids: [2002, 2003] });
+		expect(cards.map((i) => i.json.id)).toEqual([1, 2]);
+
+		const forward = executeContext({
+			params: {
+				resource: 'conversation',
+				operation: 'forwardMessage.store',
+				contact: '2001',
+				message: '1001',
+				targets: '[{"contact_id": 2002, "device_id": 7}]',
+				useJsonBody: false,
+				additionalFields: {},
+			},
+			responses: [
+				{
+					body: [
+						{
+							contact_id: 2002,
+							mode: 'internal',
+							status: 'queued',
+							reason: null,
+							message: { id: 3 },
+						},
+					],
+				},
+			],
+		});
+		const [forwarded] = await node.execute.call(forward.ctx);
+		expect(forwarded[0].json).toMatchObject({ contact_id: 2002, status: 'queued' });
+	});
+
+	it('Listar formularios con «devolver todo» recorre las páginas con per_page', async () => {
+		const { ctx, calls } = executeContext({
+			params: { resource: 'form', operation: 'whatsappForm.index', returnAll: true, filters: {} },
+			responses: [
+				{ body: { data: [{ id: 1 }], meta: { current_page: 1, last_page: 2 } } },
+				{ body: { data: [{ id: 2 }], meta: { current_page: 2, last_page: 2 } } },
+			],
+		});
+		const [out] = await node.execute.call(ctx);
+		expect(calls.map(requestLine)).toEqual([
+			'GET /api/v1/forms?per_page=100&page=1',
+			'GET /api/v1/forms?per_page=100&page=2',
+		]);
+		expect(out.map((i) => i.json.id)).toEqual([1, 2]);
 	});
 
 	it('un error de la API sale con su message y su error', async () => {

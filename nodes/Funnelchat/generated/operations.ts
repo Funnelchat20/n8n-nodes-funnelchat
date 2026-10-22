@@ -14,6 +14,13 @@ export const SPEC_SOURCE: SpecSource = {
 			"source": "accounts tag v1.4.24 @ 300cc8435e6fa17e2ac274b88289a2cc7b945fcd (2026-10-22 08:31 -03:00, el que corre en production), solo lectura",
 			"used": 7,
 			"ignored": 0
+		},
+		{
+			"id": "conversations-v1.18.10",
+			"source": "conversations tag v1.18.10 @ a580a3d0020c98d9777c4f05437454c52af7ee55 (2026-10-22 01:29 -05:00, el que corre en production), solo lectura",
+			"used": 20,
+			"ignored": 0,
+			"replaced": 5
 		}
 	]
 };
@@ -33,6 +40,11 @@ export const RESOURCES: ResourceSpec[] = [
 		"value": "template",
 		"name": "Plantillas",
 		"description": "Una plantilla es un mensaje de WhatsApp que Meta aprueba antes de usarse, con encabezado, cuerpo con variables, pie y botones, asociado a un número (`device_id`) y su WABA."
+	},
+	{
+		"value": "form",
+		"name": "Formularios de WhatsApp",
+		"description": "Formularios nativos de WhatsApp: se arman, se publican en uno o más números, se envían a un contacto y sus respuestas llegan con el aviso whatsapp_form.completed."
 	},
 	{
 		"value": "tag",
@@ -1821,8 +1833,8 @@ export const OPERATIONS: OperationSpec[] = [
 		"method": "POST",
 		"path": "/api/v1/contacts/{contact}/message",
 		"permission": "conversations:send",
-		"notice": "El envío con clave se abre con el permiso `conversations:send` y las reglas de WhatsApp (ventana de 24 horas y frenos contra spam): está en camino. Hasta que se habilite, esta ruta responde `403 route_not_available` a cualquier clave. El envío con clave llega con conversations PR #2284, sin mergear al 16-10-2026. La especificación no lo marca, pero conversations exige phone o whatsapp_id además de contact_id (SendMessageRequest: required_without, origin/main @ 22f921605): agregá Teléfono o ID de WhatsApp en Campos adicionales.",
-		"source": "spec",
+		"notice": "Con una clave responde 200 con el mensaje en cola (status queued) y su id; el resultado llega después en el aviso message.status_changed. Pasan las guardas de WhatsApp: ventana de 24 horas (422 window_closed), ritmo (429 rate_limited) y antibloqueo (422 antiblock_…). Con una clave, Teléfono o ID de WhatsApp es obligatorio y tiene que ser el del contacto (si no, 422 recipient_mismatch). Si el contacto agotó los contactos activos del mes, 429 mac_lockout_24h.",
+		"source": "conversations-v1.18.10",
 		"body": {
 			"required": true,
 			"root": "object"
@@ -1895,7 +1907,7 @@ export const OPERATIONS: OperationSpec[] = [
 				"required": false,
 				"kind": "string",
 				"displayName": "Archivo (URL)",
-				"description": "En la API: file.",
+				"description": "URL http(s) del archivo (también firmada o sin extensión, con Tipo de archivo) o el nombre de un archivo ya subido. En la API: file.",
 				"valueType": "string"
 			},
 			{
@@ -1955,6 +1967,43 @@ export const OPERATIONS: OperationSpec[] = [
 				"kind": "json",
 				"displayName": "Datos de la vista previa",
 				"description": "En la API: link_preview_meta."
+			},
+			{
+				"name": "file_type",
+				"apiName": "file_type",
+				"location": "body",
+				"required": false,
+				"kind": "options",
+				"displayName": "Tipo de archivo",
+				"description": "Qué es el archivo, cuando Archivo es una URL que no muestra su extensión (por ejemplo una URL firmada). Sin él, una URL así responde 422 en file_type. En la API: file_type.",
+				"valueType": "string",
+				"options": [
+					"image",
+					"video",
+					"audio",
+					"document",
+					"sticker"
+				]
+			},
+			{
+				"name": "file_name",
+				"apiName": "file_name",
+				"location": "body",
+				"required": false,
+				"kind": "string",
+				"displayName": "Nombre del archivo",
+				"description": "Nombre con el que llega el documento (sin / \\ ? #). Hace falta para un document cuya URL no termina en una extensión conocida. En la API: file_name.",
+				"valueType": "string"
+			},
+			{
+				"name": "client_reference",
+				"apiName": "client_reference",
+				"location": "body",
+				"required": false,
+				"kind": "string",
+				"displayName": "Referencia propia",
+				"description": "Tu identificador para este envío (1 a 64 caracteres ASCII visibles, sin espacios). Vuelve en el mensaje y en el aviso message.status_changed, para relacionarlos con tu sistema. En la API: client_reference.",
+				"valueType": "string"
 			}
 		]
 	},
@@ -2003,8 +2052,8 @@ export const OPERATIONS: OperationSpec[] = [
 		"method": "POST",
 		"path": "/api/v1/message/send-message",
 		"permission": "conversations:send",
-		"notice": "El envío con clave se abre con el permiso `conversations:send` y las reglas de WhatsApp (ventana de 24 horas y frenos contra spam): está en camino. Hasta que se habilite, esta ruta responde `403 route_not_available` a cualquier clave. El envío con clave llega con conversations PR #2284, sin mergear al 16-10-2026.",
-		"source": "spec",
+		"notice": "Con una clave responde 200 con el mensaje en cola (status queued) y su id; el resultado llega después en el aviso message.status_changed. Pasan las guardas de WhatsApp: ventana de 24 horas (422 window_closed), ritmo (429 rate_limited) y antibloqueo (422 antiblock_…).",
+		"source": "conversations-v1.18.10",
 		"body": {
 			"required": true,
 			"root": "object"
@@ -2047,7 +2096,7 @@ export const OPERATIONS: OperationSpec[] = [
 				"required": false,
 				"kind": "string",
 				"displayName": "Archivo (URL)",
-				"description": "En la API: file.",
+				"description": "URL http(s) del archivo (también firmada o sin extensión, con Tipo de archivo) o el nombre de un archivo ya subido. En la API: file.",
 				"valueType": "string"
 			},
 			{
@@ -2079,6 +2128,75 @@ export const OPERATIONS: OperationSpec[] = [
 				"displayName": "Como nota interna",
 				"description": "En la API: note.",
 				"valueType": "boolean"
+			},
+			{
+				"name": "file_type",
+				"apiName": "file_type",
+				"location": "body",
+				"required": false,
+				"kind": "options",
+				"displayName": "Tipo de archivo",
+				"description": "Qué es el archivo, cuando Archivo es una URL que no muestra su extensión (por ejemplo una URL firmada). Sin él, una URL así responde 422 en file_type. En la API: file_type.",
+				"valueType": "string",
+				"options": [
+					"image",
+					"video",
+					"audio",
+					"document",
+					"sticker"
+				]
+			},
+			{
+				"name": "file_name",
+				"apiName": "file_name",
+				"location": "body",
+				"required": false,
+				"kind": "string",
+				"displayName": "Nombre del archivo",
+				"description": "Nombre con el que llega el documento (sin / \\ ? #). Hace falta para un document cuya URL no termina en una extensión conocida. En la API: file_name.",
+				"valueType": "string"
+			},
+			{
+				"name": "client_reference",
+				"apiName": "client_reference",
+				"location": "body",
+				"required": false,
+				"kind": "string",
+				"displayName": "Referencia propia",
+				"description": "Tu identificador para este envío (1 a 64 caracteres ASCII visibles, sin espacios). Vuelve en el mensaje y en el aviso message.status_changed, para relacionarlos con tu sistema. En la API: client_reference.",
+				"valueType": "string"
+			}
+		]
+	},
+	{
+		"resource": "conversation",
+		"value": "showMessage",
+		"name": "Ver un mensaje",
+		"description": "Usalo para consultar el estado de un mensaje por su id (el que devolvió el envío): queued, sent, delivered, read o failed, con el error y tu client_reference. Permiso: conversations:read.",
+		"method": "GET",
+		"path": "/api/v1/contacts/{contact}/messages/{message}",
+		"permission": "conversations:read",
+		"source": "conversations-v1.18.10",
+		"params": [
+			{
+				"name": "contact",
+				"apiName": "contact",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "ID del contacto",
+				"description": "Contacto del mensaje. En la API: contact.",
+				"valueType": "integer"
+			},
+			{
+				"name": "message",
+				"apiName": "message",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "ID del mensaje",
+				"description": "Id del mensaje. En la API: message.",
+				"valueType": "integer"
 			}
 		]
 	},
@@ -2090,7 +2208,7 @@ export const OPERATIONS: OperationSpec[] = [
 		"method": "PUT",
 		"path": "/api/v1/contacts/{contact}/messages/{message}/reaction",
 		"permission": "conversations:send",
-		"notice": "El envío con clave se abre con el permiso `conversations:send` y las reglas de WhatsApp (ventana de 24 horas y frenos contra spam): está en camino. Hasta que se habilite, esta ruta responde `403 route_not_available` a cualquier clave. El envío con clave llega con conversations PR #2284, sin mergear al 16-10-2026.",
+		"notice": "Con una clave responde 202 sin cuerpo: la reacción no es un mensaje con id. Si el proveedor no la admite, 422 con reason provider_unsupported.",
 		"source": "spec",
 		"body": {
 			"required": true,
@@ -2137,7 +2255,7 @@ export const OPERATIONS: OperationSpec[] = [
 		"method": "DELETE",
 		"path": "/api/v1/contacts/{contact}/messages/{message}/reaction",
 		"permission": "conversations:send",
-		"notice": "El envío con clave se abre con el permiso `conversations:send` y las reglas de WhatsApp (ventana de 24 horas y frenos contra spam): está en camino. Hasta que se habilite, esta ruta responde `403 route_not_available` a cualquier clave. El envío con clave llega con conversations PR #2284, sin mergear al 16-10-2026.",
+		"notice": "Con una clave responde 202 sin cuerpo: la reacción no es un mensaje con id. Si el proveedor no la admite, 422 con reason provider_unsupported.",
 		"source": "spec",
 		"params": [
 			{
@@ -2170,8 +2288,8 @@ export const OPERATIONS: OperationSpec[] = [
 		"method": "POST",
 		"path": "/api/v1/contacts/{contact}/messages/{message}/forward",
 		"permission": "conversations:send",
-		"notice": "El envío con clave se abre con el permiso `conversations:send` y las reglas de WhatsApp (ventana de 24 horas y frenos contra spam): está en camino. Hasta que se habilite, esta ruta responde `403 route_not_available` a cualquier clave. El envío con clave llega con conversations PR #2284, sin mergear al 16-10-2026.",
-		"source": "spec",
+		"notice": "Con una clave responde 200 con un resultado por destino: queued con su mensaje, o blocked con el motivo (reason).",
+		"source": "conversations-v1.18.10",
 		"body": {
 			"required": true,
 			"root": "object"
@@ -2205,6 +2323,16 @@ export const OPERATIONS: OperationSpec[] = [
 				"kind": "json",
 				"displayName": "Destinos",
 				"description": "En la API: targets."
+			},
+			{
+				"name": "client_reference",
+				"apiName": "client_reference",
+				"location": "body",
+				"required": false,
+				"kind": "string",
+				"displayName": "Referencia propia",
+				"description": "Tu identificador para este envío (1 a 64 caracteres ASCII visibles, sin espacios). Vuelve en el mensaje y en el aviso message.status_changed, para relacionarlos con tu sistema. En la API: client_reference.",
+				"valueType": "string"
 			}
 		]
 	},
@@ -2216,7 +2344,7 @@ export const OPERATIONS: OperationSpec[] = [
 		"method": "POST",
 		"path": "/api/v1/contacts/{contact}/message/poll",
 		"permission": "conversations:send",
-		"notice": "El envío con clave se abre con el permiso `conversations:send` y las reglas de WhatsApp (ventana de 24 horas y frenos contra spam): está en camino. Hasta que se habilite, esta ruta responde `403 route_not_available` a cualquier clave. El envío con clave llega con conversations PR #2284, sin mergear al 16-10-2026.",
+		"notice": "No está abierta a claves en conversations v1.18.10 (fuera del allowed de config/platform-gate.php): una clave recibe 403 route_not_available.",
 		"source": "spec",
 		"body": {
 			"required": true,
@@ -2283,7 +2411,7 @@ export const OPERATIONS: OperationSpec[] = [
 		"method": "POST",
 		"path": "/api/v1/contacts/{contact}/message/event",
 		"permission": "conversations:send",
-		"notice": "El envío con clave se abre con el permiso `conversations:send` y las reglas de WhatsApp (ventana de 24 horas y frenos contra spam): está en camino. Hasta que se habilite, esta ruta responde `403 route_not_available` a cualquier clave. El envío con clave llega con conversations PR #2284, sin mergear al 16-10-2026.",
+		"notice": "No está abierta a claves en conversations v1.18.10 (fuera del allowed de config/platform-gate.php): una clave recibe 403 route_not_available.",
 		"source": "spec",
 		"body": {
 			"required": true,
@@ -2360,8 +2488,8 @@ export const OPERATIONS: OperationSpec[] = [
 		"method": "POST",
 		"path": "/api/v1/contacts/{contact}/message/contact-card",
 		"permission": "conversations:send",
-		"notice": "El envío con clave se abre con el permiso `conversations:send` y las reglas de WhatsApp (ventana de 24 horas y frenos contra spam): está en camino. Hasta que se habilite, esta ruta responde `403 route_not_available` a cualquier clave. El envío con clave llega con conversations PR #2284, sin mergear al 16-10-2026.",
-		"source": "spec",
+		"notice": "Con una clave responde 200 con un mensaje en cola por tarjeta (status queued); el resultado llega después en el aviso message.status_changed. Pasan las guardas de WhatsApp: ventana de 24 horas (422 window_closed), ritmo (429 rate_limited) y antibloqueo (422 antiblock_…).",
+		"source": "conversations-v1.18.10",
 		"body": {
 			"required": true,
 			"root": "object"
@@ -2396,6 +2524,16 @@ export const OPERATIONS: OperationSpec[] = [
 				"displayName": "IDs de tarjetas de contacto",
 				"description": "Separá los valores con comas. En la API: contact_card_ids.",
 				"valueType": "integer"
+			},
+			{
+				"name": "client_reference",
+				"apiName": "client_reference",
+				"location": "body",
+				"required": false,
+				"kind": "string",
+				"displayName": "Referencia propia",
+				"description": "Tu identificador para este envío (1 a 64 caracteres ASCII visibles, sin espacios). Vuelve en el mensaje y en el aviso message.status_changed, para relacionarlos con tu sistema. En la API: client_reference.",
+				"valueType": "string"
 			}
 		]
 	},
@@ -2967,8 +3105,8 @@ export const OPERATIONS: OperationSpec[] = [
 		"method": "POST",
 		"path": "/api/v1/devices/{device}/templates/{template}/send-template",
 		"permission": "conversations:send",
-		"notice": "El envío con clave se abre con el permiso `conversations:send` y las reglas de WhatsApp (ventana de 24 horas y frenos contra spam): está en camino. Hasta que se habilite, esta ruta responde `403 route_not_available` a cualquier clave. El envío con clave llega con conversations PR #2284, sin mergear al 16-10-2026.",
-		"source": "spec",
+		"notice": "Con una clave responde 200 con el mensaje en cola (status queued) y su id; el resultado llega en el aviso message.status_changed. Una plantilla no pide la ventana de 24 horas.",
+		"source": "conversations-v1.18.10",
 		"body": {
 			"required": true,
 			"root": "object"
@@ -3022,6 +3160,16 @@ export const OPERATIONS: OperationSpec[] = [
 				"kind": "json",
 				"displayName": "Variables de la plantilla",
 				"description": "En la API: template_variables."
+			},
+			{
+				"name": "client_reference",
+				"apiName": "client_reference",
+				"location": "body",
+				"required": false,
+				"kind": "string",
+				"displayName": "Referencia propia",
+				"description": "Tu identificador para este envío (1 a 64 caracteres ASCII visibles, sin espacios). Vuelve en el mensaje y en el aviso message.status_changed, para relacionarlos con tu sistema. En la API: client_reference.",
+				"valueType": "string"
 			}
 		]
 	},
@@ -3054,6 +3202,709 @@ export const OPERATIONS: OperationSpec[] = [
 				"displayName": "ID de la plantilla",
 				"description": "En la API: template.",
 				"valueType": "integer"
+			}
+		]
+	},
+	{
+		"resource": "form",
+		"value": "whatsappForm.index",
+		"name": "Listar formularios",
+		"description": "Usalo para ver los formularios de WhatsApp de la cuenta, uno por formulario con su versión actual, envíos y respuestas. Permiso: conversations:read.",
+		"method": "GET",
+		"path": "/api/v1/forms",
+		"permission": "conversations:read",
+		"source": "conversations-v1.18.10",
+		"list": {
+			"pagination": "page",
+			"sizeParam": "per_page",
+			"maxPageSize": 100
+		},
+		"params": [
+			{
+				"name": "q",
+				"apiName": "q",
+				"location": "query",
+				"required": false,
+				"kind": "string",
+				"displayName": "Buscar",
+				"description": "Busca por nombre. En la API: q.",
+				"valueType": "string"
+			},
+			{
+				"name": "status",
+				"apiName": "status",
+				"location": "query",
+				"required": false,
+				"kind": "options",
+				"displayName": "Estado",
+				"description": "Estado. En la API: status.",
+				"valueType": "string",
+				"options": [
+					"draft",
+					"published",
+					"deprecated"
+				]
+			},
+			{
+				"name": "device_id",
+				"apiName": "device_id",
+				"location": "query",
+				"required": false,
+				"kind": "number",
+				"displayName": "ID del número",
+				"description": "Solo los de este número. En la API: device_id.",
+				"valueType": "integer"
+			}
+		]
+	},
+	{
+		"resource": "form",
+		"value": "whatsappForm.store",
+		"name": "Crear un formulario",
+		"description": "Usalo para crear un formulario en borrador desde una plantilla (blank lo arranca vacío) para uno o más números. Después se edita, se valida y se publica. Permiso: conversations:write.",
+		"method": "POST",
+		"path": "/api/v1/forms",
+		"permission": "conversations:write",
+		"source": "conversations-v1.18.10",
+		"body": {
+			"required": true,
+			"root": "object"
+		},
+		"params": [
+			{
+				"name": "device_id",
+				"apiName": "device_id",
+				"location": "body",
+				"required": true,
+				"kind": "number",
+				"displayName": "ID del número",
+				"description": "Número principal del formulario. En la API: device_id.",
+				"valueType": "integer"
+			},
+			{
+				"name": "template_key",
+				"apiName": "template_key",
+				"location": "body",
+				"required": true,
+				"kind": "string",
+				"displayName": "Plantilla de formulario",
+				"description": "Clave de la plantilla de formulario (de Listar plantillas de formulario); blank para empezar vacío. En la API: template_key.",
+				"valueType": "string"
+			},
+			{
+				"name": "device_ids",
+				"apiName": "device_ids",
+				"location": "body",
+				"required": false,
+				"kind": "list",
+				"displayName": "IDs de otros números",
+				"description": "Otros números (hasta 50). Separá los valores con comas. En la API: device_ids.",
+				"valueType": "integer"
+			}
+		]
+	},
+	{
+		"resource": "form",
+		"value": "whatsappForm.templates",
+		"name": "Listar plantillas de formulario",
+		"description": "Usalo para ver con qué plantillas se puede crear un formulario. Permiso: conversations:read.",
+		"method": "GET",
+		"path": "/api/v1/forms/templates",
+		"permission": "conversations:read",
+		"source": "conversations-v1.18.10",
+		"list": {
+			"pagination": "none",
+			"maxPageSize": 100
+		},
+		"params": []
+	},
+	{
+		"resource": "form",
+		"value": "whatsappForm.show",
+		"name": "Ver un formulario",
+		"description": "Usalo para ver una versión de un formulario con su definición, su lint, sus versiones y sus números. Permiso: conversations:read.",
+		"method": "GET",
+		"path": "/api/v1/forms/{id}",
+		"permission": "conversations:read",
+		"source": "conversations-v1.18.10",
+		"params": [
+			{
+				"name": "id",
+				"apiName": "id",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "ID de la versión del formulario",
+				"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones). En la API: id.",
+				"valueType": "integer"
+			}
+		]
+	},
+	{
+		"resource": "form",
+		"value": "whatsappForm.update",
+		"name": "Guardar un formulario",
+		"description": "Usalo para guardar la definición de un borrador (pantallas y preguntas). Un formulario publicado no se edita: creá una versión nueva. Permiso: conversations:write.",
+		"method": "PUT",
+		"path": "/api/v1/forms/{id}",
+		"permission": "conversations:write",
+		"source": "conversations-v1.18.10",
+		"body": {
+			"required": true,
+			"root": "object"
+		},
+		"params": [
+			{
+				"name": "id",
+				"apiName": "id",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "ID de la versión del formulario",
+				"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones). En la API: id.",
+				"valueType": "integer"
+			},
+			{
+				"name": "definition",
+				"apiName": "definition",
+				"location": "body",
+				"required": true,
+				"kind": "json",
+				"displayName": "Definición (JSON)",
+				"description": "La definición completa: {screens: [...]}, como la devuelve Ver un formulario. En la API: definition."
+			},
+			{
+				"name": "name",
+				"apiName": "name",
+				"location": "body",
+				"required": false,
+				"kind": "string",
+				"displayName": "Nombre",
+				"description": "Nombre (hasta 120 caracteres). En la API: name.",
+				"valueType": "string"
+			},
+			{
+				"name": "expected_updated_at",
+				"apiName": "expected_updated_at",
+				"location": "body",
+				"required": false,
+				"kind": "string",
+				"displayName": "Fecha de la última lectura (updated_at)",
+				"description": "El updated_at que leíste; si cambió en el medio, 409 STALE. En la API: expected_updated_at.",
+				"valueType": "string"
+			}
+		]
+	},
+	{
+		"resource": "form",
+		"value": "whatsappForm.destroy",
+		"name": "Eliminar un borrador de formulario",
+		"description": "Usalo para borrar una versión en borrador. Una publicada responde 409 PUBLISHED. Permiso: conversations:write.",
+		"method": "DELETE",
+		"path": "/api/v1/forms/{id}",
+		"permission": "conversations:write",
+		"source": "conversations-v1.18.10",
+		"params": [
+			{
+				"name": "id",
+				"apiName": "id",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "ID de la versión del formulario",
+				"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones). En la API: id.",
+				"valueType": "integer"
+			}
+		]
+	},
+	{
+		"resource": "form",
+		"value": "whatsappForm.numbersIndex",
+		"name": "Ver los números de un formulario",
+		"description": "Usalo para ver en qué números está el formulario y el estado de su publicación en cada uno. Permiso: conversations:read.",
+		"method": "GET",
+		"path": "/api/v1/forms/{id}/numbers",
+		"permission": "conversations:read",
+		"source": "conversations-v1.18.10",
+		"params": [
+			{
+				"name": "id",
+				"apiName": "id",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "ID de la versión del formulario",
+				"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones). En la API: id.",
+				"valueType": "integer"
+			}
+		]
+	},
+	{
+		"resource": "form",
+		"value": "whatsappForm.addNumber",
+		"name": "Agregar un número a un formulario",
+		"description": "Usalo para sumar un número al formulario; si ya está publicado, se publica también en ese número. Permiso: conversations:write.",
+		"method": "POST",
+		"path": "/api/v1/forms/{id}/numbers",
+		"permission": "conversations:write",
+		"source": "conversations-v1.18.10",
+		"body": {
+			"required": true,
+			"root": "object"
+		},
+		"params": [
+			{
+				"name": "id",
+				"apiName": "id",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "ID de la versión del formulario",
+				"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones). En la API: id.",
+				"valueType": "integer"
+			},
+			{
+				"name": "device_id",
+				"apiName": "device_id",
+				"location": "body",
+				"required": true,
+				"kind": "number",
+				"displayName": "ID del número",
+				"description": "Número a agregar. En la API: device_id.",
+				"valueType": "integer"
+			}
+		]
+	},
+	{
+		"resource": "form",
+		"value": "whatsappForm.removeNumber",
+		"name": "Quitar un número de un formulario",
+		"description": "Usalo para sacar un número del formulario. El número principal no se puede quitar (422 PRIMARY_NUMBER). Permiso: conversations:write.",
+		"method": "DELETE",
+		"path": "/api/v1/forms/{id}/numbers/{deviceId}",
+		"permission": "conversations:write",
+		"source": "conversations-v1.18.10",
+		"params": [
+			{
+				"name": "id",
+				"apiName": "id",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "ID de la versión del formulario",
+				"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones). En la API: id.",
+				"valueType": "integer"
+			},
+			{
+				"name": "deviceId",
+				"apiName": "deviceId",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "ID del número",
+				"description": "Número a quitar. En la API: deviceId.",
+				"valueType": "integer"
+			}
+		]
+	},
+	{
+		"resource": "form",
+		"value": "whatsappForm.retryNumbers",
+		"name": "Reintentar la publicación en los números",
+		"description": "Usalo para reintentar la publicación en los números donde falló. Permiso: conversations:write.",
+		"method": "POST",
+		"path": "/api/v1/forms/{id}/numbers/retry",
+		"permission": "conversations:write",
+		"source": "conversations-v1.18.10",
+		"params": [
+			{
+				"name": "id",
+				"apiName": "id",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "ID de la versión del formulario",
+				"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones). En la API: id.",
+				"valueType": "integer"
+			}
+		]
+	},
+	{
+		"resource": "form",
+		"value": "whatsappForm.storeVersion",
+		"name": "Crear una versión nueva de un formulario",
+		"description": "Usalo para editar un formulario publicado: crea un borrador nuevo a partir de él, o devuelve el borrador que ya existía (created: false). Permiso: conversations:write.",
+		"method": "POST",
+		"path": "/api/v1/forms/{id}/versions",
+		"permission": "conversations:write",
+		"source": "conversations-v1.18.10",
+		"params": [
+			{
+				"name": "id",
+				"apiName": "id",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "ID de la versión del formulario",
+				"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones). En la API: id.",
+				"valueType": "integer"
+			}
+		]
+	},
+	{
+		"resource": "form",
+		"value": "whatsappForm.sync",
+		"name": "Validar un formulario en Meta",
+		"description": "Usalo para subir el borrador a Meta y traer sus errores de validación antes de publicar. Permiso: conversations:write.",
+		"method": "POST",
+		"path": "/api/v1/forms/{id}/sync",
+		"permission": "conversations:write",
+		"source": "conversations-v1.18.10",
+		"params": [
+			{
+				"name": "id",
+				"apiName": "id",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "ID de la versión del formulario",
+				"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones). En la API: id.",
+				"valueType": "integer"
+			}
+		]
+	},
+	{
+		"resource": "form",
+		"value": "whatsappForm.publish",
+		"name": "Publicar un formulario",
+		"description": "Usalo para publicar el borrador en sus números. Con errores responde 422 LINT; si Meta lo rechaza, 502 META. Permiso: conversations:write.",
+		"method": "POST",
+		"path": "/api/v1/forms/{id}/publish",
+		"permission": "conversations:write",
+		"source": "conversations-v1.18.10",
+		"params": [
+			{
+				"name": "id",
+				"apiName": "id",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "ID de la versión del formulario",
+				"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones). En la API: id.",
+				"valueType": "integer"
+			}
+		]
+	},
+	{
+		"resource": "form",
+		"value": "whatsappForm.definition",
+		"name": "Ver la definición publicada de un formulario",
+		"description": "Usalo para leer la definición de la versión vigente de un formulario. Permiso: conversations:read.",
+		"method": "GET",
+		"path": "/api/v1/forms/families/{familyId}/definition",
+		"permission": "conversations:read",
+		"source": "conversations-v1.18.10",
+		"params": [
+			{
+				"name": "familyId",
+				"apiName": "familyId",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "ID del formulario",
+				"description": "Id del formulario (family_id), el mismo en todas sus versiones. En la API: familyId.",
+				"valueType": "integer"
+			}
+		]
+	},
+	{
+		"resource": "form",
+		"value": "whatsappForm.versions",
+		"name": "Listar las versiones de un formulario",
+		"description": "Usalo para ver todas las versiones de un formulario con su estado y sus respuestas. Permiso: conversations:read.",
+		"method": "GET",
+		"path": "/api/v1/forms/families/{familyId}/versions",
+		"permission": "conversations:read",
+		"source": "conversations-v1.18.10",
+		"list": {
+			"pagination": "page",
+			"sizeParam": "perPage",
+			"maxPageSize": 100
+		},
+		"params": [
+			{
+				"name": "familyId",
+				"apiName": "familyId",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "ID del formulario",
+				"description": "Id del formulario (family_id), el mismo en todas sus versiones. En la API: familyId.",
+				"valueType": "integer"
+			}
+		]
+	},
+	{
+		"resource": "form",
+		"value": "whatsappForm.responses",
+		"name": "Listar las respuestas de un formulario",
+		"description": "Usalo para traer las respuestas de un formulario, de todas sus versiones, con el contacto y los valores de cada campo. Permiso: conversations:read.",
+		"method": "GET",
+		"path": "/api/v1/forms/families/{familyId}/responses",
+		"permission": "conversations:read",
+		"source": "conversations-v1.18.10",
+		"list": {
+			"pagination": "page",
+			"sizeParam": "per_page",
+			"maxPageSize": 100
+		},
+		"params": [
+			{
+				"name": "familyId",
+				"apiName": "familyId",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "ID del formulario",
+				"description": "Id del formulario (family_id), el mismo en todas sus versiones. En la API: familyId.",
+				"valueType": "integer"
+			},
+			{
+				"name": "from",
+				"apiName": "from",
+				"location": "query",
+				"required": false,
+				"kind": "dateTime",
+				"displayName": "Desde",
+				"description": "Desde esta fecha. En la API: from.",
+				"format": "date"
+			},
+			{
+				"name": "to",
+				"apiName": "to",
+				"location": "query",
+				"required": false,
+				"kind": "dateTime",
+				"displayName": "Hasta",
+				"description": "Hasta esta fecha. En la API: to.",
+				"format": "date"
+			},
+			{
+				"name": "version_id",
+				"apiName": "version_id",
+				"location": "query",
+				"required": false,
+				"kind": "number",
+				"displayName": "ID de la versión",
+				"description": "Solo esta versión. En la API: version_id.",
+				"valueType": "integer"
+			},
+			{
+				"name": "origin",
+				"apiName": "origin",
+				"location": "query",
+				"required": false,
+				"kind": "string",
+				"displayName": "Origen",
+				"description": "Origen del envío (por ejemplo api o automation). En la API: origin.",
+				"valueType": "string"
+			},
+			{
+				"name": "status",
+				"apiName": "status",
+				"location": "query",
+				"required": false,
+				"kind": "options",
+				"displayName": "Estado",
+				"description": "Estado de la respuesta. En la API: status.",
+				"valueType": "string",
+				"options": [
+					"completed",
+					"pending",
+					"not_sent",
+					"unfinished"
+				]
+			},
+			{
+				"name": "search",
+				"apiName": "search",
+				"location": "query",
+				"required": false,
+				"kind": "string",
+				"displayName": "Buscar",
+				"description": "Busca por contacto. En la API: search.",
+				"valueType": "string"
+			}
+		]
+	},
+	{
+		"resource": "form",
+		"value": "whatsappForm.response",
+		"name": "Ver una respuesta de un formulario",
+		"description": "Usalo para ver una respuesta completa: cada respuesta del contacto, los tiempos del envío y lo que hizo el formulario. Permiso: conversations:read.",
+		"method": "GET",
+		"path": "/api/v1/forms/families/{familyId}/responses/{runId}",
+		"permission": "conversations:read",
+		"source": "conversations-v1.18.10",
+		"params": [
+			{
+				"name": "familyId",
+				"apiName": "familyId",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "ID del formulario",
+				"description": "Id del formulario (family_id), el mismo en todas sus versiones. En la API: familyId.",
+				"valueType": "integer"
+			},
+			{
+				"name": "runId",
+				"apiName": "runId",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "ID de la respuesta",
+				"description": "Id de la respuesta. En la API: runId.",
+				"valueType": "integer"
+			}
+		]
+	},
+	{
+		"resource": "form",
+		"value": "whatsappForm.metrics",
+		"name": "Ver las métricas de un formulario",
+		"description": "Usalo para ver cuántos formularios se enviaron, entregaron, leyeron y completaron, y las tasas. Permiso: conversations:read.",
+		"method": "GET",
+		"path": "/api/v1/forms/families/{familyId}/metrics",
+		"permission": "conversations:read",
+		"source": "conversations-v1.18.10",
+		"params": [
+			{
+				"name": "familyId",
+				"apiName": "familyId",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "ID del formulario",
+				"description": "Id del formulario (family_id), el mismo en todas sus versiones. En la API: familyId.",
+				"valueType": "integer"
+			},
+			{
+				"name": "from",
+				"apiName": "from",
+				"location": "query",
+				"required": false,
+				"kind": "dateTime",
+				"displayName": "Desde",
+				"description": "Desde esta fecha. En la API: from.",
+				"format": "date"
+			},
+			{
+				"name": "to",
+				"apiName": "to",
+				"location": "query",
+				"required": false,
+				"kind": "dateTime",
+				"displayName": "Hasta",
+				"description": "Hasta esta fecha. En la API: to.",
+				"format": "date"
+			},
+			{
+				"name": "version_id",
+				"apiName": "version_id",
+				"location": "query",
+				"required": false,
+				"kind": "number",
+				"displayName": "ID de la versión",
+				"description": "Solo esta versión. En la API: version_id.",
+				"valueType": "integer"
+			},
+			{
+				"name": "origin",
+				"apiName": "origin",
+				"location": "query",
+				"required": false,
+				"kind": "string",
+				"displayName": "Origen",
+				"description": "Origen del envío (por ejemplo api o automation). En la API: origin.",
+				"valueType": "string"
+			}
+		]
+	},
+	{
+		"resource": "form",
+		"value": "whatsappFormSend.store",
+		"name": "Enviar un formulario a un contacto",
+		"description": "Usalo para mandarle a un contacto un formulario publicado. Cuando lo completa llega el aviso whatsapp_form.completed con sus respuestas. Permiso: conversations:send.",
+		"method": "POST",
+		"path": "/api/v1/contacts/{contact}/message/form",
+		"permission": "conversations:send",
+		"notice": "Con una clave responde 200 con el mensaje en cola (status queued) y su id; el resultado llega después en el aviso message.status_changed. Pasan las guardas de WhatsApp: ventana de 24 horas (422 window_closed), ritmo (429 rate_limited) y antibloqueo (422 antiblock_…). Errores propios: 404 form_not_found y 422 form_not_published, form_not_on_number, number_not_eligible.",
+		"source": "conversations-v1.18.10",
+		"body": {
+			"required": true,
+			"root": "object"
+		},
+		"params": [
+			{
+				"name": "contact",
+				"apiName": "contact",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "ID del contacto",
+				"description": "Contacto. En la API: contact.",
+				"valueType": "integer"
+			},
+			{
+				"name": "form_id",
+				"apiName": "form_id",
+				"location": "body",
+				"required": true,
+				"kind": "number",
+				"displayName": "ID del formulario",
+				"description": "Id del formulario (family_id), no el de una versión: se envía la versión publicada. En la API: form_id.",
+				"valueType": "integer"
+			},
+			{
+				"name": "device_id",
+				"apiName": "device_id",
+				"location": "body",
+				"required": true,
+				"kind": "number",
+				"displayName": "ID del número",
+				"description": "Número que lo envía; el formulario tiene que estar publicado en él. En la API: device_id.",
+				"valueType": "integer"
+			},
+			{
+				"name": "text",
+				"apiName": "text",
+				"location": "body",
+				"required": false,
+				"kind": "string",
+				"displayName": "Texto",
+				"description": "Texto del mensaje (hasta 1024 caracteres). Por defecto, el nombre del formulario. En la API: text.",
+				"valueType": "string"
+			},
+			{
+				"name": "button_text",
+				"apiName": "button_text",
+				"location": "body",
+				"required": false,
+				"kind": "string",
+				"displayName": "Texto del botón",
+				"description": "Texto del botón (hasta 30 caracteres, sin emojis). Por defecto «Abrir». En la API: button_text.",
+				"valueType": "string"
+			},
+			{
+				"name": "client_reference",
+				"apiName": "client_reference",
+				"location": "body",
+				"required": false,
+				"kind": "string",
+				"displayName": "Referencia propia",
+				"description": "Tu identificador para este envío (1 a 64 caracteres ASCII visibles, sin espacios). Vuelve en el mensaje y en el aviso message.status_changed, para relacionarlos con tu sistema. En la API: client_reference.",
+				"valueType": "string"
 			}
 		]
 	},

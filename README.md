@@ -104,7 +104,7 @@ El nodo también se puede usar como herramienta de un agente de IA de n8n.
 
 <!-- operaciones:inicio (generado por npm run generate) -->
 
-108 operaciones generadas de la especificación (sha256 `8bbbae569b4c`). Las marcadas con ⚠ tienen un aviso en el nodo (nota del portal, fuente sin mergear u operación irreversible).
+128 operaciones generadas de la especificación (sha256 `8bbbae569b4c`). Las marcadas con ⚠ tienen un aviso en el nodo (nota del portal, fuente sin mergear u operación irreversible).
 
 <details><summary><strong>Contactos</strong> (15)</summary>
 
@@ -128,7 +128,7 @@ El nodo también se puede usar como herramienta de un agente de IA de n8n.
 
 </details>
 
-<details><summary><strong>Conversaciones y mensajes</strong> (17)</summary>
+<details><summary><strong>Conversaciones y mensajes</strong> (18)</summary>
 
 | Operación | Ruta | Permiso |
 |---|---|---|
@@ -143,6 +143,7 @@ El nodo también se puede usar como herramienta de un agente de IA de n8n.
 | Enviar un mensaje a un contacto ⚠ | `POST /api/v1/contacts/{contact}/message` | `conversations:send` |
 | Listar los mensajes de un contacto «devolver todo» | `GET /api/v1/contacts/{contactId}/messages` | `conversations:read` |
 | Enviar un mensaje ⚠ | `POST /api/v1/message/send-message` | `conversations:send` |
+| Ver un mensaje | `GET /api/v1/contacts/{contact}/messages/{message}` | `conversations:read` |
 | Reaccionar a un mensaje ⚠ | `PUT /api/v1/contacts/{contact}/messages/{message}/reaction` | `conversations:send` |
 | Quitar una reacción ⚠ | `DELETE /api/v1/contacts/{contact}/messages/{message}/reaction` | `conversations:send` |
 | Reenviar un mensaje ⚠ | `POST /api/v1/contacts/{contact}/messages/{message}/forward` | `conversations:send` |
@@ -163,6 +164,32 @@ El nodo también se puede usar como herramienta de un agente de IA de n8n.
 | Ver los botones de respuesta rápida de una plantilla | `GET /api/v1/templates/{template}/quick-reply-buttons` | `conversations:read` |
 | Enviar una plantilla ⚠ | `POST /api/v1/devices/{device}/templates/{template}/send-template` | `conversations:send` |
 | Eliminar una plantilla de un número | `DELETE /api/v1/devices/{device}/templates/{template}` | `conversations:write` |
+
+</details>
+
+<details><summary><strong>Formularios de WhatsApp</strong> (19)</summary>
+
+| Operación | Ruta | Permiso |
+|---|---|---|
+| Listar formularios «devolver todo» | `GET /api/v1/forms` | `conversations:read` |
+| Crear un formulario | `POST /api/v1/forms` | `conversations:write` |
+| Listar plantillas de formulario | `GET /api/v1/forms/templates` | `conversations:read` |
+| Ver un formulario | `GET /api/v1/forms/{id}` | `conversations:read` |
+| Guardar un formulario | `PUT /api/v1/forms/{id}` | `conversations:write` |
+| Eliminar un borrador de formulario | `DELETE /api/v1/forms/{id}` | `conversations:write` |
+| Ver los números de un formulario | `GET /api/v1/forms/{id}/numbers` | `conversations:read` |
+| Agregar un número a un formulario | `POST /api/v1/forms/{id}/numbers` | `conversations:write` |
+| Quitar un número de un formulario | `DELETE /api/v1/forms/{id}/numbers/{deviceId}` | `conversations:write` |
+| Reintentar la publicación en los números | `POST /api/v1/forms/{id}/numbers/retry` | `conversations:write` |
+| Crear una versión nueva de un formulario | `POST /api/v1/forms/{id}/versions` | `conversations:write` |
+| Validar un formulario en Meta | `POST /api/v1/forms/{id}/sync` | `conversations:write` |
+| Publicar un formulario | `POST /api/v1/forms/{id}/publish` | `conversations:write` |
+| Ver la definición publicada de un formulario | `GET /api/v1/forms/families/{familyId}/definition` | `conversations:read` |
+| Listar las versiones de un formulario «devolver todo» | `GET /api/v1/forms/families/{familyId}/versions` | `conversations:read` |
+| Listar las respuestas de un formulario «devolver todo» | `GET /api/v1/forms/families/{familyId}/responses` | `conversations:read` |
+| Ver una respuesta de un formulario | `GET /api/v1/forms/families/{familyId}/responses/{runId}` | `conversations:read` |
+| Ver las métricas de un formulario | `GET /api/v1/forms/families/{familyId}/metrics` | `conversations:read` |
+| Enviar un formulario a un contacto ⚠ | `POST /api/v1/contacts/{contact}/message/form` | `conversations:send` |
 
 </details>
 

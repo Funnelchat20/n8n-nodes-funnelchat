@@ -255,11 +255,21 @@ export function nextPage(
 	return links.next ? { page: currentPage + 1 } : null;
 }
 
+function isObject(value: unknown): value is IDataObject {
+	return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
 /**
- * What one API response becomes in n8n: one item per element of a list, the object of `{data: {...}}`, the body as
- * is, `{success: true}` for an empty body, and `{result}` for a scalar.
+ * What one API response becomes in n8n: one item per element of a list, the object of `{data: {...}}`, the message
+ * of a send (`{message: {...}}`, one item per message of `{messages: [...]}`), the body as is, `{success: true}` for
+ * an empty body, and `{result}` for a scalar.
  */
 export function responseToItems(body: unknown): IDataObject[] {
+	if (isObject(body) && Object.keys(body).length === 1) {
+		if (isObject(body.message)) return [body.message];
+		if (Array.isArray(body.messages) && body.messages.every(isObject))
+			return body.messages as IDataObject[];
+	}
 	const items = extractItems(body);
 	if (items)
 		return items.map((i) =>

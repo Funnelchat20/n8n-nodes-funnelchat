@@ -14,6 +14,7 @@ describe('generación desde la especificación', () => {
 			'Contactos',
 			'Conversaciones y mensajes',
 			'Plantillas',
+			'Formularios de WhatsApp',
 			'Etiquetas',
 			'Campos personalizados',
 			'Grupos',
@@ -59,10 +60,65 @@ describe('generación desde la especificación', () => {
 		}
 	});
 
-	it('los envíos pendientes en v0 llevan la nota del portal', () => {
-		const sends = OPERATIONS.filter((o) => o.permission === 'conversations:send');
-		expect(sends.length).toBeGreaterThan(0);
-		for (const o of sends) expect(o.notice, o.value).toContain('PR #2284');
+	it('los envíos con clave salen de conversations v1.18.10: mismo operationId, campos nuevos, sin la nota v0', () => {
+		const replaced = [
+			'conversation.sendMessage',
+			'message.sendMessage',
+			'forwardMessage.store',
+			'contactCard.store',
+			'messageTemplate.send',
+		];
+		const paths = spec.paths as unknown as Record<string, Record<string, { operationId?: string }>>;
+		for (const value of replaced) {
+			const o = OPERATIONS.find((x) => x.value === value)!;
+			expect(o.source, value).toBe('conversations-v1.18.10');
+			expect(paths[o.path][o.method.toLowerCase()].operationId).toBe(value);
+			expect(
+				o.params.map((p) => p.apiName),
+				value,
+			).toContain('client_reference');
+			expect(o.notice ?? '', value).not.toContain('route_not_available');
+		}
+		for (const value of ['conversation.sendMessage', 'message.sendMessage']) {
+			const names = OPERATIONS.find((x) => x.value === value)!.params.map((p) => p.apiName);
+			expect(names).toEqual(expect.arrayContaining(['file', 'file_type', 'file_name']));
+		}
+		const fileType = OPERATIONS.find((x) => x.value === 'conversation.sendMessage')!.params.find(
+			(p) => p.apiName === 'file_type',
+		)!;
+		expect(fileType.options).toEqual(['image', 'video', 'audio', 'document', 'sticker']);
+		// Nothing keeps the «está en camino» note of the 13-10 snapshot.
+		for (const o of OPERATIONS) expect(o.notice ?? '', o.value).not.toContain('PR #2284');
+		for (const value of ['interactiveMessage.storePoll', 'interactiveMessage.storeEvent'])
+			expect(OPERATIONS.find((x) => x.value === value)!.notice).toContain('route_not_available');
+		expect(SPEC_SOURCE.supplements.find((x) => x.id === 'conversations-v1.18.10')).toMatchObject({
+			replaced: 5,
+		});
+	});
+
+	it('mensaje por id y formularios de WhatsApp, con su permiso', () => {
+		const show = OPERATIONS.find((o) => o.value === 'showMessage')!;
+		expect(`${show.method} ${show.path} ${show.permission}`).toBe(
+			'GET /api/v1/contacts/{contact}/messages/{message} conversations:read',
+		);
+		const forms = OPERATIONS.filter((o) => o.resource === 'form');
+		expect(forms).toHaveLength(19);
+		const send = forms.find((o) => o.value === 'whatsappFormSend.store')!;
+		expect(send.permission).toBe('conversations:send');
+		expect(send.params.filter((p) => p.required).map((p) => p.apiName)).toEqual([
+			'contact',
+			'form_id',
+			'device_id',
+		]);
+		for (const o of forms.filter((x) => x !== send))
+			expect(o.permission, o.value).toBe(
+				o.method === 'GET' ? 'conversations:read' : 'conversations:write',
+			);
+		expect(forms.find((o) => o.value === 'whatsappForm.index')!.list).toEqual({
+			pagination: 'page',
+			sizeParam: 'per_page',
+			maxPageSize: 100,
+		});
 	});
 
 	it('los listados paginados ofrecen «devolver todo»', () => {
@@ -76,6 +132,8 @@ describe('generación desde la especificación', () => {
 				'conversation.index',
 				'messageTemplate.templates',
 				'group.index',
+				'whatsappForm.index',
+				'whatsappForm.responses',
 			]),
 		);
 	});
