@@ -1,0 +1,70 @@
+# Publishes this n8n community node package to npm on every version tag push.
+#
+# Starting May 1 2026, n8n requires all community nodes to be published via
+# GitHub Actions with npm provenance statements. This workflow satisfies that
+# requirement. Provenance lets anyone cryptographically verify that a package
+# was built by this exact workflow, from this exact repository and commit.
+#
+# Based on the template scaffolded by `n8n-node release --init-workflow`
+# (@n8n/node-cli 0.52.4), with "v" tags, a check that the tag matches the
+# version in package.json, and the token passed through setup-node.
+#
+# ─── ONE-TIME SETUP ────────────────────────────────────────────────────────────
+#
+# Add an npm token with publish permission on this package as the NPM_TOKEN
+# repository secret (Settings → Secrets and variables → Actions). Provenance is
+# signed by GitHub's OIDC infrastructure regardless of how npm authentication
+# is handled. The repository must be public for npm to accept provenance.
+#
+# ─── RELEASE PROCESS ───────────────────────────────────────────────────────────
+#
+# Set the version in package.json, commit it on main, then tag and push:
+#
+#   git tag v0.1.0 && git push origin v0.1.0
+
+name: Publish
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+
+    permissions:
+      # Required to mint an OIDC token for npm provenance attestation.
+      id-token: write
+      # Scoped down from the default (write) for least-privilege publishing.
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org/'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Tag matches package.json version
+        run: |
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $PACKAGE_VERSION"
+            exit 1
+          fi
+
+      - name: Release
+        # In GitHub Actions, `n8n-node release` runs lint and build, then
+        # `npm publish` with NPM_CONFIG_PROVENANCE=true.
+        run: npm run release
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
