@@ -252,13 +252,13 @@ El nodo también se puede usar como herramienta de un agente de IA de n8n.
 
 | Operación | Ruta | Permiso |
 |---|---|---|
-| Listar suscripciones de webhooks ⚠ | `GET /api/v1/webhooks` | — |
-| Crear una suscripción de webhook ⚠ | `POST /api/v1/webhooks` | — |
-| Ver una suscripción de webhook ⚠ | `GET /api/v1/webhooks/{id}` | — |
-| Actualizar una suscripción de webhook ⚠ | `PUT /api/v1/webhooks/{id}` | — |
-| Eliminar una suscripción de webhook ⚠ | `DELETE /api/v1/webhooks/{id}` | — |
-| Listar las entregas de una suscripción ⚠ «devolver todo» | `GET /api/v1/webhooks/{id}/deliveries` | — |
-| Enviar un evento de prueba ⚠ | `POST /api/v1/webhooks/{id}/test` | — |
+| Listar suscripciones de webhooks ⚠ | `GET /api/v1/webhooks` | `webhooks:read` |
+| Crear una suscripción de webhook ⚠ | `POST /api/v1/webhooks` | `webhooks:write` |
+| Ver una suscripción de webhook ⚠ | `GET /api/v1/webhooks/{id}` | `webhooks:read` |
+| Actualizar una suscripción de webhook ⚠ | `PUT /api/v1/webhooks/{id}` | `webhooks:write` |
+| Eliminar una suscripción de webhook ⚠ | `DELETE /api/v1/webhooks/{id}` | `webhooks:write` |
+| Listar las entregas de una suscripción ⚠ «devolver todo» | `GET /api/v1/webhooks/{id}/deliveries` | `webhooks:read` |
+| Enviar un evento de prueba ⚠ | `POST /api/v1/webhooks/{id}/test` | `webhooks:write` |
 | Listar tipos de evento | `GET /api/v1/webhooks/events` | `accounts:read` |
 | Listar webhooks «devolver todo» | `GET /api/v1/webhooks/endpoints` | `accounts:read` |
 | Crear un webhook | `POST /api/v1/webhooks/endpoints` | `accounts:write` |

@@ -14,8 +14,8 @@ import {
 } from './mocks';
 
 /*
- * The create/check/delete cycle of the subscription against simulated responses shaped like accounts origin/main
- * @ c34cba2c0 (WebhookSubscriptionController: the resource goes unwrapped, `secret` only on creation, 204 on delete).
+ * The create/check/delete cycle of the subscription against simulated responses shaped like accounts v1.4.24
+ * (300cc8435) (WebhookSubscriptionController: the resource goes unwrapped, `secret` only on creation, 204 on delete).
  */
 
 const SUBSCRIPTION_ID = '0f486bfd-2f55-4ed6-8a12-b09e31a6ac08';
@@ -214,23 +214,30 @@ describe('ciclo de la suscripción del disparador', () => {
 		expect((error as Error).message).toContain('no trajo su id o su secreto');
 	});
 
-	it('hoy una clave recibe 403 route_not_available en accounts: el error lo dice', async () => {
+	it('sin el permiso de lectura del área de un evento, el alta falla con el 422 de accounts', async () => {
 		const { ctx, staticData } = hookContext({
 			params: PARAMS,
 			responses: [
 				{
-					status: 403,
+					status: 422,
+					headers: { 'x-request-id': '7d1c2b3a-4e5f-4a6b-8c7d-9e0f1a2b3c4d' },
 					body: {
-						error: 'route_not_available',
-						message: 'Esta ruta no está disponible para claves de API.',
+						message:
+							'La clave de API no tiene permiso de lectura sobre el área de estos eventos: conversations:read.',
+						errors: {
+							events: [
+								'La clave de API no tiene permiso de lectura sobre el área de estos eventos: conversations:read.',
+							],
+						},
 					},
 				},
 			],
 		});
 		const error = (await methods.create.call(ctx).catch((e: unknown) => e)) as NodeApiError;
 		expect(error).toBeInstanceOf(NodeApiError);
-		expect(error.message).toBe('Esta ruta no está disponible para claves de API.');
-		expect(error.description).toContain('error: route_not_available');
+		expect(error.message).toContain('conversations:read');
+		expect(error.description).toContain('events: La clave de API no tiene permiso de lectura');
+		expect(error.description).toContain('X-Request-Id: 7d1c2b3a-4e5f-4a6b-8c7d-9e0f1a2b3c4d');
 		expect(staticData.subscriptions).toBeUndefined();
 	});
 });

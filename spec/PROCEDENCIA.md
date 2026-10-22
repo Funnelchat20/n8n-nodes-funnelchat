@@ -32,19 +32,21 @@ que las incluya, el suplemento se ignora solo y el generador lo avisa.
 | Dato | Valor |
 |---|---|
 | Repo | `accounts` (Funnelchat20), solo lectura |
-| Commit | `origin/main` @ `c34cba2c0c8f2274494731f99bbddd8d23321355` (2026-10-16 00:34 -03:00) |
+| Commit | tag `v1.4.24` @ `300cc8435e6fa17e2ac274b88289a2cc7b945fcd` (2026-10-22 08:31 -03:00), el que corre en production. Escrito el 16-10 contra `origin/main` @ `c34cba2c0`; el 22-10 se revisó el diff hasta `v1.4.24`: los cuerpos y las respuestas no cambiaron, cambiaron el acceso de las claves y la regla de áreas |
 | Rutas | `back/routes/api/webhooks.php` (bloque «Suscripciones de webhook UNIFICADAS») |
 | Controladores | `back/app/Modules/Webhook/Http/Controllers/WebhookSubscriptionController.php`, `WebhookSubscriptionDeliveryController.php`, `WebhookSubscriptionTestController.php`, `WebhookEventCatalogController.php` |
 | Cuerpos y respuestas | `Http/Requests/StoreWebhookSubscriptionRequest.php`, `UpdateWebhookSubscriptionRequest.php`, `Http/Resources/WebhookSubscriptionResource.php`, `WebhookSubscriptionCreatedResource.php`, `WebhookSubscriptionDeliveryResource.php`, `Services/SubscriptionFilter.php` |
 | Catálogo de eventos | `back/app/Modules/Webhook/Catalogs/WebhookEventCatalog.php` y `Catalogs/Areas/*.php` |
-| Ruteo del borde | `api-edge` `origin/main` @ `4b3c175` (`src/routes.ts`): `/api/v1/webhooks…` va a accounts |
+| Ruteo del borde | `api-edge` tag `v0.3.0` @ `a1c5b35` (`src/routes.ts`): `/api/v1/webhooks…` va a accounts |
 | Portal | `developers-portal` `feat/armar-funnelchat-portal` @ `dd7cd42` (`content/webhooks.md`): sobre, cabeceras, firma y reintentos |
 
-**Estado para las claves de API (accounts `origin/main` @ `c34cba2c0`):** estas rutas existen y las usa el panel,
-pero no están en la lista `allowed` de `back/config/platform-gate.php`, así que hoy una clave recibe
-`403 route_not_available`. Las que sí están habilitadas para claves son las de `/api/v1/webhooks/endpoints…` y
-`GET /api/v1/webhooks/events` (incluidas en la especificación unificada). Además, cada acción exige que la clave sea
-del titular de la cuenta.
+**Estado para las claves de API (accounts `v1.4.24`):** abiertas. Están en la lista `allowed` de
+`back/config/platform-gate.php`, salvo `POST /api/v1/webhooks/{id}/rotate-secret` y `/activate` (solo el panel). Por
+`permission_prefix` piden `webhooks:read` (los `GET`) y `webhooks:write` (el resto), no `accounts:*`. Además, cada acción
+exige que la clave sea del titular de la cuenta y el permiso de lectura del área de cada tipo de evento
+(`Http/Controllers/Concerns/RejectsUnreadableAreas.php` y `StoreWebhookSubscriptionRequest::after`): sin él, el alta o el
+cambio de eventos responde `422` en `events`, y ver, cambiar, borrar o probar responde `403 permission_denied`.
+`GET /api/v1/webhooks/events` sigue pidiendo `accounts:read`.
 
 ## `eventos-webhooks.json` — catálogo de eventos de los webhooks
 

@@ -16,7 +16,7 @@ import { EVENT_CATALOG } from './generated/events';
 
 /*
  * The trigger subscribes through the unified webhook subscriptions of accounts (`/api/v1/webhooks`). Those routes
- * are not in the portal's unified specification yet: they are taken from accounts origin/main @ c34cba2c0
+ * are not in the portal's unified specification yet: they are taken from accounts v1.4.24 @ 300cc8435
  * (routes/api/webhooks.php and Modules/Webhook/Http/Controllers/WebhookSubscription*Controller.php, read only) and from
  * the portal's content/webhooks.md (feat/armar-funnelchat-portal @ dd7cd42). See spec/PROCEDENCIA.md.
  *
@@ -25,6 +25,10 @@ import { EVENT_CATALOG } from './generated/events';
  *   PUT    /api/v1/webhooks/{id}  {url, events, description?, filters?, status?} → the subscription (same secret)
  *   DELETE /api/v1/webhooks/{id}  → 204 | 404
  *   GET    /api/v1/webhooks/events → {data: [{type, area, status, label, description, subscribable, …}], meta}
+ *
+ * With an API key they ask for webhooks:read / webhooks:write, and for the read permission of the area of each event
+ * type (accounts:read, conversations:read, communities:read): 422 on `events` when creating, 403 permission_denied
+ * on a subscription with an area the key cannot read. The catalog asks for accounts:read.
  *
  * The secret is returned only once, on creation, so it is kept in the node's static data next to the subscription
  * id, by webhook URL: the test URL and the production URL have their own subscription and never touch each other.

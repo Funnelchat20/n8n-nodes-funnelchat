@@ -11,7 +11,7 @@ export const SPEC_SOURCE: SpecSource = {
 	"supplements": [
 		{
 			"id": "accounts-webhook-subscriptions",
-			"source": "accounts origin/main @ c34cba2c0c8f2274494731f99bbddd8d23321355 (2026-10-16 00:34 -03:00), solo lectura",
+			"source": "accounts tag v1.4.24 @ 300cc8435e6fa17e2ac274b88289a2cc7b945fcd (2026-10-22 08:31 -03:00, el que corre en production), solo lectura",
 			"used": 7,
 			"ignored": 0
 		}
@@ -5638,11 +5638,11 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "webhook",
 		"value": "webhookSubscription.index",
 		"name": "Listar suscripciones de webhooks",
-		"description": "Usalo para ver todas las suscripciones de la cuenta, también las que crearon otras integraciones o personas.",
+		"description": "Usalo para ver todas las suscripciones de la cuenta, también las que crearon otras integraciones o personas. Permiso: webhooks:read.",
 		"method": "GET",
 		"path": "/api/v1/webhooks",
-		"permission": null,
-		"notice": "Tomada del código de accounts (origin/main @ c34cba2c0): no está en la especificación del portal y hoy una clave de API recibe 403 route_not_available.",
+		"permission": "webhooks:read",
+		"notice": "Con una clave, además del permiso de la ruta, pide el permiso de lectura del área de cada tipo de evento de la suscripción (accounts:read, conversations:read o communities:read).",
 		"source": "accounts-webhook-subscriptions",
 		"list": {
 			"pagination": "none",
@@ -5654,11 +5654,11 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "webhook",
 		"value": "webhookSubscription.store",
 		"name": "Crear una suscripción de webhook",
-		"description": "Usalo para registrar una URL https y elegir los eventos que recibe. La respuesta trae el secreto una sola vez: guardalo para verificar la firma.",
+		"description": "Usalo para registrar una URL https y elegir los eventos que recibe. La respuesta trae el secreto una sola vez: guardalo para verificar la firma. Permiso: webhooks:write.",
 		"method": "POST",
 		"path": "/api/v1/webhooks",
-		"permission": null,
-		"notice": "Tomada del código de accounts (origin/main @ c34cba2c0): no está en la especificación del portal y hoy una clave de API recibe 403 route_not_available.",
+		"permission": "webhooks:write",
+		"notice": "Con una clave, además del permiso de la ruta, pide el permiso de lectura del área de cada tipo de evento de la suscripción (accounts:read, conversations:read o communities:read).",
 		"source": "accounts-webhook-subscriptions",
 		"body": {
 			"required": true,
@@ -5710,11 +5710,11 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "webhook",
 		"value": "webhookSubscription.show",
 		"name": "Ver una suscripción de webhook",
-		"description": "Usalo para ver la URL, los eventos, el filtro y el estado de una suscripción. Nunca trae el secreto.",
+		"description": "Usalo para ver la URL, los eventos, el filtro y el estado de una suscripción. Nunca trae el secreto. Permiso: webhooks:read.",
 		"method": "GET",
 		"path": "/api/v1/webhooks/{id}",
-		"permission": null,
-		"notice": "Tomada del código de accounts (origin/main @ c34cba2c0): no está en la especificación del portal y hoy una clave de API recibe 403 route_not_available.",
+		"permission": "webhooks:read",
+		"notice": "Con una clave, además del permiso de la ruta, pide el permiso de lectura del área de cada tipo de evento de la suscripción (accounts:read, conversations:read o communities:read).",
 		"source": "accounts-webhook-subscriptions",
 		"params": [
 			{
@@ -5733,11 +5733,11 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "webhook",
 		"value": "webhookSubscription.update",
 		"name": "Actualizar una suscripción de webhook",
-		"description": "Usalo para cambiar la URL (por ejemplo, cuando cambia tu túnel), los eventos, el filtro o pausar y reactivar una suscripción. Reemplaza la suscripción completa y el secreto no cambia.",
+		"description": "Usalo para cambiar la URL (por ejemplo, cuando cambia tu túnel), los eventos, el filtro o pausar y reactivar una suscripción. Reemplaza la suscripción completa y el secreto no cambia. Permiso: webhooks:write.",
 		"method": "PUT",
 		"path": "/api/v1/webhooks/{id}",
-		"permission": null,
-		"notice": "Tomada del código de accounts (origin/main @ c34cba2c0): no está en la especificación del portal y hoy una clave de API recibe 403 route_not_available.",
+		"permission": "webhooks:write",
+		"notice": "Con una clave, además del permiso de la ruta, pide el permiso de lectura del área de cada tipo de evento de la suscripción (accounts:read, conversations:read o communities:read).",
 		"source": "accounts-webhook-subscriptions",
 		"body": {
 			"required": true,
@@ -5813,11 +5813,11 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "webhook",
 		"value": "webhookSubscription.destroy",
 		"name": "Eliminar una suscripción de webhook",
-		"description": "Usalo para dar de baja una suscripción. Sus eventos y su historial de entregas se borran con ella. No borres las que no reconocés: pueden ser de otra integración de la cuenta.",
+		"description": "Usalo para dar de baja una suscripción. Sus eventos y su historial de entregas se borran con ella. No borres las que no reconocés: pueden ser de otra integración de la cuenta. Permiso: webhooks:write.",
 		"method": "DELETE",
 		"path": "/api/v1/webhooks/{id}",
-		"permission": null,
-		"notice": "Operación irreversible. Tomada del código de accounts (origin/main @ c34cba2c0): no está en la especificación del portal y hoy una clave de API recibe 403 route_not_available.",
+		"permission": "webhooks:write",
+		"notice": "Operación irreversible. Con una clave, además del permiso de la ruta, pide el permiso de lectura del área de cada tipo de evento de la suscripción (accounts:read, conversations:read o communities:read).",
 		"source": "accounts-webhook-subscriptions",
 		"params": [
 			{
@@ -5836,11 +5836,11 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "webhook",
 		"value": "webhookSubscriptionDelivery.index",
 		"name": "Listar las entregas de una suscripción",
-		"description": "Usalo para revisar cada intento de entrega de una suscripción: estado HTTP, error y duración, lo más reciente primero.",
+		"description": "Usalo para revisar cada intento de entrega de una suscripción: estado HTTP, error y duración, lo más reciente primero. Permiso: webhooks:read.",
 		"method": "GET",
 		"path": "/api/v1/webhooks/{id}/deliveries",
-		"permission": null,
-		"notice": "Tomada del código de accounts (origin/main @ c34cba2c0): no está en la especificación del portal y hoy una clave de API recibe 403 route_not_available.",
+		"permission": "webhooks:read",
+		"notice": "Con una clave, además del permiso de la ruta, pide el permiso de lectura del área de cada tipo de evento de la suscripción (accounts:read, conversations:read o communities:read).",
 		"source": "accounts-webhook-subscriptions",
 		"list": {
 			"pagination": "page",
@@ -5884,11 +5884,11 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "webhook",
 		"value": "webhookSubscriptionTest.test",
 		"name": "Enviar un evento de prueba",
-		"description": "Usalo para probar tu receptor: envía un único evento webhook.test firmado igual que uno real, sin reintentos, y lo deja en el historial.",
+		"description": "Usalo para probar tu receptor: envía un único evento webhook.test firmado igual que uno real, sin reintentos, y lo deja en el historial. Permiso: webhooks:write.",
 		"method": "POST",
 		"path": "/api/v1/webhooks/{id}/test",
-		"permission": null,
-		"notice": "Tomada del código de accounts (origin/main @ c34cba2c0): no está en la especificación del portal y hoy una clave de API recibe 403 route_not_available.",
+		"permission": "webhooks:write",
+		"notice": "Con una clave, además del permiso de la ruta, pide el permiso de lectura del área de cada tipo de evento de la suscripción (accounts:read, conversations:read o communities:read).",
 		"source": "accounts-webhook-subscriptions",
 		"params": [
 			{

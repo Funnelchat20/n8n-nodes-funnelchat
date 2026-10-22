@@ -2,7 +2,7 @@
 	"x-fc-suplemento": {
 		"id": "accounts-webhook-subscriptions",
 		"titulo": "Suscripciones de webhooks unificadas de accounts",
-		"fuente": "accounts origin/main @ c34cba2c0c8f2274494731f99bbddd8d23321355 (2026-10-16 00:34 -03:00), solo lectura",
+		"fuente": "accounts tag v1.4.24 @ 300cc8435e6fa17e2ac274b88289a2cc7b945fcd (2026-10-22 08:31 -03:00, el que corre en production), solo lectura",
 		"archivos": [
 			"back/routes/api/webhooks.php",
 			"back/app/Modules/Webhook/Http/Controllers/WebhookSubscriptionController.php",
@@ -13,11 +13,13 @@
 			"back/app/Modules/Webhook/Http/Resources/WebhookSubscriptionResource.php",
 			"back/app/Modules/Webhook/Http/Resources/WebhookSubscriptionCreatedResource.php",
 			"back/app/Modules/Webhook/Http/Resources/WebhookSubscriptionDeliveryResource.php",
-			"back/app/Modules/Webhook/Services/SubscriptionFilter.php"
+			"back/app/Modules/Webhook/Services/SubscriptionFilter.php",
+			"back/app/Modules/Webhook/Http/Controllers/Concerns/RejectsUnreadableAreas.php",
+			"back/config/platform-gate.php"
 		],
 		"portal": "developers-portal feat/armar-funnelchat-portal @ dd7cd42, content/webhooks.md",
-		"motivo": "La especificación unificada del portal (feat/openapi-unificada @ 0ef4abb) no trae estas rutas. Se toman del código para el disparador y para el recurso Webhooks. Si una instantánea nueva las incluye, el generador ignora este suplemento.",
-		"estado_claves": "En accounts origin/main @ c34cba2c0 estas rutas no están en el allowed de config/platform-gate.php: una clave de API recibe 403 route_not_available. Además exigen que la clave sea del titular de la cuenta."
+		"motivo": "La especificación unificada del portal (instantánea del 13-10) no trae estas rutas. Se toman del código para el disparador y para el recurso Webhooks. Si una instantánea nueva las incluye, el generador ignora este suplemento.",
+		"estado_claves": "Abiertas a claves en accounts v1.4.24 (allowed de config/platform-gate.php), salvo rotate-secret y activate. Piden webhooks:read (GET) o webhooks:write (el resto) por permission_prefix, exigen que la clave sea del titular de la cuenta y, además, el permiso de lectura del área de cada tipo de evento (accounts:read, conversations:read, communities:read): 422 al crear o cambiar eventos sin él; 403 permission_denied al ver, cambiar, borrar o probar una suscripción con eventos de un área que la clave no lee."
 	},
 	"tags": [
 		{
@@ -33,9 +35,9 @@
 				"summary": "Listar suscripciones de webhooks",
 				"tags": ["WebhookSubscription"],
 				"x-fc-domain": "accounts",
-				"x-fc-permission": null,
+				"x-fc-permission": "webhooks:read",
 				"x-fc-proposito": "Usalo para ver todas las suscripciones de la cuenta, también las que crearon otras integraciones o personas.",
-				"x-fc-nota": "Tomada del código de accounts (origin/main @ c34cba2c0): no está en la especificación del portal y hoy una clave de API recibe 403 route_not_available.",
+				"x-fc-nota": "Con una clave, además del permiso de la ruta, pide el permiso de lectura del área de cada tipo de evento de la suscripción (accounts:read, conversations:read o communities:read).",
 				"responses": {
 					"200": {
 						"description": "Lista sin paginar, ordenada por id.",
@@ -55,9 +57,9 @@
 				"summary": "Crear una suscripción de webhook",
 				"tags": ["WebhookSubscription"],
 				"x-fc-domain": "accounts",
-				"x-fc-permission": null,
+				"x-fc-permission": "webhooks:write",
 				"x-fc-proposito": "Usalo para registrar una URL https y elegir los eventos que recibe. La respuesta trae el secreto una sola vez: guardalo para verificar la firma.",
-				"x-fc-nota": "Tomada del código de accounts (origin/main @ c34cba2c0): no está en la especificación del portal y hoy una clave de API recibe 403 route_not_available.",
+				"x-fc-nota": "Con una clave, además del permiso de la ruta, pide el permiso de lectura del área de cada tipo de evento de la suscripción (accounts:read, conversations:read o communities:read).",
 				"requestBody": {
 					"required": true,
 					"content": {
@@ -84,9 +86,9 @@
 				"summary": "Ver una suscripción de webhook",
 				"tags": ["WebhookSubscription"],
 				"x-fc-domain": "accounts",
-				"x-fc-permission": null,
+				"x-fc-permission": "webhooks:read",
 				"x-fc-proposito": "Usalo para ver la URL, los eventos, el filtro y el estado de una suscripción. Nunca trae el secreto.",
-				"x-fc-nota": "Tomada del código de accounts (origin/main @ c34cba2c0): no está en la especificación del portal y hoy una clave de API recibe 403 route_not_available.",
+				"x-fc-nota": "Con una clave, además del permiso de la ruta, pide el permiso de lectura del área de cada tipo de evento de la suscripción (accounts:read, conversations:read o communities:read).",
 				"parameters": [{ "$ref": "#/components/parameters/SupWebhookSubscriptionId" }],
 				"responses": {
 					"200": {
@@ -104,9 +106,9 @@
 				"summary": "Actualizar una suscripción de webhook",
 				"tags": ["WebhookSubscription"],
 				"x-fc-domain": "accounts",
-				"x-fc-permission": null,
+				"x-fc-permission": "webhooks:write",
 				"x-fc-proposito": "Usalo para cambiar la URL (por ejemplo, cuando cambia tu túnel), los eventos, el filtro o pausar y reactivar una suscripción. Reemplaza la suscripción completa y el secreto no cambia.",
-				"x-fc-nota": "Tomada del código de accounts (origin/main @ c34cba2c0): no está en la especificación del portal y hoy una clave de API recibe 403 route_not_available.",
+				"x-fc-nota": "Con una clave, además del permiso de la ruta, pide el permiso de lectura del área de cada tipo de evento de la suscripción (accounts:read, conversations:read o communities:read).",
 				"parameters": [{ "$ref": "#/components/parameters/SupWebhookSubscriptionId" }],
 				"requestBody": {
 					"required": true,
@@ -132,10 +134,10 @@
 				"summary": "Eliminar una suscripción de webhook",
 				"tags": ["WebhookSubscription"],
 				"x-fc-domain": "accounts",
-				"x-fc-permission": null,
+				"x-fc-permission": "webhooks:write",
 				"x-fc-destructive": true,
 				"x-fc-proposito": "Usalo para dar de baja una suscripción. Sus eventos y su historial de entregas se borran con ella. No borres las que no reconocés: pueden ser de otra integración de la cuenta.",
-				"x-fc-nota": "Tomada del código de accounts (origin/main @ c34cba2c0): no está en la especificación del portal y hoy una clave de API recibe 403 route_not_available.",
+				"x-fc-nota": "Con una clave, además del permiso de la ruta, pide el permiso de lectura del área de cada tipo de evento de la suscripción (accounts:read, conversations:read o communities:read).",
 				"parameters": [{ "$ref": "#/components/parameters/SupWebhookSubscriptionId" }],
 				"responses": {
 					"204": { "description": "Eliminada." }
@@ -148,9 +150,9 @@
 				"summary": "Listar las entregas de una suscripción",
 				"tags": ["WebhookSubscription"],
 				"x-fc-domain": "accounts",
-				"x-fc-permission": null,
+				"x-fc-permission": "webhooks:read",
 				"x-fc-proposito": "Usalo para revisar cada intento de entrega de una suscripción: estado HTTP, error y duración, lo más reciente primero.",
-				"x-fc-nota": "Tomada del código de accounts (origin/main @ c34cba2c0): no está en la especificación del portal y hoy una clave de API recibe 403 route_not_available.",
+				"x-fc-nota": "Con una clave, además del permiso de la ruta, pide el permiso de lectura del área de cada tipo de evento de la suscripción (accounts:read, conversations:read o communities:read).",
 				"x-fc-listing": {
 					"per_page_default": 25,
 					"per_page_max": 100,
@@ -220,9 +222,9 @@
 				"summary": "Enviar un evento de prueba",
 				"tags": ["WebhookSubscription"],
 				"x-fc-domain": "accounts",
-				"x-fc-permission": null,
+				"x-fc-permission": "webhooks:write",
 				"x-fc-proposito": "Usalo para probar tu receptor: envía un único evento webhook.test firmado igual que uno real, sin reintentos, y lo deja en el historial.",
-				"x-fc-nota": "Tomada del código de accounts (origin/main @ c34cba2c0): no está en la especificación del portal y hoy una clave de API recibe 403 route_not_available.",
+				"x-fc-nota": "Con una clave, además del permiso de la ruta, pide el permiso de lectura del área de cada tipo de evento de la suscripción (accounts:read, conversations:read o communities:read).",
 				"parameters": [{ "$ref": "#/components/parameters/SupWebhookSubscriptionId" }],
 				"responses": {
 					"200": {

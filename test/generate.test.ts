@@ -42,7 +42,7 @@ describe('generación desde la especificación', () => {
 		expect(() => generate()).not.toThrow();
 	});
 
-	it('las suscripciones de accounts vienen del suplemento y avisan su estado', () => {
+	it('las suscripciones de accounts vienen del suplemento, con webhooks:* y la regla de áreas', () => {
 		const fromSupplement = OPERATIONS.filter((o) => o.source === 'accounts-webhook-subscriptions');
 		expect(fromSupplement.map((o) => `${o.method} ${o.path}`)).toEqual([
 			'GET /api/v1/webhooks',
@@ -53,7 +53,10 @@ describe('generación desde la especificación', () => {
 			'GET /api/v1/webhooks/{id}/deliveries',
 			'POST /api/v1/webhooks/{id}/test',
 		]);
-		for (const o of fromSupplement) expect(o.notice).toContain('route_not_available');
+		for (const o of fromSupplement) {
+			expect(o.permission).toBe(o.method === 'GET' ? 'webhooks:read' : 'webhooks:write');
+			expect(o.notice).toContain('permiso de lectura del área');
+		}
 	});
 
 	it('los envíos pendientes en v0 llevan la nota del portal', () => {
