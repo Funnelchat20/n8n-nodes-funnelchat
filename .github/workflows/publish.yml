@@ -11,8 +11,8 @@
 #
 # ─── ONE-TIME SETUP ────────────────────────────────────────────────────────────
 #
-# Add an npm token with publish permission on this package as the NPM_TOKEN
-# repository secret (Settings → Secrets and variables → Actions). Provenance is
+# Add an npm token with publish permission on the @funnelchat-hq scope as the
+# NPM_TOKEN repository secret (Settings → Secrets and variables → Actions). Provenance is
 # signed by GitHub's OIDC infrastructure regardless of how npm authentication
 # is handled. The repository must be public for npm to accept provenance.
 #

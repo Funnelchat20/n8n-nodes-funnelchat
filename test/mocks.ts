@@ -27,7 +27,7 @@ export interface RecordedCall {
 const NODE: INode = {
 	id: 'node-1',
 	name: 'Funnelchat',
-	type: 'n8n-nodes-funnelchat.funnelchat',
+	type: '@funnelchat-hq/n8n-nodes-funnelchat.funnelchat',
 	typeVersion: 1,
 	position: [0, 0],
 	parameters: {},
@@ -100,7 +100,7 @@ export function hookContext(opts: {
 		getNode: () => ({
 			...NODE,
 			name: 'Funnelchat Trigger',
-			type: 'n8n-nodes-funnelchat.funnelchatTrigger',
+			type: '@funnelchat-hq/n8n-nodes-funnelchat.funnelchatTrigger',
 		}),
 		getCredentials: async () => ({
 			apiKey: 'test-key',

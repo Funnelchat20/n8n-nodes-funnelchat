@@ -1,5 +1,5 @@
 {
-	"name": "n8n-nodes-funnelchat",
+	"name": "@funnelchat-hq/n8n-nodes-funnelchat",
 	"version": "0.1.0",
 	"description": "n8n community node for the Funnelchat public API: actions on contacts, conversations and messages, templates, WhatsApp forms, groups, numbers and webhooks, and a trigger for signed webhooks.",
 	"license": "MIT",
@@ -39,6 +39,9 @@
 	"files": [
 		"dist"
 	],
+	"publishConfig": {
+		"access": "public"
+	},
 	"engines": {
 		"node": ">=20.15"
 	},

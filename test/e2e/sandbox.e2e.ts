@@ -31,7 +31,7 @@ const DEVICE = 4;
 const NODE = {
 	id: 'e2e',
 	name: 'Funnelchat',
-	type: 'n8n-nodes-funnelchat.funnelchat',
+	type: '@funnelchat-hq/n8n-nodes-funnelchat.funnelchat',
 	typeVersion: 1,
 	position: [0, 0] as [number, number],
 	parameters: {},

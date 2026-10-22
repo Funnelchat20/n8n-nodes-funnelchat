@@ -1,5 +1,5 @@
 {
-	"node": "n8n-nodes-funnelchat.funnelchatTrigger",
+	"node": "@funnelchat-hq/n8n-nodes-funnelchat.funnelchatTrigger",
 	"nodeVersion": "1.0",
 	"codexVersion": "1.0",
 	"categories": ["Communication", "Sales"],

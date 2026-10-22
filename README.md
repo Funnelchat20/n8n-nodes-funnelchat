@@ -1,4 +1,4 @@
-# n8n-nodes-funnelchat
+# @funnelchat-hq/n8n-nodes-funnelchat
 
 [n8n](https://n8n.io) community node for the Funnelchat public API. With it you build workflows that work with your
 account without writing code: sync contacts from a form or a CRM, reply to messages, check the status of your numbers
@@ -38,8 +38,8 @@ API documentation: [Funnelchat developer portal](https://developers-portal.funne
 
 ### From n8n (community nodes)
 
-In self-hosted n8n: **Settings → Community nodes → Install** and type `n8n-nodes-funnelchat`. n8n downloads it from
-the public npm registry and makes it available in the nodes panel: search for "Funnelchat".
+In self-hosted n8n: **Settings → Community nodes → Install** and type `@funnelchat-hq/n8n-nodes-funnelchat`. n8n
+downloads it from the public npm registry and makes it available in the nodes panel: search for "Funnelchat".
 
 n8n Cloud only shows the nodes n8n has verified. The package is ready for that (strict mode, no runtime dependencies,
 n8n lint passing), but it has not been submitted for verification yet.
@@ -49,7 +49,7 @@ n8n lint passing), but it has not been submitted for verification yet.
 ```bash
 mkdir -p ~/.n8n/nodes && cd ~/.n8n/nodes
 npm init -y                       # only the first time
-npm install n8n-nodes-funnelchat
+npm install @funnelchat-hq/n8n-nodes-funnelchat
 ```
 
 Restart n8n. With Docker, that folder is `/home/node/.n8n/nodes` inside n8n's volume. It was tested with n8n 2.25.7
@@ -62,10 +62,10 @@ git clone https://github.com/Funnelchat20/n8n-nodes-funnelchat.git
 cd n8n-nodes-funnelchat
 npm ci
 npm run build
-npm pack            # creates n8n-nodes-funnelchat-0.1.0.tgz
+npm pack            # creates funnelchat-hq-n8n-nodes-funnelchat-0.1.0.tgz
 ```
 
-Then, in n8n's nodes folder, `npm install /path/to/n8n-nodes-funnelchat-0.1.0.tgz`.
+Then, in n8n's nodes folder, `npm install /path/to/funnelchat-hq-n8n-nodes-funnelchat-0.1.0.tgz`.
 
 ## Minimal example
 
@@ -472,7 +472,7 @@ does not remove it.
 with in-memory state and signed webhooks, and has no real effects: nothing goes out to WhatsApp. How to start it is in
 its README. By default it listens on `http://localhost:4010`.
 
-1. **Start the sandbox**, for example with `npx funnelchat-sandbox` or
+1. **Start the sandbox**, for example with `npx @funnelchat-hq/sandbox` or
    `docker run --rm -p 4010:4010 funnelchat-sandbox`. Its panel is at `http://localhost:4010/_sandbox`.
 2. **Create a Funnelchat API credential** for the sandbox:
    - **Environment**: **Custom**.
@@ -502,7 +502,7 @@ its README. By default it listens on `http://localhost:4010`.
    too).
 
 5. **What the sandbox does not show you:** with the real API, n8n's URL has to be `https` and public (try it with
-   `npx funnelchat-sandbox --require-https`).
+   `npx @funnelchat-hq/sandbox --require-https`).
 
 The end-to-end tests (`npm run test:e2e`, see [Development](#development)) passed on 2026-10-22 against the sandbox on
 `feat/inicial` @ `7e244b8`: send and read a message, file by URL, `X-Request-Id` in errors, the signed
