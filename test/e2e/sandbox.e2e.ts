@@ -1,16 +1,16 @@
-import { createServer, type IncomingHttpHeaders, type Server } from 'http';
-import type { AddressInfo } from 'net';
 import {
 	NodeApiError,
+	sleep,
 	type IDataObject,
 	type IExecuteFunctions,
 	type IHookFunctions,
 	type IHttpRequestOptions,
 	type IWebhookFunctions,
 } from 'n8n-workflow';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, inject, it } from 'vitest';
 import { Funnelchat } from '../../nodes/Funnelchat/Funnelchat.node';
 import { FunnelchatTrigger } from '../../nodes/FunnelchatTrigger/FunnelchatTrigger.node';
+import { startReceiver } from './receiver.mjs';
 
 /*
  * End to end against a running funnelchat-sandbox (Funnelchat20/funnelchat-sandbox, branch feat/inicial): the real
@@ -22,7 +22,7 @@ import { FunnelchatTrigger } from '../../nodes/FunnelchatTrigger/FunnelchatTrigg
  * before each test with POST /_sandbox/reset.
  */
 
-const SANDBOX = process.env.FUNNELCHAT_SANDBOX_URL;
+const SANDBOX = inject('sandboxUrl') || undefined;
 const KEY = '1|fc_live_e2e';
 const CONTACT = 2001;
 const PHONE = '5491100000000';
@@ -72,29 +72,7 @@ async function run(params: IDataObject): Promise<IDataObject[]> {
 	return out.map((i) => i.json);
 }
 
-interface Delivery {
-	headers: IncomingHttpHeaders;
-	raw: Buffer;
-}
-
-/** A local receiver for the sandbox's signed deliveries (the sandbox accepts http and local URLs). */
-function receiver(): Promise<{ server: Server; url: string; deliveries: Delivery[] }> {
-	const deliveries: Delivery[] = [];
-	const server = createServer((req, res) => {
-		const chunks: Buffer[] = [];
-		req.on('data', (c: Buffer) => chunks.push(c));
-		req.on('end', () => {
-			deliveries.push({ headers: req.headers, raw: Buffer.concat(chunks) });
-			res.writeHead(200).end();
-		});
-	});
-	return new Promise((resolve) =>
-		server.listen(0, '127.0.0.1', () => {
-			const { port } = server.address() as AddressInfo;
-			resolve({ server, url: `http://127.0.0.1:${port}/webhook/e2e/webhook`, deliveries });
-		}),
-	);
-}
+type Delivery = Awaited<ReturnType<typeof startReceiver>>['deliveries'][number];
 
 async function until<T>(what: string, check: () => T | undefined, seconds = 15): Promise<T> {
 	const end = Date.now() + seconds * 1000;
@@ -102,7 +80,7 @@ async function until<T>(what: string, check: () => T | undefined, seconds = 15):
 		const value = check();
 		if (value !== undefined) return value;
 		if (Date.now() > end) throw new Error(`No llegó a tiempo: ${what}`);
-		await new Promise((r) => setTimeout(r, 200));
+		await sleep(200);
 	}
 }
 
@@ -192,11 +170,11 @@ describe.skipIf(!SANDBOX)('e2e contra el sandbox', () => {
 	});
 
 	describe('disparador', () => {
-		let hook: Awaited<ReturnType<typeof receiver>>;
+		let hook: Awaited<ReturnType<typeof startReceiver>>;
 		beforeAll(async () => {
-			hook = await receiver();
+			hook = await startReceiver();
 		});
-		afterAll(() => new Promise<void>((r) => hook.server.close(() => r())));
+		afterAll(() => hook.close());
 
 		function hookContext(staticData: IDataObject, events: string[]): IHookFunctions {
 			const logger = { info: () => {}, warn: () => {}, error: () => {}, debug: () => {} };
