@@ -15,9 +15,10 @@ It has three parts:
   verified.
 
 > [!IMPORTANT]
-> **Status: 0.1.0, ready to publish and not published yet** on npm or in n8n's node registry. It is up to date with the
-> API running in production on 2026-10-22 (accounts `v1.4.24`, conversations `v1.18.10`). The public API is v0 and
-> may change: see [Sources and what is left to verify](#sources-and-what-is-left-to-verify).
+> **Status: published on npm** as `@funnelchat-hq/n8n-nodes-funnelchat` (with provenance) and installable from n8n's
+> panel as a community node (see [Installation](#installation)). It is up to date with the API running in production
+> on 2026-10-22 (accounts `v1.4.24`, conversations `v1.18.10`). The public API is v0 and may change: see
+> [Sources and what is left to verify](#sources-and-what-is-left-to-verify).
 
 API documentation: [Funnelchat developer portal](https://developers-portal.funnelchat.app/docs/).
 
@@ -62,10 +63,10 @@ git clone https://github.com/Funnelchat20/n8n-nodes-funnelchat.git
 cd n8n-nodes-funnelchat
 npm ci
 npm run build
-npm pack            # creates funnelchat-hq-n8n-nodes-funnelchat-0.1.0.tgz
+npm pack            # creates funnelchat-hq-n8n-nodes-funnelchat-0.1.1.tgz
 ```
 
-Then, in n8n's nodes folder, `npm install /path/to/funnelchat-hq-n8n-nodes-funnelchat-0.1.0.tgz`.
+Then, in n8n's nodes folder, `npm install /path/to/funnelchat-hq-n8n-nodes-funnelchat-0.1.1.tgz`.
 
 ## Minimal example
 
