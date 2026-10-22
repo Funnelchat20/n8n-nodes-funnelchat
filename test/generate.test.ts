@@ -2,48 +2,48 @@ import { describe, expect, it } from 'vitest';
 import { Funnelchat } from '../nodes/Funnelchat/Funnelchat.node';
 import { OPERATIONS, RESOURCES, SPEC_SOURCE } from '../nodes/Funnelchat/generated/operations';
 import { generate, staleFiles } from '../scripts/generate.mjs';
+import translations from '../scripts/operations.en.json';
 import spec from '../spec/funnelchat.json';
 
-describe('generación desde la especificación', () => {
-	it('lo generado está al día con spec/ (si falla: npm run generate)', () => {
+describe('generation from the specification', () => {
+	it('the generated files are up to date with spec/ (if it fails: npm run generate)', () => {
 		expect(staleFiles()).toEqual([]);
 	});
 
-	it('cada recurso del portal pedido tiene operaciones', () => {
+	it('each resource of the portal that was asked for has operations', () => {
 		expect(RESOURCES.map((r) => r.name)).toEqual([
-			'Contactos',
-			'Conversaciones y mensajes',
-			'Plantillas',
-			'Formularios de WhatsApp',
-			'Etiquetas',
-			'Campos personalizados',
-			'Grupos',
-			'Números',
+			'Contacts',
+			'Conversations and Messages',
+			'Templates',
+			'WhatsApp Forms',
+			'Tags',
+			'Custom Fields',
+			'Groups',
+			'Numbers',
 			'Webhooks',
 		]);
 		for (const r of RESOURCES)
 			expect(OPERATIONS.filter((o) => o.resource === r.value).length, r.value).toBeGreaterThan(0);
 	});
 
-	it('los nombres son los summary del portal y las rutas, las de la especificación', () => {
-		const paths = spec.paths as unknown as Record<
-			string,
-			Record<string, { summary?: string; operationId?: string }>
-		>;
+	it("the specification's operations keep their route and operationId, with their English name", () => {
+		const paths = spec.paths as unknown as Record<string, Record<string, { operationId?: string }>>;
+		const english = translations as unknown as Record<string, { name: string; purpose: string }>;
 		for (const op of OPERATIONS.filter((o) => o.source === 'spec')) {
 			const fromSpec = paths[op.path]?.[op.method.toLowerCase()];
 			expect(fromSpec, `${op.method} ${op.path}`).toBeDefined();
-			expect(op.name).toBe(fromSpec?.summary);
 			expect(op.value).toBe(fromSpec?.operationId);
+			expect(op.name).toBe(english[op.value].name);
+			expect(op.description.startsWith(english[op.value].purpose), op.value).toBe(true);
 		}
 	});
 
-	it('la procedencia registra la especificación copiada (el generador se niega si no)', () => {
+	it('the provenance records the copied specification (the generator refuses otherwise)', () => {
 		expect(SPEC_SOURCE.sha256).toMatch(/^[0-9a-f]{64}$/);
 		expect(() => generate()).not.toThrow();
 	});
 
-	it('las suscripciones de accounts vienen del suplemento, con webhooks:* y la regla de áreas', () => {
+	it('the accounts subscriptions come from the supplement, with webhooks:* and the area rule', () => {
 		const fromSupplement = OPERATIONS.filter((o) => o.source === 'accounts-webhook-subscriptions');
 		expect(fromSupplement.map((o) => `${o.method} ${o.path}`)).toEqual([
 			'GET /api/v1/webhooks',
@@ -56,11 +56,11 @@ describe('generación desde la especificación', () => {
 		]);
 		for (const o of fromSupplement) {
 			expect(o.permission).toBe(o.method === 'GET' ? 'webhooks:read' : 'webhooks:write');
-			expect(o.notice).toContain('permiso de lectura del área');
+			expect(o.notice).toContain('read permission of the area');
 		}
 	});
 
-	it('los envíos con clave salen de conversations v1.18.10: mismo operationId, campos nuevos, sin la nota v0', () => {
+	it('sends with an API key come from conversations v1.18.10: same operationId, new fields, without the v0 note', () => {
 		const replaced = [
 			'conversation.sendMessage',
 			'message.sendMessage',
@@ -87,7 +87,7 @@ describe('generación desde la especificación', () => {
 			(p) => p.apiName === 'file_type',
 		)!;
 		expect(fileType.options).toEqual(['image', 'video', 'audio', 'document', 'sticker']);
-		// Nothing keeps the «está en camino» note of the 13-10 snapshot.
+		// Nothing keeps the "on its way" note of the 13-10 snapshot.
 		for (const o of OPERATIONS) expect(o.notice ?? '', o.value).not.toContain('PR #2284');
 		for (const value of ['interactiveMessage.storePoll', 'interactiveMessage.storeEvent'])
 			expect(OPERATIONS.find((x) => x.value === value)!.notice).toContain('route_not_available');
@@ -96,7 +96,7 @@ describe('generación desde la especificación', () => {
 		});
 	});
 
-	it('mensaje por id y formularios de WhatsApp, con su permiso', () => {
+	it('message by ID and WhatsApp forms, with their permission', () => {
 		const show = OPERATIONS.find((o) => o.value === 'showMessage')!;
 		expect(`${show.method} ${show.path} ${show.permission}`).toBe(
 			'GET /api/v1/contacts/{contact}/messages/{message} conversations:read',
@@ -121,7 +121,7 @@ describe('generación desde la especificación', () => {
 		});
 	});
 
-	it('los listados paginados ofrecen «devolver todo»', () => {
+	it('paginated lists offer "Return All"', () => {
 		const node = new Funnelchat();
 		const returnAll = node.description.properties.filter((p) => p.name === 'returnAll');
 		const paginated = OPERATIONS.filter((o) => o.list && o.list.pagination !== 'none');

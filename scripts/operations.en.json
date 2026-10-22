@@ -1,0 +1,387 @@
+{
+	"$comment": "English name and purpose of each operation of spec/funnelchat.json, by operationId. The portal's specification is in Spanish and is copied as is (its SHA-256 is checked), so scripts/generate.mjs takes the texts the node shows from here, and refuses to generate if an operation of the specification has no entry. Operations from spec/suplementos/ are written in English there.",
+	"contact.index": {
+		"name": "List contacts",
+		"purpose": "Use it to search and segment contacts from your system: filter by name, phone, email, tags, custom fields, country, creation date or lead score. It is the basis for syncing or exporting your CRM."
+	},
+	"contact.store": {
+		"name": "Create a contact",
+		"purpose": "Creates a new contact (phone or WhatsApp ID, name, email) when you know it does not exist. If you are not sure, use Create or update a contact."
+	},
+	"contact.updateOrCreate": {
+		"name": "Create or update a contact",
+		"purpose": "Use it to sync contacts from your system without duplicates: if the phone already exists it updates that contact, otherwise it creates one. It is the safe option for retries."
+	},
+	"contact.attachCustomField": {
+		"name": "Set a custom field on contacts",
+		"purpose": "Use it to store your own business data on contacts (plan, city, purchase date): sets custom field values on one or more contacts in a single call."
+	},
+	"contact.detachCustomField": {
+		"name": "Remove a custom field from contacts",
+		"purpose": "Clears the value of a custom field on one or more contacts, for example when the data is out of date in your system."
+	},
+	"contact.show": {
+		"name": "Get a contact",
+		"purpose": "Use it to get the full record of a contact: data, custom fields, conversation status, unread messages and last message."
+	},
+	"contact.update": {
+		"name": "Update a contact",
+		"purpose": "Keeps a contact's record up to date from your system: name, email, phone, notes, assigned agent, favorite, or whether it can run flows."
+	},
+	"contact.tags": {
+		"name": "List a contact's tags",
+		"purpose": "Use it to know which tags a contact has, for example to reflect its segment in your CRM or decide what to do next."
+	},
+	"contact.customFields": {
+		"name": "List a contact's custom fields",
+		"purpose": "Reads the custom field values of a contact, with a search by field name."
+	},
+	"contact.metaWindow": {
+		"name": "Get a contact's 24-hour window",
+		"purpose": "Use it before writing to a contact to know whether its Meta 24-hour window is open on a number, and so whether you can send a free-form message or need a template."
+	},
+	"contact.contactsByDevice": {
+		"name": "List a number's contacts",
+		"purpose": "Lists the contacts of one of your connected numbers, useful if you handle several numbers and want to split the base by number."
+	},
+	"contact.destroy": {
+		"name": "Delete contacts",
+		"purpose": "Use it to delete contacts in bulk: by IDs, by filters (tags, custom fields, country, creation date) or all of them. Meant for large clean-ups of the base."
+	},
+	"contactNote.index": {
+		"name": "List a contact's notes",
+		"purpose": "Reads the notes the team left on a contact, with author and date, and searches them by text."
+	},
+	"contactNote.store": {
+		"name": "Add a note to a contact",
+		"purpose": "Use it to record on the contact something that happened in your system, such as a call, a purchase or a complaint."
+	},
+	"contactNote.destroy": {
+		"name": "Delete a note",
+		"purpose": "Deletes a contact's note that is out of date or was added by mistake."
+	},
+	"conversation.index": {
+		"name": "List conversations",
+		"purpose": "Use it to build your own inbox or sync conversations: filter by number, agent, tags, kanban stage, unread or lead score, and get only what changed with updated_since."
+	},
+	"conversation.countUnread": {
+		"name": "Count unread conversations",
+		"purpose": "Shows a count of unread conversations, for example in a badge or a dashboard, filtered by agents or favorites."
+	},
+	"conversation.countOpen": {
+		"name": "Count open conversations",
+		"purpose": "Use it to measure the current workload: how many conversations are open, in total or per agent."
+	},
+	"conversation.countClosed": {
+		"name": "Count closed conversations",
+		"purpose": "Counts closed conversations, for example for service metrics per agent."
+	},
+	"conversation.countAll": {
+		"name": "Count all conversations",
+		"purpose": "Use it to get the total number of conversations, as the basis to compute the share of open, closed or unread ones."
+	},
+	"conversation.markAllAsRead": {
+		"name": "Mark all as read",
+		"purpose": "Clears all unread counts at once, for example when you already answered through another channel; it can be limited to agents or favorites."
+	},
+	"conversation.markAllAsUnread": {
+		"name": "Mark all as unread",
+		"purpose": "Use it to mark a set of conversations (by agents or favorites) as unread again so the team picks them up. It has a cap and the response says whether it was reached."
+	},
+	"conversation.update": {
+		"name": "Update a contact's conversation",
+		"purpose": "Manages the conversation with a contact: assign it to an agent, open or close it, mark it as favorite or unread, or change the number that handles it."
+	},
+	"conversation.getLatestMessages": {
+		"name": "List a contact's messages",
+		"purpose": "Gets a contact's message history and keeps it in sync in your system, with cursor pagination and updated_since to ask only for what is new."
+	},
+	"messageReaction.update": {
+		"name": "React to a message",
+		"purpose": "Use it to react with an emoji to a message of a conversation, for example to acknowledge it without writing a reply."
+	},
+	"messageReaction.destroy": {
+		"name": "Remove a reaction",
+		"purpose": "Removes the reaction you put on a message."
+	},
+	"interactiveMessage.storePoll": {
+		"name": "Send a poll",
+		"purpose": "Sends a contact a poll with options, single or multiple choice, for example to learn preferences or confirm an appointment."
+	},
+	"interactiveMessage.storeEvent": {
+		"name": "Send an event invitation",
+		"purpose": "Use it to send a contact an invitation to an event with a name, date and time, description and place, such as a webinar or a meeting."
+	},
+	"messageTemplate.templates": {
+		"name": "List templates",
+		"purpose": "Use it to list your WhatsApp templates with their approval status, category, language and number, and pick the one to use in a send or a broadcast."
+	},
+	"messageTemplate.store": {
+		"name": "Create a template",
+		"purpose": "Creates a WhatsApp template (header, body with variables, footer and buttons) from your system, without going through the dashboard."
+	},
+	"messageTemplate.template": {
+		"name": "Get a template",
+		"purpose": "Shows a full template, with its status, variables and buttons, for example to know which values to fill in when sending it."
+	},
+	"messageTemplate.update": {
+		"name": "Update a template",
+		"purpose": "Use it to edit the content of an existing template: category, header, body, variables, footer or buttons."
+	},
+	"messageTemplate.quickReplyButtons": {
+		"name": "Get a template's quick reply buttons",
+		"purpose": "Use it to get the quick reply buttons of a template, for example to plan what to do depending on the button the contact taps."
+	},
+	"messageTemplate.delete": {
+		"name": "Delete a template from a number",
+		"purpose": "Use it to delete a template from one of your numbers when you no longer need it."
+	},
+	"tag.index": {
+		"name": "List tags",
+		"purpose": "Lists the account's tags, optionally with how many contacts each one has, to get their IDs to filter or segment."
+	},
+	"tag.store": {
+		"name": "Create a tag",
+		"purpose": "Use it to create a tag (name, description, color) and segment contacts by your business criteria."
+	},
+	"tag.show": {
+		"name": "Get a tag",
+		"purpose": "Shows a tag and, if you ask for it, how many contacts have it."
+	},
+	"tag.update": {
+		"name": "Update a tag",
+		"purpose": "Use it to rename a tag or change its description or color."
+	},
+	"tag.contacts": {
+		"name": "List the contacts with a tag",
+		"purpose": "Gets all the contacts that have a tag, for example to export a segment or sync it with another tool."
+	},
+	"tag.destroy": {
+		"name": "Delete tags",
+		"purpose": "Use it to delete several tags at once."
+	},
+	"customField.index": {
+		"name": "List custom fields",
+		"purpose": "Use it to know the account's custom fields and their IDs before reading or writing that data on your contacts."
+	},
+	"customField.store": {
+		"name": "Create a custom field",
+		"purpose": "Creates a new custom field (for example plan or purchase date) to store your own business data in Funnelchat."
+	},
+	"customField.destroy": {
+		"name": "Delete custom fields",
+		"purpose": "Use it to delete in bulk the custom fields you no longer use."
+	},
+	"customField.show": {
+		"name": "Get a custom field",
+		"purpose": "Shows the definition of a custom field: name, type, description and how many contacts have it."
+	},
+	"customField.update": {
+		"name": "Update a custom field",
+		"purpose": "Use it to rename a custom field or update its description; its type cannot be changed here."
+	},
+	"group.index": {
+		"name": "List groups",
+		"purpose": "Use it to list your account's groups filtered by type, status, number or without a campaign, for example to sync them with your system."
+	},
+	"group.groups": {
+		"name": "List the groups a number manages",
+		"purpose": "Shows the groups a number manages according to the WhatsApp provider, for example to find groups you have not added to a campaign yet."
+	},
+	"group.adGroups": {
+		"name": "List a number's announcement groups",
+		"purpose": "Use it to list the announcement groups a number manages (the response says which community each belongs to), for example to choose which to add to a campaign."
+	},
+	"group.channels": {
+		"name": "List a number's channels",
+		"purpose": "Lists the WhatsApp channels of a number and gets their identifiers."
+	},
+	"groupMetadata.show": {
+		"name": "Get a group's current data on WhatsApp",
+		"purpose": "Use it to read live from WhatsApp the current name, photo, description, link and admins of a group or channel, for example to check they match what you expect."
+	},
+	"group.show": {
+		"name": "Get a group",
+		"purpose": "Shows the details of a group: admins, whether the owner is connected, clicks, invite and campaign links, and whether it is full."
+	},
+	"group.actions": {
+		"name": "List the session actions on a group",
+		"purpose": "Use it to see the history of actions run on a group and their result, for example to understand why its name or its admins changed."
+	},
+	"group.messages": {
+		"name": "List the messages sent to a group",
+		"purpose": "Shows the messages that were sent to a group and the scheduled send each one came from."
+	},
+	"group.scheduledMessages": {
+		"name": "List the scheduled sends that include a group",
+		"purpose": "Use it to know which scheduled sends include a group, for example before changing it."
+	},
+	"campaign.participants": {
+		"name": "List a campaign's participants",
+		"purpose": "Lists the participants of a campaign, with a search by phone and whether they are admins."
+	},
+	"campaign.campaignParticipants": {
+		"name": "List participants with their current group",
+		"purpose": "Use it to know which group each participant of a campaign is in, when they joined or left and whether they are still active. Meant for syncing members with your CRM."
+	},
+	"campaign.participantEvents": {
+		"name": "List a campaign's joins and leaves",
+		"purpose": "Gets the log of joins and leaves of a whole campaign, with date, group and country, filtered by event type, dates or groups."
+	},
+	"group.participants": {
+		"name": "List a group's participants",
+		"purpose": "Use it to list the participants of a group, filtered by phone, whether they are admins or whether they can be promoted to admin."
+	},
+	"group.participantEvents": {
+		"name": "List a group's joins and leaves",
+		"purpose": "Shows who joined and left a group and when, with country and filters by date or event type."
+	},
+	"device.index": {
+		"name": "List numbers",
+		"purpose": "Lists your WhatsApp numbers with their provider, whether they are connected and active, and their health, and gets the IDs the other operations use."
+	},
+	"device.me": {
+		"name": "Get a number's WhatsApp profile",
+		"purpose": "Use it to read the WhatsApp profile of one of your numbers as the provider reports it."
+	},
+	"device.checkPhone": {
+		"name": "Check whether a phone has WhatsApp",
+		"purpose": "Checks whether a phone has WhatsApp before adding it as a contact or writing to it, to avoid failed sends."
+	},
+	"device.show": {
+		"name": "Get a number",
+		"purpose": "Use it to see a number's data: alias, provider, WABA, username, whether it is connected and its health."
+	},
+	"device.update": {
+		"name": "Update a number",
+		"purpose": "Updates a number's data (alias, color, image) or completes its WhatsApp Business data, such as the WABA and phone number ID, and the Conversions API consent."
+	},
+	"device.destroy": {
+		"name": "Delete a number",
+		"purpose": "Use it to remove a number from the account for good. It cannot be undone and needs the accounts:operate permission."
+	},
+	"device.reset": {
+		"name": "Restart a number's session",
+		"purpose": "Restarts a number's WhatsApp session from scratch; the QR code has to be scanned again afterwards. It cannot be undone and needs accounts:operate."
+	},
+	"device.updateWebhookReceived": {
+		"name": "Set the received messages webhook",
+		"purpose": "Sets on a number the received messages notice that Funnelchat uses to get them."
+	},
+	"device.updateWebhookReceivedAndDelivery": {
+		"name": "Set the received and delivery webhook",
+		"purpose": "Sets on a number the received messages and delivery receipt notices that Funnelchat uses."
+	},
+	"device.clean": {
+		"name": "Clean a number",
+		"purpose": "Cleans a number's WhatsApp session: the QR code has to be scanned again afterwards. It cannot be undone and needs accounts:operate."
+	},
+	"device.chats": {
+		"name": "List a number's chats",
+		"purpose": "Use it to list the chats a number has on WhatsApp according to the provider, with a search by phone and a filter by type."
+	},
+	"device.openConversations": {
+		"name": "Check which phones have an open conversation",
+		"purpose": "Checks in bulk, up to 100 phones per call, which ones have an open conversation with a number, for example before deciding how to reach them."
+	},
+	"device.messageQueue": {
+		"name": "Get the message queue",
+		"purpose": "Use it to see the messages waiting in a number's queue, for example to understand why something has not gone out yet."
+	},
+	"device.deleteMessageQueue": {
+		"name": "Delete messages from the queue",
+		"purpose": "Removes specific messages from the queue, by their UID, before they are sent, for example one queued by mistake."
+	},
+	"device.getQueueCount": {
+		"name": "Count the messages in the queue",
+		"purpose": "Use it to monitor how many messages a number has queued, for example to detect jams."
+	},
+	"device.clearQueue": {
+		"name": "Empty the message queue",
+		"purpose": "Empties a number's whole queue when piled-up sends have to be stopped. It drops the messages without a record; it cannot be undone and needs accounts:operate."
+	},
+	"device.status": {
+		"name": "Get the connection status",
+		"purpose": "Use it to check a number's connection status, for example before starting sends or to monitor your numbers."
+	},
+	"device.extensionToken": {
+		"name": "Get a token for the WhatsApp Web extension",
+		"purpose": "Gets a single-use, short-lived code with which the Z-API Conector Chrome extension moves a WhatsApp Web session to this number. Z-API numbers only."
+	},
+	"deviceHealth.show": {
+		"name": "Get a number's health",
+		"purpose": "Use it to see the health of a WhatsApp Cloud number (status, identity, throughput level and change history) from the last stored data, without asking Meta."
+	},
+	"deviceHealth.refresh": {
+		"name": "Refresh a number's health",
+		"purpose": "Asks Meta for a number's current health; the response says whether it was really refreshed or returned the previous data because of the 60-second wait or another refresh in progress."
+	},
+	"deviceConnectionEvent.index": {
+		"name": "Get the connection history",
+		"purpose": "Use it to see when a number connected and disconnected, newest event first, for example to investigate outages."
+	},
+	"deviceLogs.index": {
+		"name": "List a number's logs",
+		"purpose": "Use it to debug one number: its activity logs with method, HTTP code, duration and errors in a time window, newest first."
+	},
+	"deviceLogs.health": {
+		"name": "Get the logs health signal",
+		"purpose": "A quick check of a number: looks at its last 5 requests that are not sends and returns a verdict (healthy, check or attention)."
+	},
+	"deviceFleetLogs.index": {
+		"name": "List the logs of all numbers",
+		"purpose": "Reviews in one place the activity logs of all your numbers (method, URL, HTTP code, duration, errors) in a time window. Meant for diagnosing failures."
+	},
+	"deviceUsername.show": {
+		"name": "Get the username",
+		"purpose": "Use it to see the WhatsApp username reserved for a number, both the one Meta reports and the one stored in Funnelchat."
+	},
+	"deviceUsername.store": {
+		"name": "Set the username",
+		"purpose": "Reserves a WhatsApp username at Meta for one of your numbers."
+	},
+	"deviceUsername.suggestions": {
+		"name": "Suggest usernames",
+		"purpose": "Use it to ask Meta for username suggestions before reserving one."
+	},
+	"deviceDisconnectSurvey.show": {
+		"name": "Get the disconnection survey",
+		"purpose": "Tells whether a number has the survey about the reason for its disconnection pending."
+	},
+	"deviceDisconnectSurvey.store": {
+		"name": "Answer the disconnection survey",
+		"purpose": "Use it to record why a number disconnected, answering the disconnection survey with one of the predefined reasons."
+	},
+	"webhookEventCatalog.index": {
+		"name": "List event types",
+		"purpose": "Use it to know the catalog of events of the account and its numbers, which are emitted already and which are planned, with an example body of each."
+	},
+	"webhookEndpoint.index": {
+		"name": "List webhooks",
+		"purpose": "Use it to see the account's webhook endpoints, which events each one is subscribed to, its status and its health."
+	},
+	"webhookEndpoint.store": {
+		"name": "Create a webhook",
+		"purpose": "Lets your system know when a number connects or disconnects, without polling the API. Register an HTTPS URL and keep the secret: it is shown only once."
+	},
+	"webhookEndpoint.show": {
+		"name": "Get a webhook",
+		"purpose": "Use it to see an endpoint's configuration: URL, events, status, disabling reason and when the secret was rotated."
+	},
+	"webhookEndpoint.update": {
+		"name": "Update a webhook",
+		"purpose": "Changes an endpoint's URL or description, or turns the whole endpoint on and off without losing its subscriptions."
+	},
+	"webhookEndpoint.destroy": {
+		"name": "Delete a webhook",
+		"purpose": "Use it to remove an endpoint; its subscriptions and delivery history are deleted with it."
+	},
+	"webhookEndpointEvent.update": {
+		"name": "Choose a webhook's events",
+		"purpose": "Sets which event types an endpoint is subscribed to."
+	},
+	"webhookDelivery.index": {
+		"name": "List a webhook's deliveries",
+		"purpose": "Use it to debug a webhook endpoint: each delivery attempt, newest first."
+	}
+}

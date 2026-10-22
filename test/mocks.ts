@@ -9,7 +9,10 @@ import type {
 } from 'n8n-workflow';
 import { vi } from 'vitest';
 
-/** A simulated API response. No network: every request is answered from this queue, in order. */
+/**
+ * A simulated API response. No network: every request is answered from this queue, in order. The API's own messages
+ * in the tests are in Spanish, as the API answers them.
+ */
 export interface FakeResponse {
 	status?: number;
 	headers?: IDataObject;
@@ -40,7 +43,8 @@ function fakeHttp(responses: FakeResponse[]) {
 				options: JSON.parse(JSON.stringify(options)) as IHttpRequestOptions,
 			});
 			const next = queue.shift();
-			if (!next) throw new Error(`Pedido sin respuesta simulada: ${options.method} ${options.url}`);
+			if (!next)
+				throw new Error(`Request without a simulated response: ${options.method} ${options.url}`);
 			return { statusCode: next.status ?? 200, headers: next.headers ?? {}, body: next.body };
 		},
 	);
@@ -63,7 +67,7 @@ export function executeContext(opts: {
 		getNode: () => NODE,
 		continueOnFail: () => opts.continueOnFail ?? false,
 		getCredentials: async () => ({
-			apiKey: 'clave-de-prueba',
+			apiKey: 'test-key',
 			environment: opts.environment ?? 'production',
 			...(opts.baseUrl !== undefined ? { baseUrl: opts.baseUrl } : {}),
 		}),
@@ -92,14 +96,14 @@ export function hookContext(opts: {
 		getNodeWebhookUrl: () => opts.webhookUrl ?? WEBHOOK_URL,
 		getNodeParameter: (name: string, fallback?: unknown) =>
 			name in opts.params ? opts.params[name] : fallback,
-		getWorkflow: () => ({ id: 'wf-1', name: opts.workflowName ?? 'Mi flujo', active: true }),
+		getWorkflow: () => ({ id: 'wf-1', name: opts.workflowName ?? 'My workflow', active: true }),
 		getNode: () => ({
 			...NODE,
 			name: 'Funnelchat Trigger',
 			type: 'n8n-nodes-funnelchat.funnelchatTrigger',
 		}),
 		getCredentials: async () => ({
-			apiKey: 'clave-de-prueba',
+			apiKey: 'test-key',
 			environment: opts.environment ?? 'production',
 			...(opts.baseUrl !== undefined ? { baseUrl: opts.baseUrl } : {}),
 		}),
@@ -113,7 +117,7 @@ export function loadOptionsContext(responses: FakeResponse[]) {
 	const http = fakeHttp(responses);
 	const ctx = {
 		getNode: () => NODE,
-		getCredentials: async () => ({ apiKey: 'clave-de-prueba', environment: 'staging' }),
+		getCredentials: async () => ({ apiKey: 'test-key', environment: 'staging' }),
 		helpers: { httpRequestWithAuthentication: http.httpRequestWithAuthentication },
 	};
 	return { ctx: ctx as unknown as ILoadOptionsFunctions, calls: http.calls };

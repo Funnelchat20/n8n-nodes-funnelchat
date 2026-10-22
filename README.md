@@ -1,565 +1,581 @@
 # n8n-nodes-funnelchat
 
-Nodo comunitario de [n8n](https://n8n.io) para la API pública de Funnelchat. Con él armás flujos que trabajan con tu
-cuenta sin escribir código: sincronizar contactos desde un formulario o un CRM, responder mensajes, revisar el estado de
-tus números o reaccionar a lo que pasa en tu cuenta.
+[n8n](https://n8n.io) community node for the Funnelchat public API. With it you build workflows that work with your
+account without writing code: sync contacts from a form or a CRM, reply to messages, check the status of your numbers
+or react to what happens in your account.
 
-Trae tres piezas:
+It has three parts:
 
-- **Credencial «Funnelchat API»**: tu clave de API y el entorno (producción, staging o una URL propia, como el sandbox).
-- **Nodo «Funnelchat»**: las operaciones de la API agrupadas como en el portal: contactos, conversaciones y mensajes,
-  plantillas, formularios de WhatsApp, etiquetas, campos personalizados, grupos, números y webhooks. Se generan de la
-  especificación unificada y de lo que los dominios abrieron después.
-- **Nodo «Funnelchat Trigger»**: arranca un flujo con cada evento que Funnelchat manda por webhook, con la firma
-  verificada.
+- **"Funnelchat API" credential**: your API key and the environment (production, staging or a URL of your own, such
+  as the sandbox).
+- **"Funnelchat" node**: the API operations grouped as in the portal: contacts, conversations and messages,
+  templates, WhatsApp forms, tags, custom fields, groups, numbers and webhooks. They are generated from the unified
+  specification and from what the domains opened later.
+- **"Funnelchat Trigger" node**: starts a workflow with each event Funnelchat sends by webhook, with its signature
+  verified.
 
 > [!IMPORTANT]
-> **Estado: 0.1.0, listo para publicar y todavía sin publicar** en npm ni en el registro de nodos de n8n. Está al día
-> con la API que corre en production el 22-10-2026 (accounts `v1.4.24`, conversations `v1.18.10`). La API pública es
-> v0 y puede cambiar: ver [Fuentes y lo que falta verificar](#fuentes-y-lo-que-falta-verificar).
+> **Status: 0.1.0, ready to publish and not published yet** on npm or in n8n's node registry. It is up to date with the
+> API running in production on 2026-10-22 (accounts `v1.4.24`, conversations `v1.18.10`). The public API is v0 and
+> may change: see [Sources and what is left to verify](#sources-and-what-is-left-to-verify).
 
-Documentación de la API: [portal de desarrolladores de Funnelchat](https://developers-portal.funnelchat.app/docs/).
+API documentation: [Funnelchat developer portal](https://developers-portal.funnelchat.app/docs/).
 
-## Contenido
+## Contents
 
-- [Instalación](#instalación)
-- [Ejemplo mínimo](#ejemplo-mínimo)
-- [Credencial](#credencial)
-- [Nodo «Funnelchat»](#nodo-funnelchat)
-- [Disparador «Funnelchat Trigger»](#disparador-funnelchat-trigger)
-- [Ejemplos de flujos](#ejemplos-de-flujos)
-- [Probar con el sandbox](#probar-con-el-sandbox)
-- [Cómo regenerar](#cómo-regenerar)
-- [Desarrollo](#desarrollo)
-- [Fuentes y lo que falta verificar](#fuentes-y-lo-que-falta-verificar)
+- [Installation](#installation)
+- [Minimal example](#minimal-example)
+- [Credential](#credential)
+- [The Funnelchat node](#the-funnelchat-node)
+- [The Funnelchat Trigger](#the-funnelchat-trigger)
+- [Workflow examples](#workflow-examples)
+- [Testing with the sandbox](#testing-with-the-sandbox)
+- [Regenerating](#regenerating)
+- [Development](#development)
+- [Sources and what is left to verify](#sources-and-what-is-left-to-verify)
 
-## Instalación
+## Installation
 
-### Desde n8n (nodos comunitarios)
+### From n8n (community nodes)
 
-En n8n self-hosted: **Settings → Community nodes → Install** y escribí `n8n-nodes-funnelchat`. n8n lo baja del registro
-público de npm y lo deja disponible en el panel de nodos: buscá «Funnelchat».
+In self-hosted n8n: **Settings → Community nodes → Install** and type `n8n-nodes-funnelchat`. n8n downloads it from
+the public npm registry and makes it available in the nodes panel: search for "Funnelchat".
 
-En n8n Cloud solo aparecen los nodos que n8n verificó. El paquete está preparado para eso (modo estricto, sin
-dependencias en tiempo de ejecución, lint de n8n en verde), pero todavía no se envió a verificar.
+n8n Cloud only shows the nodes n8n has verified. The package is ready for that (strict mode, no runtime dependencies,
+n8n lint passing), but it has not been submitted for verification yet.
 
-### Con npm, en la carpeta de nodos de n8n
+### With npm, in n8n's nodes folder
 
 ```bash
 mkdir -p ~/.n8n/nodes && cd ~/.n8n/nodes
-npm init -y                       # solo la primera vez
+npm init -y                       # only the first time
 npm install n8n-nodes-funnelchat
 ```
 
-Reiniciá n8n. Con Docker, esa carpeta es `/home/node/.n8n/nodes` dentro del volumen de n8n. Se probó con n8n 2.25.7
-(imagen `n8nio/n8n`).
+Restart n8n. With Docker, that folder is `/home/node/.n8n/nodes` inside n8n's volume. It was tested with n8n 2.25.7
+(image `n8nio/n8n`).
 
-### Desde el código
+### From the source code
 
 ```bash
 git clone https://github.com/Funnelchat20/n8n-nodes-funnelchat.git
 cd n8n-nodes-funnelchat
 npm ci
 npm run build
-npm pack            # genera n8n-nodes-funnelchat-0.1.0.tgz
+npm pack            # creates n8n-nodes-funnelchat-0.1.0.tgz
 ```
 
-Y en la carpeta de nodos de n8n, `npm install /ruta/a/n8n-nodes-funnelchat-0.1.0.tgz`.
+Then, in n8n's nodes folder, `npm install /path/to/n8n-nodes-funnelchat-0.1.0.tgz`.
 
-## Ejemplo mínimo
+## Minimal example
 
-Un flujo que le manda un mensaje a un contacto y guarda el id del mensaje:
+A workflow that sends a message to a contact and keeps the message ID:
 
-1. Creá la credencial **Funnelchat API** con tu clave (ver [Credencial](#credencial)).
-2. Agregá el nodo **Funnelchat** — Recurso «Conversaciones y mensajes», operación «Enviar un mensaje a un contacto»:
-   - ID del contacto (en la ruta y en el cuerpo): `2001`
-   - ID del número: el id del número que envía, de «Números → Listar números».
-   - Campos adicionales → Teléfono: el del contacto, `5491100000000`; Texto: `Hola`; Referencia propia: `pedido-981`.
-3. Ejecutalo. Sale un ítem con el mensaje en cola:
+1. Create the **Funnelchat API** credential with your key (see [Credential](#credential)).
+2. Add the **Funnelchat** node — resource "Conversations and Messages", operation "Send a message to a contact":
+   - Contact ID (in the route and in the body): `2001`
+   - Number ID: the ID of the number that sends, from "Numbers → List numbers".
+   - Additional Fields → Phone: the contact's, `5491100000000`; Text: `Hello`; Client Reference: `order-981`.
+3. Run it. You get one item with the queued message:
 
 ```json
 {
-  "id": 1001,
-  "contact_id": 2001,
-  "device_id": 7,
-  "direction": "outbound",
-  "type": "text",
-  "status": "queued",
-  "error": null,
-  "client_reference": "pedido-981",
-  "created_at": "2026-10-22T13:05:00Z",
-  "updated_at": "2026-10-22T13:05:00Z"
+	"id": 1001,
+	"contact_id": 2001,
+	"device_id": 7,
+	"direction": "outbound",
+	"type": "text",
+	"status": "queued",
+	"error": null,
+	"client_reference": "order-981",
+	"created_at": "2026-10-22T13:05:00Z",
+	"updated_at": "2026-10-22T13:05:00Z"
 }
 ```
 
-El resultado (`sent`, `delivered`, `read` o `failed`) llega después: con el **Funnelchat Trigger** y el evento
-`message.status_changed`, que trae tu `client_reference`, o leyendo el mensaje con «Ver un mensaje».
+The result (`sent`, `delivered`, `read` or `failed`) comes later: with the **Funnelchat Trigger** and the
+`message.status_changed` event, which carries your `client_reference`, or by reading the message with "Get a message".
 
-## Credencial
+## Credential
 
-1. En Funnelchat, entrá a la pantalla **Desarrolladores** y creá una clave con los permisos que vas a usar. La clave se
-   muestra una sola vez y tiene la forma `<id>|fc_live_…`.
-2. En n8n, creá una credencial **Funnelchat API**:
-   - **Clave de API**: la clave completa, incluido el `<id>|` del principio. Se manda como
-     `Authorization: Bearer <clave>`.
-   - **Entorno**: **Producción** (`https://api.funnelchat.com`), **Staging** (`https://api-staging.funnelchat.com`) o
-     **Personalizado**, con una **URL base** propia: por ejemplo el sandbox local, `http://localhost:4010` (ver
-     [Probar con el sandbox](#probar-con-el-sandbox)). La URL base empieza con `http://` o `https://`, no termina en `/` y
-     no lleva `/api/v1`: el nodo lo agrega. Si no cumple eso, la prueba de la credencial falla y el nodo no manda nada.
-3. Al guardar, n8n prueba la credencial con `GET /api/v1/me` («Ver mi cuenta»). **Esa prueba pide el permiso
-   `accounts:read`**: si tu clave no lo tiene, la prueba falla aunque la clave sirva para lo demás. Podés guardarla igual.
+1. In Funnelchat, go to the **Developers** screen and create a key with the permissions you will use. The key is shown
+   only once and looks like `<id>|fc_live_…`.
+2. In n8n, create a **Funnelchat API** credential:
+   - **API Key**: the full key, including the leading `<id>|`. It is sent as `Authorization: Bearer <key>`.
+   - **Environment**: **Production** (`https://api.funnelchat.com`), **Staging** (`https://api-staging.funnelchat.com`)
+     or **Custom**, with a **Base URL** of your own: for example the local sandbox, `http://localhost:4010` (see
+     [Testing with the sandbox](#testing-with-the-sandbox)). The base URL starts with `http://` or `https://`, does not
+     end in `/` and has no `/api/v1`: the node adds it. Otherwise the credential test fails and the node sends nothing.
+3. When you save it, n8n tests the credential with `GET /api/v1/me` ("Get my account"). **That test needs the
+   `accounts:read` permission**: if your key does not have it, the test fails even if the key works for everything
+   else. You can save it anyway.
 
-Cada operación del nodo dice qué permiso pide (`conversations:read`, `conversations:write`, `conversations:send`,
-`communities:read`, `accounts:read`, `accounts:write`, `accounts:operate`, `webhooks:read` o `webhooks:write`). Si falta, la API responde
-`403 permission_denied` y el nodo muestra el `message`, que dice cuál falta. Todas las claves son `fc_live_`: lo que hace
-el nodo actúa sobre datos y números reales.
+Each operation of the node says which permission it needs (`conversations:read`, `conversations:write`,
+`conversations:send`, `communities:read`, `accounts:read`, `accounts:write`, `accounts:operate`, `webhooks:read` or
+`webhooks:write`). If it is missing, the API answers `403 permission_denied` and the node shows the `message`, which
+says which one is missing. All keys are `fc_live_`: what the node does acts on real data and real numbers.
 
-## Nodo «Funnelchat»
+## The Funnelchat node
 
-Elegís un **recurso** y una **operación**. Los nombres son los del portal, y cada operación muestra en su descripción
-para qué sirve y qué permiso pide.
+You choose a **resource** and an **operation**. Each operation shows in its description what it is for and which
+permission it needs.
 
-- **Campos.** Arriba van los obligatorios (por ejemplo, «ID del contacto»). Los opcionales se agregan desde **Filtros**
-  (en las consultas) o **Campos adicionales** (en el cuerpo). Las listas se escriben separadas por comas o llegan como
-  lista desde una expresión. Los campos con estructura (objetos, listas de objetos) se escriben en JSON.
-- **Cuerpo en JSON.** En las operaciones que mandan un cuerpo, **Enviar el cuerpo como JSON** te deja escribirlo
-  completo, tal como lo describe la referencia del portal. Sirve para mandar `null` o estructuras complejas.
-- **Listados.** Los listados paginados tienen **Devolver todo**: si está apagado, trae hasta el **Límite**. El nodo pide
-  las páginas solo (por número de página o por cursor, según la ruta) y devuelve un ítem por elemento.
-- **Respuestas.** Un objeto sale como un ítem; una respuesta sin cuerpo (`204`, `202`) sale como
+- **Fields.** The required ones are at the top (for example, "Contact ID"). The optional ones are added from
+  **Filters** (in queries) or **Additional Fields** (in the body). Lists are typed separated by commas or come as a list
+  from an expression. Structured fields (objects, lists of objects) are written in JSON.
+- **JSON body.** In the operations that send a body, **Send Body as JSON** lets you write it in full, as the portal's
+  reference describes it. It is useful to send `null` or complex structures.
+- **Lists.** Paginated lists have **Return All**: when it is off, they bring up to the **Limit**. The node asks for the
+  pages itself (by page number or by cursor, depending on the route) and returns one item per element.
+- **Responses.** An object comes out as one item; a response without a body (`204`, `202`) comes out as
   `{ "success": true }`.
-- **Envíos.** Con una clave, un envío (mensaje, plantilla, tarjeta de contacto, formulario) responde `200` con el
-  **mensaje en cola** (`status: "queued"`) y su `id`, y el nodo devuelve ese mensaje como ítem (uno por mensaje en la
-  tarjeta de contacto; uno por destino en el reenvío). **Referencia propia** (`client_reference`, hasta 64 caracteres
-  ASCII sin espacios) vuelve en el mensaje y en `message.status_changed`. Antes de salir, cada envío pasa las guardas de
-  WhatsApp: ventana de 24 horas (`422 window_closed`, salvo plantillas), ritmo (`429 rate_limited`), antibloqueo
-  (`422 antiblock_duplicate_content`, `antiblock_unanswered_limit`) y contactos activos del mes
+- **Sends.** With an API key, a send (message, template, contact card, form) answers `200` with the **queued message**
+  (`status: "queued"`) and its `id`, and the node returns that message as an item (one per message for contact cards;
+  one per target for a forward). **Client Reference** (`client_reference`, up to 64 ASCII characters without spaces)
+  comes back in the message and in `message.status_changed`. Before going out, each send goes through WhatsApp's
+  guards: the 24-hour window (`422 window_closed`, except templates), pace (`429 rate_limited`), anti-blocking
+  (`422 antiblock_duplicate_content`, `antiblock_unanswered_limit`) and monthly active contacts
   (`429 mac_lockout_24h`, `mac_limit_reached`).
-- **Archivo por URL.** En «Enviar un mensaje a un contacto» y «Enviar un mensaje», **Archivo** acepta una URL, también
-  firmada o sin extensión: en ese caso indicá **Tipo de archivo** (`image`, `video`, `audio`, `document` o `sticker`)
-  y, para un documento, **Nombre del archivo**. Si falta, la API responde `422` en `file_type` o `file_name`; una
-  extensión que WhatsApp no admite, `415`.
-- **Errores.** El error del nodo lleva el `message` de la API y, en la descripción, su `error` (código estable) y el
-  **`X-Request-Id`** de la respuesta: citalo si consultás a soporte. Un `422` lista los campos con problemas. Un `429`
-  con `Retry-After` de hasta 60 segundos se reintenta solo, hasta 3 veces; si la espera es más larga, el error dice
-  cuánto esperar. La entrada de la API tiene errores propios: `404 route_not_found`, `502 origin_unreachable` y
-  `500 edge_misconfigured`. **Un `502` en una escritura se trata como un timeout**: puede haberse aplicado, así que
-  leé el estado antes de repetirla (no actives **Retry On Fail** en envíos). Con **Continue On Fail**, el ítem sale
-  como `{ "error": "<código>", "message": "<texto>", "httpCode": "<estado>", "requestId": "<X-Request-Id>" }`.
-- **Avisos (⚠).** Algunas operaciones muestran un aviso arriba de los campos: lo que el código de la API exige y la
-  especificación no dice, que una ruta todavía no está abierta a claves o que la operación es irreversible.
+- **File by URL.** In "Send a message to a contact" and "Send a message", **File (URL)** accepts a URL, also signed or
+  without an extension: in that case set **File Type** (`image`, `video`, `audio`, `document` or `sticker`) and, for a
+  document, **File Name**. Without them the API answers `422` on `file_type` or `file_name`; an extension WhatsApp does
+  not support, `415`.
+- **Errors.** The node's error carries the API's `message` and, in its description, its `error` (stable code) and the
+  response's **`X-Request-Id`**: quote it if you contact support. A `422` lists the fields with problems. A `429` with a
+  `Retry-After` of up to 60 seconds is retried on its own, up to 3 times; if the wait is longer, the error says how long
+  to wait. The API's entry point has its own errors: `404 route_not_found`, `502 origin_unreachable` and
+  `500 edge_misconfigured`. **A `502` on a write is treated as a timeout**: it may have been applied, so read the state
+  before repeating it (do not turn on **Retry On Fail** for sends). With **Continue On Fail**, the item comes out as
+  `{ "error": "<code>", "message": "<text>", "httpCode": "<status>", "requestId": "<X-Request-Id>" }`.
+- **Notices (⚠).** Some operations show a notice above their fields: what the API's code requires and the
+  specification does not say, that a route is not open to API keys yet, or that the operation is irreversible.
 
-El nodo también se puede usar como herramienta de un agente de IA de n8n.
+The node can also be used as a tool of an n8n AI agent.
 
-### Operaciones
+### Operations
 
-<!-- operaciones:inicio (generado por npm run generate) -->
+<!-- operations:start (generated by npm run generate) -->
 
-128 operaciones generadas de la especificación (sha256 `8bbbae569b4c`) y sus suplementos. Las marcadas con ⚠ tienen un aviso en el nodo (lo que el código exige y la especificación no dice, una ruta cerrada a claves u operación irreversible).
+128 operations generated from the specification (sha256 `8bbbae569b4c`) and its supplements. The ones marked ⚠ show a notice in the node (what the code requires and the specification does not say, a route closed to keys, or an irreversible operation).
 
-<details><summary><strong>Contactos</strong> (15)</summary>
+<details><summary><strong>Contacts</strong> (15)</summary>
 
-| Operación | Ruta | Permiso |
+| Operation | Route | Permission |
 |---|---|---|
-| Listar contactos «devolver todo» | `GET /api/v1/contacts` | `conversations:read` |
-| Crear un contacto | `POST /api/v1/contacts` | `conversations:write` |
-| Crear o actualizar un contacto | `POST /api/v1/contacts/update-or-create` | `conversations:write` |
-| Asignar un campo personalizado a contactos | `POST /api/v1/contacts/attach-custom-field` | `conversations:write` |
-| Quitar un campo personalizado de contactos | `POST /api/v1/contacts/detach-custom-field` | `conversations:write` |
-| Ver un contacto | `GET /api/v1/contacts/{contact}` | `conversations:read` |
-| Actualizar un contacto | `PUT /api/v1/contacts/{contact}` | `conversations:write` |
-| Listar las etiquetas de un contacto «devolver todo» | `GET /api/v1/contacts/{contact}/tags` | `conversations:read` |
-| Listar los campos personalizados de un contacto «devolver todo» | `GET /api/v1/contacts/{contact}/custom-fields` | `conversations:read` |
-| Ver la ventana de 24 horas de un contacto | `GET /api/v1/contacts/{contact}/meta-window` | `conversations:read` |
-| Listar los contactos de un número «devolver todo» | `GET /api/v1/devices/{device}/contacts` | `conversations:read` |
-| Eliminar contactos | `POST /api/v1/contacts/delete` | `conversations:write` |
-| Listar las notas de un contacto «devolver todo» | `GET /api/v1/contacts/{contact}/notes` | `conversations:read` |
-| Agregar una nota a un contacto | `POST /api/v1/contacts/{contact}/notes` | `conversations:write` |
-| Eliminar una nota | `DELETE /api/v1/contacts/{contact}/notes/{note}` | `conversations:write` |
+| List contacts "return all" | `GET /api/v1/contacts` | `conversations:read` |
+| Create a contact | `POST /api/v1/contacts` | `conversations:write` |
+| Create or update a contact | `POST /api/v1/contacts/update-or-create` | `conversations:write` |
+| Set a custom field on contacts | `POST /api/v1/contacts/attach-custom-field` | `conversations:write` |
+| Remove a custom field from contacts | `POST /api/v1/contacts/detach-custom-field` | `conversations:write` |
+| Get a contact | `GET /api/v1/contacts/{contact}` | `conversations:read` |
+| Update a contact | `PUT /api/v1/contacts/{contact}` | `conversations:write` |
+| List a contact's tags "return all" | `GET /api/v1/contacts/{contact}/tags` | `conversations:read` |
+| List a contact's custom fields "return all" | `GET /api/v1/contacts/{contact}/custom-fields` | `conversations:read` |
+| Get a contact's 24-hour window | `GET /api/v1/contacts/{contact}/meta-window` | `conversations:read` |
+| List a number's contacts "return all" | `GET /api/v1/devices/{device}/contacts` | `conversations:read` |
+| Delete contacts | `POST /api/v1/contacts/delete` | `conversations:write` |
+| List a contact's notes "return all" | `GET /api/v1/contacts/{contact}/notes` | `conversations:read` |
+| Add a note to a contact | `POST /api/v1/contacts/{contact}/notes` | `conversations:write` |
+| Delete a note | `DELETE /api/v1/contacts/{contact}/notes/{note}` | `conversations:write` |
 
 </details>
 
-<details><summary><strong>Conversaciones y mensajes</strong> (18)</summary>
+<details><summary><strong>Conversations and Messages</strong> (18)</summary>
 
-| Operación | Ruta | Permiso |
+| Operation | Route | Permission |
 |---|---|---|
-| Listar conversaciones «devolver todo» | `GET /api/v1/conversations` | `conversations:read` |
-| Contar conversaciones sin leer | `GET /api/v1/conversations/count/unread` | `conversations:read` |
-| Contar conversaciones abiertas | `GET /api/v1/conversations/count/open` | `conversations:read` |
-| Contar conversaciones cerradas | `GET /api/v1/conversations/count/closed` | `conversations:read` |
-| Contar todas las conversaciones | `GET /api/v1/conversations/count/all` | `conversations:read` |
-| Marcar todas como leídas | `POST /api/v1/conversations/mark-all-read` | `conversations:write` |
-| Marcar todas como no leídas | `POST /api/v1/conversations/mark-all-unread` | `conversations:write` |
-| Actualizar la conversación de un contacto | `PUT /api/v1/contacts/{contact}/update` | `conversations:write` |
-| Enviar un mensaje a un contacto ⚠ | `POST /api/v1/contacts/{contact}/message` | `conversations:send` |
-| Listar los mensajes de un contacto «devolver todo» | `GET /api/v1/contacts/{contactId}/messages` | `conversations:read` |
-| Enviar un mensaje ⚠ | `POST /api/v1/message/send-message` | `conversations:send` |
-| Ver un mensaje | `GET /api/v1/contacts/{contact}/messages/{message}` | `conversations:read` |
-| Reaccionar a un mensaje ⚠ | `PUT /api/v1/contacts/{contact}/messages/{message}/reaction` | `conversations:send` |
-| Quitar una reacción ⚠ | `DELETE /api/v1/contacts/{contact}/messages/{message}/reaction` | `conversations:send` |
-| Reenviar un mensaje ⚠ | `POST /api/v1/contacts/{contact}/messages/{message}/forward` | `conversations:send` |
-| Enviar una encuesta ⚠ | `POST /api/v1/contacts/{contact}/message/poll` | `conversations:send` |
-| Enviar una invitación a un evento ⚠ | `POST /api/v1/contacts/{contact}/message/event` | `conversations:send` |
-| Enviar una tarjeta de contacto ⚠ | `POST /api/v1/contacts/{contact}/message/contact-card` | `conversations:send` |
+| List conversations "return all" | `GET /api/v1/conversations` | `conversations:read` |
+| Count unread conversations | `GET /api/v1/conversations/count/unread` | `conversations:read` |
+| Count open conversations | `GET /api/v1/conversations/count/open` | `conversations:read` |
+| Count closed conversations | `GET /api/v1/conversations/count/closed` | `conversations:read` |
+| Count all conversations | `GET /api/v1/conversations/count/all` | `conversations:read` |
+| Mark all as read | `POST /api/v1/conversations/mark-all-read` | `conversations:write` |
+| Mark all as unread | `POST /api/v1/conversations/mark-all-unread` | `conversations:write` |
+| Update a contact's conversation | `PUT /api/v1/contacts/{contact}/update` | `conversations:write` |
+| Send a message to a contact ⚠ | `POST /api/v1/contacts/{contact}/message` | `conversations:send` |
+| List a contact's messages "return all" | `GET /api/v1/contacts/{contactId}/messages` | `conversations:read` |
+| Send a message ⚠ | `POST /api/v1/message/send-message` | `conversations:send` |
+| Get a message | `GET /api/v1/contacts/{contact}/messages/{message}` | `conversations:read` |
+| React to a message ⚠ | `PUT /api/v1/contacts/{contact}/messages/{message}/reaction` | `conversations:send` |
+| Remove a reaction ⚠ | `DELETE /api/v1/contacts/{contact}/messages/{message}/reaction` | `conversations:send` |
+| Forward a message ⚠ | `POST /api/v1/contacts/{contact}/messages/{message}/forward` | `conversations:send` |
+| Send a poll ⚠ | `POST /api/v1/contacts/{contact}/message/poll` | `conversations:send` |
+| Send an event invitation ⚠ | `POST /api/v1/contacts/{contact}/message/event` | `conversations:send` |
+| Send a contact card ⚠ | `POST /api/v1/contacts/{contact}/message/contact-card` | `conversations:send` |
 
 </details>
 
-<details><summary><strong>Plantillas</strong> (7)</summary>
+<details><summary><strong>Templates</strong> (7)</summary>
 
-| Operación | Ruta | Permiso |
+| Operation | Route | Permission |
 |---|---|---|
-| Listar plantillas «devolver todo» | `GET /api/v1/templates` | `conversations:read` |
-| Crear una plantilla | `POST /api/v1/templates` | `conversations:write` |
-| Ver una plantilla | `GET /api/v1/templates/{template}` | `conversations:read` |
-| Actualizar una plantilla | `PUT /api/v1/templates/{template}` | `conversations:write` |
-| Ver los botones de respuesta rápida de una plantilla | `GET /api/v1/templates/{template}/quick-reply-buttons` | `conversations:read` |
-| Enviar una plantilla ⚠ | `POST /api/v1/devices/{device}/templates/{template}/send-template` | `conversations:send` |
-| Eliminar una plantilla de un número | `DELETE /api/v1/devices/{device}/templates/{template}` | `conversations:write` |
+| List templates "return all" | `GET /api/v1/templates` | `conversations:read` |
+| Create a template | `POST /api/v1/templates` | `conversations:write` |
+| Get a template | `GET /api/v1/templates/{template}` | `conversations:read` |
+| Update a template | `PUT /api/v1/templates/{template}` | `conversations:write` |
+| Get a template's quick reply buttons | `GET /api/v1/templates/{template}/quick-reply-buttons` | `conversations:read` |
+| Send a template ⚠ | `POST /api/v1/devices/{device}/templates/{template}/send-template` | `conversations:send` |
+| Delete a template from a number | `DELETE /api/v1/devices/{device}/templates/{template}` | `conversations:write` |
 
 </details>
 
-<details><summary><strong>Formularios de WhatsApp</strong> (19)</summary>
+<details><summary><strong>WhatsApp Forms</strong> (19)</summary>
 
-| Operación | Ruta | Permiso |
+| Operation | Route | Permission |
 |---|---|---|
-| Listar formularios «devolver todo» | `GET /api/v1/forms` | `conversations:read` |
-| Crear un formulario | `POST /api/v1/forms` | `conversations:write` |
-| Listar plantillas de formulario | `GET /api/v1/forms/templates` | `conversations:read` |
-| Ver un formulario | `GET /api/v1/forms/{id}` | `conversations:read` |
-| Guardar un formulario | `PUT /api/v1/forms/{id}` | `conversations:write` |
-| Eliminar un borrador de formulario | `DELETE /api/v1/forms/{id}` | `conversations:write` |
-| Ver los números de un formulario | `GET /api/v1/forms/{id}/numbers` | `conversations:read` |
-| Agregar un número a un formulario | `POST /api/v1/forms/{id}/numbers` | `conversations:write` |
-| Quitar un número de un formulario | `DELETE /api/v1/forms/{id}/numbers/{deviceId}` | `conversations:write` |
-| Reintentar la publicación en los números | `POST /api/v1/forms/{id}/numbers/retry` | `conversations:write` |
-| Crear una versión nueva de un formulario | `POST /api/v1/forms/{id}/versions` | `conversations:write` |
-| Validar un formulario en Meta | `POST /api/v1/forms/{id}/sync` | `conversations:write` |
-| Publicar un formulario | `POST /api/v1/forms/{id}/publish` | `conversations:write` |
-| Ver la definición publicada de un formulario | `GET /api/v1/forms/families/{familyId}/definition` | `conversations:read` |
-| Listar las versiones de un formulario «devolver todo» | `GET /api/v1/forms/families/{familyId}/versions` | `conversations:read` |
-| Listar las respuestas de un formulario «devolver todo» | `GET /api/v1/forms/families/{familyId}/responses` | `conversations:read` |
-| Ver una respuesta de un formulario | `GET /api/v1/forms/families/{familyId}/responses/{runId}` | `conversations:read` |
-| Ver las métricas de un formulario | `GET /api/v1/forms/families/{familyId}/metrics` | `conversations:read` |
-| Enviar un formulario a un contacto ⚠ | `POST /api/v1/contacts/{contact}/message/form` | `conversations:send` |
+| List forms "return all" | `GET /api/v1/forms` | `conversations:read` |
+| Create a form | `POST /api/v1/forms` | `conversations:write` |
+| List form templates | `GET /api/v1/forms/templates` | `conversations:read` |
+| Get a form | `GET /api/v1/forms/{id}` | `conversations:read` |
+| Save a form | `PUT /api/v1/forms/{id}` | `conversations:write` |
+| Delete a draft form | `DELETE /api/v1/forms/{id}` | `conversations:write` |
+| Get a form's numbers | `GET /api/v1/forms/{id}/numbers` | `conversations:read` |
+| Add a number to a form | `POST /api/v1/forms/{id}/numbers` | `conversations:write` |
+| Remove a number from a form | `DELETE /api/v1/forms/{id}/numbers/{deviceId}` | `conversations:write` |
+| Retry publishing on the numbers | `POST /api/v1/forms/{id}/numbers/retry` | `conversations:write` |
+| Create a new version of a form | `POST /api/v1/forms/{id}/versions` | `conversations:write` |
+| Validate a form with Meta | `POST /api/v1/forms/{id}/sync` | `conversations:write` |
+| Publish a form | `POST /api/v1/forms/{id}/publish` | `conversations:write` |
+| Get a form's published definition | `GET /api/v1/forms/families/{familyId}/definition` | `conversations:read` |
+| List a form's versions "return all" | `GET /api/v1/forms/families/{familyId}/versions` | `conversations:read` |
+| List a form's responses "return all" | `GET /api/v1/forms/families/{familyId}/responses` | `conversations:read` |
+| Get a form's response | `GET /api/v1/forms/families/{familyId}/responses/{runId}` | `conversations:read` |
+| Get a form's metrics | `GET /api/v1/forms/families/{familyId}/metrics` | `conversations:read` |
+| Send a form to a contact ⚠ | `POST /api/v1/contacts/{contact}/message/form` | `conversations:send` |
 
 </details>
 
-<details><summary><strong>Etiquetas</strong> (6)</summary>
+<details><summary><strong>Tags</strong> (6)</summary>
 
-| Operación | Ruta | Permiso |
+| Operation | Route | Permission |
 |---|---|---|
-| Listar etiquetas «devolver todo» | `GET /api/v1/tags` | `conversations:read` |
-| Crear una etiqueta | `POST /api/v1/tags` | `conversations:write` |
-| Ver una etiqueta | `GET /api/v1/tags/{tag}` | `conversations:read` |
-| Actualizar una etiqueta | `PUT /api/v1/tags/{tag}` | `conversations:write` |
-| Listar los contactos con una etiqueta «devolver todo» | `GET /api/v1/tags/{tag}/contacts` | `conversations:read` |
-| Eliminar etiquetas | `POST /api/v1/tags/delete` | `conversations:write` |
+| List tags "return all" | `GET /api/v1/tags` | `conversations:read` |
+| Create a tag | `POST /api/v1/tags` | `conversations:write` |
+| Get a tag | `GET /api/v1/tags/{tag}` | `conversations:read` |
+| Update a tag | `PUT /api/v1/tags/{tag}` | `conversations:write` |
+| List the contacts with a tag "return all" | `GET /api/v1/tags/{tag}/contacts` | `conversations:read` |
+| Delete tags | `POST /api/v1/tags/delete` | `conversations:write` |
 
 </details>
 
-<details><summary><strong>Campos personalizados</strong> (5)</summary>
+<details><summary><strong>Custom Fields</strong> (5)</summary>
 
-| Operación | Ruta | Permiso |
+| Operation | Route | Permission |
 |---|---|---|
-| Listar campos personalizados «devolver todo» | `GET /api/v1/custom-fields` | `conversations:read` |
-| Crear un campo personalizado | `POST /api/v1/custom-fields` | `conversations:write` |
-| Eliminar campos personalizados | `POST /api/v1/custom-fields/delete` | `conversations:write` |
-| Ver un campo personalizado | `GET /api/v1/custom-fields/{customField}` | `conversations:read` |
-| Actualizar un campo personalizado | `PUT /api/v1/custom-fields/{customField}` | `conversations:write` |
+| List custom fields "return all" | `GET /api/v1/custom-fields` | `conversations:read` |
+| Create a custom field | `POST /api/v1/custom-fields` | `conversations:write` |
+| Delete custom fields | `POST /api/v1/custom-fields/delete` | `conversations:write` |
+| Get a custom field | `GET /api/v1/custom-fields/{customField}` | `conversations:read` |
+| Update a custom field | `PUT /api/v1/custom-fields/{customField}` | `conversations:write` |
 
 </details>
 
-<details><summary><strong>Grupos</strong> (14)</summary>
+<details><summary><strong>Groups</strong> (14)</summary>
 
-| Operación | Ruta | Permiso |
+| Operation | Route | Permission |
 |---|---|---|
-| Listar grupos «devolver todo» | `GET /api/v1/groups` | `communities:read` |
-| Listar los grupos que administra un número «devolver todo» | `GET /api/v1/devices/{device}/groups` | `communities:read` |
-| Listar los grupos de anuncios de un número «devolver todo» | `GET /api/v1/devices/{device}/ad-groups` | `communities:read` |
-| Listar los canales de un número «devolver todo» | `GET /api/v1/devices/{device}/channels` | `communities:read` |
-| Ver los datos actuales de un grupo en WhatsApp | `GET /api/v1/groups/{groupUid}/metadata` | `communities:read` |
-| Ver un grupo | `GET /api/v1/groups/{group}` | `communities:read` |
-| Listar las acciones de sesión sobre un grupo «devolver todo» | `GET /api/v1/groups/{group}/actions` | `communities:read` |
-| Listar los mensajes enviados a un grupo «devolver todo» | `GET /api/v1/groups/{group}/messages` | `communities:read` |
-| Listar los envíos programados que incluyen un grupo «devolver todo» | `GET /api/v1/groups/{group}/scheduled-messages` | `communities:read` |
-| Listar los participantes de una campaña «devolver todo» | `GET /api/v1/campaigns/{campaign}/participants` | `communities:read` |
-| Listar los participantes con su grupo actual «devolver todo» | `GET /api/v1/campaigns/{campaign}/campaign-participants` | `communities:read` |
-| Listar entradas y salidas de una campaña «devolver todo» | `GET /api/v1/campaigns/{campaign}/participant-events` | `communities:read` |
-| Listar los participantes de un grupo «devolver todo» | `GET /api/v1/groups/participants` | `communities:read` |
-| Listar entradas y salidas de un grupo «devolver todo» | `GET /api/v1/groups/{group}/participant-events` | `communities:read` |
+| List groups "return all" | `GET /api/v1/groups` | `communities:read` |
+| List the groups a number manages "return all" | `GET /api/v1/devices/{device}/groups` | `communities:read` |
+| List a number's announcement groups "return all" | `GET /api/v1/devices/{device}/ad-groups` | `communities:read` |
+| List a number's channels "return all" | `GET /api/v1/devices/{device}/channels` | `communities:read` |
+| Get a group's current data on WhatsApp | `GET /api/v1/groups/{groupUid}/metadata` | `communities:read` |
+| Get a group | `GET /api/v1/groups/{group}` | `communities:read` |
+| List the session actions on a group "return all" | `GET /api/v1/groups/{group}/actions` | `communities:read` |
+| List the messages sent to a group "return all" | `GET /api/v1/groups/{group}/messages` | `communities:read` |
+| List the scheduled sends that include a group "return all" | `GET /api/v1/groups/{group}/scheduled-messages` | `communities:read` |
+| List a campaign's participants "return all" | `GET /api/v1/campaigns/{campaign}/participants` | `communities:read` |
+| List participants with their current group "return all" | `GET /api/v1/campaigns/{campaign}/campaign-participants` | `communities:read` |
+| List a campaign's joins and leaves "return all" | `GET /api/v1/campaigns/{campaign}/participant-events` | `communities:read` |
+| List a group's participants "return all" | `GET /api/v1/groups/participants` | `communities:read` |
+| List a group's joins and leaves "return all" | `GET /api/v1/groups/{group}/participant-events` | `communities:read` |
 
 </details>
 
-<details><summary><strong>Números</strong> (29)</summary>
+<details><summary><strong>Numbers</strong> (29)</summary>
 
-| Operación | Ruta | Permiso |
+| Operation | Route | Permission |
 |---|---|---|
-| Listar números «devolver todo» | `GET /api/v1/devices` | `accounts:read` |
-| Ver el perfil de WhatsApp de un número | `GET /api/v1/devices/{device}/me` | `accounts:read` |
-| Verificar si un teléfono tiene WhatsApp | `GET /api/v1/devices/{device}/check-phone` | `accounts:read` |
-| Ver un número | `GET /api/v1/devices/{device}` | `accounts:read` |
-| Actualizar un número | `PUT /api/v1/devices/{device}` | `accounts:write` |
-| Eliminar un número ⚠ | `DELETE /api/v1/devices/{device}` | `accounts:operate` |
-| Reiniciar la sesión de un número ⚠ | `PUT /api/v1/devices/{device}/reset` | `accounts:operate` |
-| Configurar el webhook de mensajes recibidos | `PUT /api/v1/devices/{device}/update-webhook-received` | `accounts:write` |
-| Configurar el webhook de recibidos y entregas | `PUT /api/v1/devices/{device}/update-webhook-received-and-delivery` | `accounts:write` |
-| Limpiar un número ⚠ | `POST /api/v1/devices/{device}/clean` | `accounts:operate` |
-| Listar los chats de un número | `GET /api/v1/devices/{device}/chats` | `accounts:read` |
-| Ver qué teléfonos tienen conversación abierta | `GET /api/v1/devices/{device}/open-conversations` | `accounts:read` |
-| Ver la cola de mensajes | `GET /api/v1/devices/{device}/message-queue` | `accounts:read` |
-| Eliminar mensajes de la cola | `DELETE /api/v1/devices/{device}/message-queue` | `accounts:write` |
-| Contar los mensajes en la cola | `GET /api/v1/devices/{device}/message-queue/count` | `accounts:read` |
-| Vaciar la cola de mensajes ⚠ | `DELETE /api/v1/devices/{device}/message-queue/all` | `accounts:operate` |
-| Ver el estado de conexión | `GET /api/v1/devices/{device}/status` | `accounts:read` |
-| Pedir un token para la extensión de WhatsApp Web | `POST /api/v1/devices/{device}/extension-token` | `accounts:write` |
-| Ver la salud de un número | `GET /api/v1/devices/{device}/health` | `accounts:read` |
-| Actualizar la salud de un número | `POST /api/v1/devices/{device}/health/refresh` | `accounts:write` |
-| Ver el historial de conexión «devolver todo» | `GET /api/v1/devices/{device}/connection-history` | `accounts:read` |
-| Listar los registros de un número «devolver todo» | `GET /api/v1/devices/{device}/logs` | `accounts:read` |
-| Ver la señal de salud de los registros | `GET /api/v1/devices/{device}/logs/health` | `accounts:read` |
-| Listar los registros de todos los números «devolver todo» | `GET /api/v1/devices/logs` | `accounts:read` |
-| Ver el nombre de usuario | `GET /api/v1/devices/{device}/username` | `accounts:read` |
-| Configurar el nombre de usuario | `POST /api/v1/devices/{device}/username` | `accounts:write` |
-| Sugerir nombres de usuario | `GET /api/v1/devices/{device}/username/suggestions` | `accounts:read` |
-| Ver la encuesta de desconexión | `GET /api/v1/devices/{device}/disconnect-survey` | `accounts:read` |
-| Responder la encuesta de desconexión | `POST /api/v1/devices/{device}/disconnect-survey` | `accounts:write` |
+| List numbers "return all" | `GET /api/v1/devices` | `accounts:read` |
+| Get a number's WhatsApp profile | `GET /api/v1/devices/{device}/me` | `accounts:read` |
+| Check whether a phone has WhatsApp | `GET /api/v1/devices/{device}/check-phone` | `accounts:read` |
+| Get a number | `GET /api/v1/devices/{device}` | `accounts:read` |
+| Update a number | `PUT /api/v1/devices/{device}` | `accounts:write` |
+| Delete a number ⚠ | `DELETE /api/v1/devices/{device}` | `accounts:operate` |
+| Restart a number's session ⚠ | `PUT /api/v1/devices/{device}/reset` | `accounts:operate` |
+| Set the received messages webhook | `PUT /api/v1/devices/{device}/update-webhook-received` | `accounts:write` |
+| Set the received and delivery webhook | `PUT /api/v1/devices/{device}/update-webhook-received-and-delivery` | `accounts:write` |
+| Clean a number ⚠ | `POST /api/v1/devices/{device}/clean` | `accounts:operate` |
+| List a number's chats | `GET /api/v1/devices/{device}/chats` | `accounts:read` |
+| Check which phones have an open conversation | `GET /api/v1/devices/{device}/open-conversations` | `accounts:read` |
+| Get the message queue | `GET /api/v1/devices/{device}/message-queue` | `accounts:read` |
+| Delete messages from the queue | `DELETE /api/v1/devices/{device}/message-queue` | `accounts:write` |
+| Count the messages in the queue | `GET /api/v1/devices/{device}/message-queue/count` | `accounts:read` |
+| Empty the message queue ⚠ | `DELETE /api/v1/devices/{device}/message-queue/all` | `accounts:operate` |
+| Get the connection status | `GET /api/v1/devices/{device}/status` | `accounts:read` |
+| Get a token for the WhatsApp Web extension | `POST /api/v1/devices/{device}/extension-token` | `accounts:write` |
+| Get a number's health | `GET /api/v1/devices/{device}/health` | `accounts:read` |
+| Refresh a number's health | `POST /api/v1/devices/{device}/health/refresh` | `accounts:write` |
+| Get the connection history "return all" | `GET /api/v1/devices/{device}/connection-history` | `accounts:read` |
+| List a number's logs "return all" | `GET /api/v1/devices/{device}/logs` | `accounts:read` |
+| Get the logs health signal | `GET /api/v1/devices/{device}/logs/health` | `accounts:read` |
+| List the logs of all numbers "return all" | `GET /api/v1/devices/logs` | `accounts:read` |
+| Get the username | `GET /api/v1/devices/{device}/username` | `accounts:read` |
+| Set the username | `POST /api/v1/devices/{device}/username` | `accounts:write` |
+| Suggest usernames | `GET /api/v1/devices/{device}/username/suggestions` | `accounts:read` |
+| Get the disconnection survey | `GET /api/v1/devices/{device}/disconnect-survey` | `accounts:read` |
+| Answer the disconnection survey | `POST /api/v1/devices/{device}/disconnect-survey` | `accounts:write` |
 
 </details>
 
 <details><summary><strong>Webhooks</strong> (15)</summary>
 
-| Operación | Ruta | Permiso |
+| Operation | Route | Permission |
 |---|---|---|
-| Listar suscripciones de webhooks ⚠ | `GET /api/v1/webhooks` | `webhooks:read` |
-| Crear una suscripción de webhook ⚠ | `POST /api/v1/webhooks` | `webhooks:write` |
-| Ver una suscripción de webhook ⚠ | `GET /api/v1/webhooks/{id}` | `webhooks:read` |
-| Actualizar una suscripción de webhook ⚠ | `PUT /api/v1/webhooks/{id}` | `webhooks:write` |
-| Eliminar una suscripción de webhook ⚠ | `DELETE /api/v1/webhooks/{id}` | `webhooks:write` |
-| Listar las entregas de una suscripción ⚠ «devolver todo» | `GET /api/v1/webhooks/{id}/deliveries` | `webhooks:read` |
-| Enviar un evento de prueba ⚠ | `POST /api/v1/webhooks/{id}/test` | `webhooks:write` |
-| Listar tipos de evento | `GET /api/v1/webhooks/events` | `accounts:read` |
-| Listar webhooks «devolver todo» | `GET /api/v1/webhooks/endpoints` | `accounts:read` |
-| Crear un webhook | `POST /api/v1/webhooks/endpoints` | `accounts:write` |
-| Ver un webhook | `GET /api/v1/webhooks/endpoints/{id}` | `accounts:read` |
-| Actualizar un webhook | `PATCH /api/v1/webhooks/endpoints/{id}` | `accounts:write` |
-| Eliminar un webhook | `DELETE /api/v1/webhooks/endpoints/{id}` | `accounts:write` |
-| Elegir los eventos de un webhook | `PUT /api/v1/webhooks/endpoints/{id}/events` | `accounts:write` |
-| Listar entregas de un webhook «devolver todo» | `GET /api/v1/webhooks/endpoints/{id}/deliveries` | `accounts:read` |
+| List webhook subscriptions ⚠ | `GET /api/v1/webhooks` | `webhooks:read` |
+| Create a webhook subscription ⚠ | `POST /api/v1/webhooks` | `webhooks:write` |
+| Get a webhook subscription ⚠ | `GET /api/v1/webhooks/{id}` | `webhooks:read` |
+| Update a webhook subscription ⚠ | `PUT /api/v1/webhooks/{id}` | `webhooks:write` |
+| Delete a webhook subscription ⚠ | `DELETE /api/v1/webhooks/{id}` | `webhooks:write` |
+| List a subscription's deliveries ⚠ "return all" | `GET /api/v1/webhooks/{id}/deliveries` | `webhooks:read` |
+| Send a test event ⚠ | `POST /api/v1/webhooks/{id}/test` | `webhooks:write` |
+| List event types | `GET /api/v1/webhooks/events` | `accounts:read` |
+| List webhooks "return all" | `GET /api/v1/webhooks/endpoints` | `accounts:read` |
+| Create a webhook | `POST /api/v1/webhooks/endpoints` | `accounts:write` |
+| Get a webhook | `GET /api/v1/webhooks/endpoints/{id}` | `accounts:read` |
+| Update a webhook | `PATCH /api/v1/webhooks/endpoints/{id}` | `accounts:write` |
+| Delete a webhook | `DELETE /api/v1/webhooks/endpoints/{id}` | `accounts:write` |
+| Choose a webhook's events | `PUT /api/v1/webhooks/endpoints/{id}/events` | `accounts:write` |
+| List a webhook's deliveries "return all" | `GET /api/v1/webhooks/endpoints/{id}/deliveries` | `accounts:read` |
 
 </details>
 
-<!-- operaciones:fin -->
+<!-- operations:end -->
 
-## Disparador «Funnelchat Trigger»
+## The Funnelchat Trigger
 
-### Cómo funciona
+### How it works
 
-1. Elegís los **Eventos** de la lista. La lista sale del catálogo de Funnelchat (`GET /api/v1/webhooks/events`): muestra
-   los tipos que se pueden suscribir, el permiso de lectura que pide cada uno y marca los que todavía no se emiten
-   (`planned`). Si la clave no puede leer el catálogo (pide `accounts:read`), muestra la lista que trae el nodo, copiada
-   del catálogo de accounts `v1.4.24`: 53 tipos, entre ellos `message.received`, `message.status_changed`,
-   `whatsapp_form.completed`, `group.message_received`, `group_action.completed` y `group.reaction_added`.
-2. Al **activar** el flujo, el nodo crea una suscripción en Funnelchat (`POST /api/v1/webhooks`) con la URL de n8n,
-   esos eventos y la descripción `n8n · <nombre del flujo>`, y guarda el `id` y el secreto que Funnelchat devuelve una
-   sola vez.
-3. Cada entrega llega firmada. El nodo **verifica la firma** antes de arrancar el flujo y **rechaza con `400`** las que
-   no son válidas: el flujo no corre.
-4. Al **desactivar** el flujo, el nodo borra su suscripción (`DELETE /api/v1/webhooks/{id}`). Solo toca la que creó: las
-   demás suscripciones de la cuenta no se tocan.
+1. You choose the **Events** from the list. The list comes from Funnelchat's catalog (`GET /api/v1/webhooks/events`):
+   it shows the types that can be subscribed to, the read permission each one needs, and marks the ones that are not
+   emitted yet (`planned`). If the key cannot read the catalog (it needs `accounts:read`), it shows the list built into
+   the node, copied from the catalog of accounts `v1.4.24`: 53 types, among them `message.received`,
+   `message.status_changed`, `whatsapp_form.completed`, `group.message_received`, `group_action.completed` and
+   `group.reaction_added`.
+2. When the workflow is **activated**, the node creates a subscription in Funnelchat (`POST /api/v1/webhooks`) with
+   n8n's URL, those events and the description `n8n · <workflow name>`, and keeps the `id` and the secret Funnelchat
+   returns only once.
+3. Each delivery comes signed. The node **verifies the signature** before starting the workflow and **rejects with
+   `400`** the ones that are not valid: the workflow does not run.
+4. When the workflow is **deactivated**, the node deletes its subscription (`DELETE /api/v1/webhooks/{id}`). It only
+   touches the one it created: the account's other subscriptions are left alone.
 
-Si cambiás los eventos o el filtro y volvés a activar, el nodo actualiza su suscripción en el lugar
-(`PUT /api/v1/webhooks/{id}`) y el secreto no cambia. Si la suscripción ya no existe o quedó deshabilitada, crea otra.
-**Listen for test event** crea una suscripción aparte para la URL de prueba de n8n y la borra al terminar.
+If you change the events or the filter and activate again, the node updates its subscription in place
+(`PUT /api/v1/webhooks/{id}`) and the secret does not change. If the subscription no longer exists or was disabled, it
+creates another one. **Listen for test event** creates a separate subscription for n8n's test URL and deletes it when
+done.
 
-**Opciones:** una **Descripción** propia para reconocer la suscripción, y **IDs de campaña** para recibir solo eventos
-de esas campañas (`filters.campaign_ids`; con filtro, un evento sin campaña no llega).
+**Options:** a **Description** of your own to recognize the subscription, and **Campaign IDs** to receive only the
+events of those campaigns (`filters.campaign_ids`; with a filter, an event without a campaign does not arrive).
 
-### Lo que necesitás
+### What you need
 
-- **Una URL `https` pública para n8n** (con Producción o Staging). Funnelchat rechaza URLs `http`, direcciones
-  internas y URLs con usuario y contraseña. En self-hosted, configurá `WEBHOOK_URL` con tu dominio o usá un túnel. Con
-  una URL base personalizada (el sandbox), sirve también la URL local de n8n, como `http://localhost:5678`: el nodo no
-  filtra la URL, la decide la API.
-- **Una clave del titular de la cuenta**, con `webhooks:read` y `webhooks:write` y el permiso de lectura del área de
-  cada evento que elegís (por ejemplo, `conversations:read` para `message.received`, `communities:read` para los de
-  grupos). Sin el de un área, el alta responde `422` en `events`.
-- **Lugar en la cuenta:** hay un tope de 50 suscripciones por cuenta.
+- **A public `https` URL for n8n** (with Production or Staging). Funnelchat rejects `http` URLs, internal addresses
+  and URLs with a user and password. In self-hosted n8n, set `WEBHOOK_URL` to your domain or use a tunnel. With a
+  custom base URL (the sandbox), n8n's local URL works too, such as `http://localhost:5678`: the node does not filter
+  the URL, the API decides.
+- **A key of the account owner**, with `webhooks:read` and `webhooks:write` and the read permission of the area of each
+  event you choose (for example, `conversations:read` for `message.received`, `communities:read` for the group events).
+  Without the one of an area, creating the subscription answers `422` on `events`.
+- **Room in the account:** there is a cap of 50 subscriptions per account.
 
-### Qué llega al flujo
+### What reaches the workflow
 
-Un ítem por entrega, con el sobre del evento tal como lo manda Funnelchat:
+One item per delivery, with the event envelope as Funnelchat sends it:
 
 ```json
 {
-  "id": "evt_000000000000000000000001",
-  "type": "message.received",
-  "version": 1,
-  "occurred_at": "2026-10-01T12:00:00Z",
-  "data": {
-    "message": { "id": 1001, "type": "text", "text": "Hola, quiero más información", "media": null },
-    "contact": { "id": 2001, "name": "Contacto de ejemplo", "phone": "+5491100000000" },
-    "receiver": { "phone": "+5491100000001" },
-    "device_id": 4521
-  }
+	"id": "evt_000000000000000000000001",
+	"type": "message.received",
+	"version": 1,
+	"occurred_at": "2026-10-01T12:00:00Z",
+	"data": {
+		"message": {
+			"id": 1001,
+			"type": "text",
+			"text": "Hi, I'd like more information",
+			"media": null
+		},
+		"contact": { "id": 2001, "name": "Sample contact", "phone": "+5491100000000" },
+		"receiver": { "phone": "+5491100000001" },
+		"device_id": 4521
+	}
 }
 ```
 
-La entrega es «al menos una vez»: el mismo evento puede llegar dos veces con el mismo `id`. Si tu flujo no tolera
-repetidos, guardá los `id` procesados y descartá los que ya viste. El formato de cada tipo está en el catálogo de eventos
-del portal.
+Delivery is "at least once": the same event may arrive twice with the same `id`. If your workflow does not tolerate
+duplicates, keep the processed `id`s and drop the ones you have already seen. The format of each type is in the
+portal's event catalog.
 
-### La firma
+### The signature
 
-Cabecera `X-Funnelchat-Signature: t=<unix>,v1=<hex>`. `v1` es el HMAC-SHA256, con el secreto completo de la suscripción
-(con su `whsec_`), de `"<t>." + cuerpo crudo`. Puede haber varias `v1` (alcanza con que una coincida) y `t` no puede
-alejarse más de 300 segundos del reloj de n8n: mantené el reloj del servidor sincronizado. El código es el del snippet
-del portal (`snippets/verificar-firma.js`) y los tests usan sus mismos vectores (`tests/test_firmas.py`).
+Header `X-Funnelchat-Signature: t=<unix>,v1=<hex>`. `v1` is the HMAC-SHA256, with the full secret of the subscription
+(including its `whsec_`), of `"<t>." + raw body`. There may be several `v1` (one match is enough) and `t` cannot be more
+than 300 seconds away from n8n's clock: keep the server's clock in sync. The code is the one of the portal's snippet
+(`snippets/verificar-firma.js`) and the tests use its same vectors (`tests/test_firmas.py`).
 
-## Ejemplos de flujos
+## Workflow examples
 
-### Recibir un mensaje y responder
+### Receive a message and reply
 
-1. **Funnelchat Trigger** — Eventos: «Mensaje recibido (message.received)».
-2. **If** (opcional) — seguí solo si `{{ $json.data.message.type }}` es `text`.
-3. **Funnelchat** — Recurso «Conversaciones y mensajes», operación «Enviar un mensaje a un contacto»:
-   - ID del contacto (en la ruta y en el cuerpo): `{{ $json.data.contact.id }}`
-   - ID del número: `{{ $json.data.device_id }}` (puede venir `null`; entonces, el id de «Números → Listar números»).
-   - Campos adicionales → Teléfono: `{{ $json.data.contact.phone }}`. Con una clave es obligatorio (o ID de WhatsApp)
-     y tiene que ser el del contacto: si no, `422 recipient_mismatch`.
-   - Campos adicionales → Texto: `¡Gracias por escribirnos! Te respondemos en un rato.`
+1. **Funnelchat Trigger** — Events: "Message received (message.received)".
+2. **If** (optional) — continue only if `{{ $json.data.message.type }}` is `text`.
+3. **Funnelchat** — resource "Conversations and Messages", operation "Send a message to a contact":
+   - Contact ID (in the route and in the body): `{{ $json.data.contact.id }}`
+   - Number ID: `{{ $json.data.device_id }}` (it may be `null`; then, the ID from "Numbers → List numbers").
+   - Additional Fields → Phone: `{{ $json.data.contact.phone }}`. With an API key it is required (or WhatsApp ID) and
+     must be the contact's: otherwise, `422 recipient_mismatch`.
+   - Additional Fields → Text: `Thanks for writing to us! We will get back to you shortly.`
 
-Respondé dentro de la ventana de 24 horas del contacto: fuera de ella, WhatsApp pide una plantilla («Plantillas →
-Enviar una plantilla») y el envío responde `422 window_closed`.
+Reply within the contact's 24-hour window: outside it, WhatsApp requires a template ("Templates → Send a template") and
+the send answers `422 window_closed`.
 
-### Mandar un formulario de WhatsApp y recibir las respuestas
+### Send a WhatsApp form and receive the answers
 
-1. **Funnelchat** — Recurso «Formularios de WhatsApp», operación «Enviar un formulario a un contacto»: ID del contacto,
-   **ID del formulario** (el `family_id` de «Listar formularios», no el id de una versión) y el ID de un número donde
-   esté publicado. Sale el mensaje en cola, de tipo `whatsapp_form`.
-2. En otro flujo, **Funnelchat Trigger** con el evento «Formulario de WhatsApp completado
-   (whatsapp_form.completed)»: llega con `data.form`, `data.contact_id`, `data.message_id` (el id que devolvió el
-   envío) y `data.answers`, una lista de `{key, label, value}`.
+1. **Funnelchat** — resource "WhatsApp Forms", operation "Send a form to a contact": Contact ID, **Form ID** (the
+   `family_id` from "List forms", not the ID of a version) and the ID of a number where it is published. You get the
+   queued message, of type `whatsapp_form`.
+2. In another workflow, **Funnelchat Trigger** with the event "WhatsApp form completed (whatsapp_form.completed)": it
+   comes with `data.form`, `data.contact_id`, `data.message_id` (the ID the send returned) and `data.answers`, a list
+   of `{key, label, value}`.
 
-Los formularios se arman, validan en Meta y publican con las demás operaciones del recurso («Crear un formulario»,
-«Guardar un formulario», «Validar un formulario en Meta», «Publicar un formulario»).
+Forms are built, validated with Meta and published with the other operations of the resource ("Create a form", "Save a
+form", "Validate a form with Meta", "Publish a form").
 
-### Crear un contacto desde un formulario
+### Create a contact from a form
 
-1. **n8n Form Trigger** — campos «Nombre», «Email» y «Teléfono» (o un **Webhook** que reciba tu formulario).
-2. **Funnelchat** — Recurso «Contactos», operación «Crear o actualizar un contacto»:
-   - Teléfono: `{{ $json["Teléfono"] }}`, con código de país (con o sin `+`).
-   - Campos adicionales → Nombre: `{{ $json["Nombre"] }}`, Email: `{{ $json["Email"] }}`.
+1. **n8n Form Trigger** — fields "Name", "Email" and "Phone" (or a **Webhook** that receives your form).
+2. **Funnelchat** — resource "Contacts", operation "Create or update a contact":
+   - Phone: `{{ $json["Phone"] }}`, with the country code (with or without `+`).
+   - Additional Fields → Name: `{{ $json["Name"] }}`, Email: `{{ $json["Email"] }}`.
 
-   Si el teléfono ya existe, actualiza ese contacto; si no, lo crea. Es seguro reintentarlo.
-3. **Funnelchat** (opcional) — operación «Agregar una nota a un contacto»: ID del contacto `{{ $json.id }}`, Texto de la
-   nota `Llegó desde el formulario de la web`.
+   If the phone already exists, it updates that contact; otherwise it creates it. It is safe to retry.
 
-Para buscar después ese contacto por teléfono, sacale el `+`: la API guarda el teléfono sin `+` y la búsqueda por
-`phone` no lo quita.
+3. **Funnelchat** (optional) — operation "Add a note to a contact": Contact ID `{{ $json.id }}`, Note Text
+   `Came from the website form`.
 
-## Probar con el sandbox
+To find that contact by phone later, remove the `+`: the API stores the phone without `+` and the search by `phone`
+does not remove it.
 
-[`funnelchat-sandbox`](https://github.com/Funnelchat20/funnelchat-sandbox) imita la API pública en tu máquina, con
-estado en memoria y webhooks firmados, y no tiene efectos reales: nada sale a WhatsApp. Está en su PR #1, sin mergear al
-16-10-2026; cómo levantarlo está en su README. Por defecto escucha en `http://localhost:4010`.
+## Testing with the sandbox
 
-1. **Levantá el sandbox**, por ejemplo con `npx funnelchat-sandbox` o
-   `docker run --rm -p 4010:4010 funnelchat-sandbox`. Su panel está en `http://localhost:4010/_sandbox`.
-2. **Creá una credencial Funnelchat API** para el sandbox:
-   - **Entorno**: **Personalizado**.
-   - **URL base**: `http://localhost:4010`. Si n8n corre en Docker y el sandbox en tu máquina,
-     `http://host.docker.internal:4010` (con Podman, `http://host.containers.internal:4010`).
-   - **Clave de API**: `1|fc_live_sandbox`. El sandbox acepta cualquier clave con la forma de una real, y todas tienen
-     todos los permisos.
+[`funnelchat-sandbox`](https://github.com/Funnelchat20/funnelchat-sandbox) imitates the public API on your machine,
+with in-memory state and signed webhooks, and has no real effects: nothing goes out to WhatsApp. How to start it is in
+its README. By default it listens on `http://localhost:4010`.
 
-   La prueba de la credencial llama a `GET /api/v1/me` del sandbox.
-3. **Acciones.** Cualquier operación del nodo anda contra el sandbox. Contactos, conversaciones y mensajes, etiquetas,
-   campos personalizados, plantillas, números y suscripciones de webhooks guardan lo que hacés; el resto responde un
-   ejemplo armado de la especificación. El envío con clave ya está abierto en el sandbox, con la ventana de 24 horas y
-   los frenos contra spam de la API.
-4. **Disparador.** El sandbox acepta URLs `http` y locales, así que un n8n en `http://localhost:5678` recibe los
-   eventos. Activá el flujo con el **Funnelchat Trigger** y simulá un mensaje entrante:
+1. **Start the sandbox**, for example with `npx funnelchat-sandbox` or
+   `docker run --rm -p 4010:4010 funnelchat-sandbox`. Its panel is at `http://localhost:4010/_sandbox`.
+2. **Create a Funnelchat API credential** for the sandbox:
+   - **Environment**: **Custom**.
+   - **Base URL**: `http://localhost:4010`. If n8n runs in Docker and the sandbox on your machine,
+     `http://host.docker.internal:4010` (with Podman, `http://host.containers.internal:4010`).
+   - **API Key**: `1|fc_live_sandbox`. The sandbox accepts any key shaped like a real one, and all of them have every
+     permission.
+
+   The credential test calls the sandbox's `GET /api/v1/me`.
+
+3. **Actions.** Any operation of the node works against the sandbox. Contacts, conversations and messages, tags, custom
+   fields, templates, WhatsApp forms, numbers and webhook subscriptions keep what you do; the rest answers an example
+   built from the specification. Sending with an API key is open in the sandbox, with the API's 24-hour window and
+   anti-spam guards, and every response carries `X-Request-Id`.
+4. **Trigger.** The sandbox accepts `http` and local URLs, so an n8n on `http://localhost:5678` receives the events.
+   Activate the workflow with the **Funnelchat Trigger** and simulate an incoming message:
 
    ```bash
    curl -s -X POST http://localhost:4010/_sandbox/inbound/message \
      -H 'Content-Type: application/json' \
-     -d '{"phone": "5491100000000", "device_id": 3, "text": "Hola"}'
+     -d '{"phone": "5491100000000", "device_id": 3, "text": "Hello"}'
    ```
 
-   El sandbox firma la entrega como la API, el nodo verifica la firma y el flujo arranca con el evento
-   `message.received`. Si n8n corre en Docker, configurale `WEBHOOK_URL` con una URL que el sandbox alcance (por
-   ejemplo `http://localhost:5678/` publicando ese puerto, o `http://host.docker.internal:5678/` si el sandbox también
-   corre en Docker).
-5. **Lo que el sandbox no te muestra:** con la API real, la URL de n8n tiene que ser `https` y pública (probalo con
+   The sandbox signs the delivery like the API, the node verifies the signature and the workflow starts with the
+   `message.received` event. If n8n runs in Docker, set its `WEBHOOK_URL` to a URL the sandbox can reach (for example
+   `http://localhost:5678/` publishing that port, or `http://host.docker.internal:5678/` if the sandbox runs in Docker
+   too).
+
+5. **What the sandbox does not show you:** with the real API, n8n's URL has to be `https` and public (try it with
    `npx funnelchat-sandbox --require-https`).
 
-Probado el 16-10-2026 con n8n 2.25.7 y el sandbox en `feat/inicial` @ `7a1b3d8`. Contra el sandbox salieron bien la prueba
-de la credencial, un flujo con «Crear o actualizar un contacto» y «Listar etiquetas», y el ciclo completo del
-disparador: alta al activar, entrega firmada que arranca el flujo, `400` a una firma falsa y baja al desactivar.
+The end-to-end tests (`npm run test:e2e`, see [Development](#development)) passed on 2026-10-22 against the sandbox on
+`feat/inicial` @ `7e244b8`: send and read a message, file by URL, `X-Request-Id` in errors, the signed
+`message.status_changed` with the `client_reference`, and a WhatsApp form created, published, sent and completed
+through the trigger. By hand, on 2026-10-16 with n8n 2.25.7 and the sandbox @ `7a1b3d8`: the credential test, a
+workflow with "Create or update a contact" and "List tags", and the full trigger cycle.
 
-## Cómo regenerar
+## Regenerating
 
-Las operaciones del nodo no se escriben a mano: salen de `spec/funnelchat.json` con `npm run generate`. Cuando el portal
-publique una especificación nueva:
+The node's operations are not written by hand: they come from `spec/funnelchat.json` with `npm run generate`. When
+the portal publishes a new specification:
 
-1. Copiá la especificación unificada del portal (`out/specs/funnelchat.json`, que arma su build) a
+1. Copy the portal's unified specification (`out/specs/funnelchat.json`, built by its build) to
    `spec/funnelchat.json`.
-2. Anotá en `spec/PROCEDENCIA.md` de dónde salió: rama, commit, fecha y SHA-256 (`shasum -a 256 spec/funnelchat.json`).
-   El generador se niega a correr si el SHA-256 no figura ahí.
-3. Corré `npm run generate`. Actualiza `nodes/Funnelchat/generated/operations.ts` y la tabla de operaciones de este
-   README, y avisa lo que conviene revisar (por ejemplo, una etiqueta del config que ya no existe).
-4. Revisá el diff y corré `npm run lint`, `npm run build` y `npm test`.
+2. Write down in `spec/PROVENANCE.md` where it came from: branch, commit, date and SHA-256
+   (`shasum -a 256 spec/funnelchat.json`). The generator refuses to run if the SHA-256 is not there.
+3. Run `npm run generate`. It updates `nodes/Funnelchat/generated/operations.ts` and this README's operations table,
+   and warns about what is worth checking (for example, a config tag that no longer exists).
+4. Review the diff and run `npm run lint`, `npm run build` and `npm test`.
 
-Lo que cambia solo, sin tocar código: operaciones nuevas, nombres, descripciones, permisos, notas del portal, campos y
-paginación. Lo que se configura en `scripts/generator.config.json`: qué etiquetas (tags) de la especificación entran en
-cada recurso, los nombres en español de los campos (los que no figuran se muestran con su nombre de la API) y, en
-`operationNotes`, avisos de lo que el código de un dominio exige y su especificación no dice. Al regenerar, revisá si
-esos avisos siguen haciendo falta.
+What changes on its own, without touching code: new operations, permissions, fields and pagination. What is set in
+`scripts/`:
 
-- **Suplementos.** `spec/suplementos/` tiene lo que la especificación todavía no trae: las suscripciones de webhooks de
-  accounts y, de conversations `v1.18.10`, el envío con clave, la lectura de un mensaje y los formularios. Si una
-  especificación nueva incluye una ruta de un suplemento común, el generador usa la de la especificación y avisa que
-  sobra. Un suplemento con `"reemplaza": true` (el de conversations) gana sobre la especificación, con el mismo
-  `operationId`, y el generador lo avisa en cada corrida: cuando la especificación lo traiga al día, sacalo del config.
-- **Catálogo de eventos.** `spec/eventos-webhooks.json` es una copia de `GET /api/v1/webhooks/events` (la lista de
-  respaldo del disparador). Reemplazala por una copia nueva (por ejemplo `snapshots/accounts/events.json` del portal),
-  anotala en `spec/PROCEDENCIA.md` y regenerá.
-- **Ojo con los cambios de `operationId`.** El valor de cada operación en n8n es su `operationId`. Si la especificación
-  lo cambia, los flujos guardados con la operación vieja dejan de encontrarla.
+- **English texts.** The portal's specification is in Spanish. The name and purpose of each of its operations are in
+  `scripts/operations.en.json`: a new operation without an entry makes the generator stop and ask for one.
+- **`scripts/generator.config.json`.** Which tags of the specification go into each resource, the English labels of
+  the fields (the ones not listed show their API name), `fieldDescriptions` to replace field descriptions of the
+  specification that are in Spanish or written for the domain's developers, and, in `operationNotes`, notices of what
+  a domain's code requires and its specification does not say. When regenerating, check whether those notices are
+  still needed.
+- **Supplements.** `spec/supplements/` has what the specification does not have yet: the webhook subscriptions of
+  accounts and, from conversations `v1.18.10`, sending with an API key, reading a message and the forms. They are
+  written in English. If a new specification includes a route of a regular supplement, the generator uses the
+  specification's and says the supplement is no longer needed. A supplement with `"replaces": true` (the conversations
+  one) wins over the specification, with the same `operationId`, and the generator says so on every run: when the
+  specification brings it up to date, remove it from the config.
+- **Event catalog.** `spec/webhook-events.json` is a copy of `GET /api/v1/webhooks/events` (the trigger's fallback
+  list). Replace it with a new copy (for example `snapshots/accounts/events.json` of the portal), write it down in
+  `spec/PROVENANCE.md`, add the English label of any new type to `scripts/events.en.json` and regenerate.
+- **Watch out for `operationId` changes.** The value of each operation in n8n is its `operationId`. If the
+  specification changes it, saved workflows with the old operation stop finding it.
 
-## Desarrollo
+## Development
 
 ```bash
 npm ci
-npm run generate -- --check   # lo generado está al día con spec/
-npm run lint                  # linter de n8n para nodos comunitarios (modo estricto)
+npm run generate -- --check   # the generated files are up to date with spec/
+npm run lint                  # n8n's linter for community nodes (strict mode)
 npm run build
-npm test                      # vitest, sin red ni claves: respuestas simuladas
-FUNNELCHAT_SANDBOX_URL=http://127.0.0.1:4010 npm run test:e2e   # e2e contra un sandbox levantado
-npm run dev                   # levanta n8n en http://localhost:5678 con el nodo cargado
+npm test                      # vitest, without network or keys: simulated responses
+FUNNELCHAT_SANDBOX_URL=http://127.0.0.1:4010 npm run test:e2e   # e2e against a running sandbox
+npm run dev                   # starts n8n on http://localhost:5678 with the node loaded
 ```
 
-- `nodes/Funnelchat/`: el nodo de acciones. `generated/operations.ts` es la tabla generada; `description.ts` arma los
-  campos a partir de ella y `request.ts` arma los pedidos (ruta, consulta y cuerpo) y la paginación.
-- `nodes/FunnelchatTrigger/`: el disparador.
-- `nodes/shared/`: el transporte (clave, URL base, errores, `429`) y la verificación de la firma.
-- `test/`: la firma con los vectores del portal, el armado de pedidos y la paginación, el ciclo crear, confirmar y
-  borrar suscripción del disparador, y la URL base personalizada.
-- `test/e2e/`: el nodo con HTTP real contra el sandbox: envío y lectura de un mensaje, archivo por URL, `X-Request-Id`
-  en los errores y el ciclo del disparador con un aviso firmado de verdad. Sin `FUNNELCHAT_SANDBOX_URL` se saltea.
+- `nodes/Funnelchat/`: the action node. `generated/operations.ts` is the generated table; `description.ts` builds the
+  fields from it and `request.ts` builds the requests (route, query and body) and the pagination.
+- `nodes/FunnelchatTrigger/`: the trigger. `generated/events.ts` is the built-in event list.
+- `nodes/shared/`: the transport (key, base URL, errors, `429`) and the signature check.
+- `test/`: the signature with the portal's vectors, building requests and pagination, the trigger's create, check and
+  delete cycle, and the custom base URL.
+- `test/e2e/`: the node with real HTTP against the sandbox: send and read a message, file by URL, `X-Request-Id` in
+  errors, the trigger cycle with a really signed event, and a WhatsApp form end to end. Without
+  `FUNNELCHAT_SANDBOX_URL` it is skipped.
 
-La interfaz está en español. Algunas reglas del linter de n8n exigen textos en inglés (por ejemplo, que la descripción
-de un booleano empiece con «Whether»); donde chocan, la excepción está marcada en el código con su motivo.
+## Sources and what is left to verify
 
-## Fuentes y lo que falta verificar
+| What                                                    | Where it comes from                                                              | Status on 2026-10-22                                                                       |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| The unified specification (most operations)             | developers-portal, the same one the portal publishes (domain snapshots of 13-10) | Published; the portal regenerates it from the production tags                              |
+| Sending with an API key, message by ID and forms        | conversations tag `v1.18.10` (production), read from the code                    | Open to API keys. The new `operationId`s are not checked against a generated specification |
+| Webhook subscriptions (trigger and Webhooks resource)   | accounts tag `v1.4.24` (production), read from the code                          | Open to API keys with `webhooks:read` / `webhooks:write`                                   |
+| The trigger's fallback event catalog                    | accounts tag `v1.4.24`, extracted from the code                                  | 54 types, 49 being emitted                                                                 |
+| The signature algorithm and vectors, the event envelope | developers-portal (`snippets/verificar-firma.js`, `tests/test_firmas.py`)        | Published                                                                                  |
+| The local sandbox of "Testing with the sandbox"         | funnelchat-sandbox `feat/inicial` @ `7e244b8`                                    | funnelchat-sandbox PR #1, not merged                                                       |
 
-| Qué | De dónde sale | Estado al 22-10-2026 |
-|---|---|---|
-| La especificación unificada (la mayoría de las operaciones) | developers-portal, la misma que publica el portal (instantánea de los dominios del 13-10) | Publicada; el portal la regenera desde los tags de production |
-| Envío con clave, mensaje por id y formularios | conversations tag `v1.18.10` (production), leído del código | Abierto a claves. Los `operationId` nuevos no están verificados contra una especificación generada |
-| Las suscripciones de webhooks (disparador y recurso Webhooks) | accounts tag `v1.4.24` (production), leído del código | Abiertas a claves con `webhooks:read` / `webhooks:write` |
-| El catálogo de eventos de respaldo del disparador | accounts tag `v1.4.24`, extraído del código | 54 tipos, 49 emitiéndose |
-| El algoritmo y los vectores de la firma, el sobre de los eventos | developers-portal (`snippets/verificar-firma.js`, `tests/test_firmas.py`) | Publicados |
-| El sandbox local de «Probar con el sandbox» | funnelchat-sandbox `feat/inicial` | PR funnelchat-sandbox #1, sin mergear |
-
-El detalle de cada fuente está en [`spec/PROCEDENCIA.md`](spec/PROCEDENCIA.md).
+The details of each source are in [`spec/PROVENANCE.md`](spec/PROVENANCE.md).

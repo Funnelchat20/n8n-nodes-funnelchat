@@ -24,7 +24,7 @@ import {
 	type ParamValues,
 } from './request';
 
-/** Hard stop for «Devolver todo», in case an endpoint keeps announcing a next page. */
+/** Hard stop for "Return All", in case an endpoint keeps announcing a next page. */
 const MAX_PAGES = 1000;
 
 export function findOperation(resource: string, operation: string): OperationSpec | undefined {
@@ -86,13 +86,9 @@ async function runOperation(this: IExecuteFunctions, itemIndex: number): Promise
 	const operation = this.getNodeParameter('operation', itemIndex) as string;
 	const op = findOperation(resource, operation);
 	if (!op) {
-		throw new NodeOperationError(
-			this.getNode(),
-			`Operación desconocida: ${resource} / ${operation}`,
-			{
-				itemIndex,
-			},
-		);
+		throw new NodeOperationError(this.getNode(), `Unknown operation: ${resource} / ${operation}`, {
+			itemIndex,
+		});
 	}
 
 	const values: ParamValues = {};
@@ -150,7 +146,7 @@ export class Funnelchat implements INodeType {
 		version: 1,
 		subtitle: '={{$parameter["operation"]}}',
 		description:
-			'Contactos, conversaciones y mensajes, plantillas, etiquetas, campos personalizados, grupos, números y webhooks de la API pública de Funnelchat',
+			'Contacts, conversations and messages, templates, WhatsApp forms, tags, custom fields, groups, numbers and webhooks of the Funnelchat public API',
 		defaults: {
 			name: 'Funnelchat',
 		},

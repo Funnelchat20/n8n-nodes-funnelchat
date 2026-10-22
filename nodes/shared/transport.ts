@@ -135,17 +135,15 @@ export function apiError(
 	}
 	const wait = retryAfterSeconds(response.headers);
 	if (response.statusCode === 429 && wait !== undefined) {
-		details.push(`Volvé a intentar en ${wait} s (Retry-After).`);
+		details.push(`Try again in ${wait} s (Retry-After).`);
 	}
 	if (response.statusCode === 502 && method !== undefined && method !== 'GET') {
-		details.push(
-			'Puede que el cambio se haya aplicado igual: revisá el estado antes de repetirlo.',
-		);
+		details.push('The change may have been applied anyway: check the state before repeating it.');
 	}
 	if (!apiMessage && typeof body === 'string' && body.trim() !== '') {
 		details.push(body.slice(0, 300));
 	}
-	if (requestId) details.push(`X-Request-Id: ${requestId} (citalo si consultás a soporte)`);
+	if (requestId) details.push(`X-Request-Id: ${requestId} (quote it if you contact support)`);
 
 	const errorResponse: JsonObject = {
 		...(data as JsonObject),
@@ -156,12 +154,12 @@ export function apiError(
 	if (requestId) errorResponse.requestId = requestId;
 
 	const error = new NodeApiError(node, errorResponse, {
-		message: apiMessage ?? `La API respondió ${response.statusCode}`,
+		message: apiMessage ?? `The API answered ${response.statusCode}`,
 		description: details.length ? details.join('\n') : undefined,
 		httpCode: String(response.statusCode),
 		itemIndex,
 	});
-	// Kept apart so the node can output them as they came with «Continue on fail».
+	// Kept apart so the node can output them as they came with "Continue On Fail".
 	error.context.apiError = code ?? null;
 	error.context.apiMessage = apiMessage ?? null;
 	error.context.requestId = requestId ?? null;
@@ -182,10 +180,10 @@ export async function funnelchatApiRequest(
 	if (!baseURL) {
 		throw new NodeOperationError(
 			this.getNode(),
-			'La URL base de la credencial no es válida: tiene que empezar con http:// o https:// y no terminar en /.',
+			"The credential's base URL is not valid: it has to start with http:// or https:// and not end in /.",
 			{
 				itemIndex: request.itemIndex,
-				description: `Valor actual: ${String(credentials.baseUrl ?? '') || '(vacío)'}. Por ejemplo: http://localhost:4010.`,
+				description: `Current value: ${String(credentials.baseUrl ?? '') || '(empty)'}. For example: http://localhost:4010.`,
 			},
 		);
 	}

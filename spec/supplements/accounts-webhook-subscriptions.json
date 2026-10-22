@@ -1,9 +1,9 @@
 {
-	"x-fc-suplemento": {
+	"x-fc-supplement": {
 		"id": "accounts-webhook-subscriptions",
-		"titulo": "Suscripciones de webhooks unificadas de accounts",
-		"fuente": "accounts tag v1.4.24 @ 300cc8435e6fa17e2ac274b88289a2cc7b945fcd (2026-10-22 08:31 -03:00, el que corre en production), solo lectura",
-		"archivos": [
+		"title": "Unified webhook subscriptions of accounts",
+		"source": "accounts tag v1.4.24 @ 300cc8435e6fa17e2ac274b88289a2cc7b945fcd (2026-10-22 08:31 -03:00, the one running in production), read only",
+		"files": [
 			"back/routes/api/webhooks.php",
 			"back/app/Modules/Webhook/Http/Controllers/WebhookSubscriptionController.php",
 			"back/app/Modules/Webhook/Http/Controllers/WebhookSubscriptionDeliveryController.php",
@@ -18,29 +18,29 @@
 			"back/config/platform-gate.php"
 		],
 		"portal": "developers-portal feat/armar-funnelchat-portal @ dd7cd42, content/webhooks.md",
-		"motivo": "La especificación unificada del portal (instantánea del 13-10) no trae estas rutas. Se toman del código para el disparador y para el recurso Webhooks. Si una instantánea nueva las incluye, el generador ignora este suplemento.",
-		"estado_claves": "Abiertas a claves en accounts v1.4.24 (allowed de config/platform-gate.php), salvo rotate-secret y activate. Piden webhooks:read (GET) o webhooks:write (el resto) por permission_prefix, exigen que la clave sea del titular de la cuenta y, además, el permiso de lectura del área de cada tipo de evento (accounts:read, conversations:read, communities:read): 422 al crear o cambiar eventos sin él; 403 permission_denied al ver, cambiar, borrar o probar una suscripción con eventos de un área que la clave no lee."
+		"reason": "The portal's unified specification (13-10 snapshot) does not have these routes. They are taken from the code for the trigger and the Webhooks resource. If a new snapshot includes them, the generator ignores this supplement.",
+		"key_access": "Open to API keys in accounts v1.4.24 (allowed list of config/platform-gate.php), except rotate-secret and activate. They need webhooks:read (GET) or webhooks:write (the rest) through permission_prefix, a key of the account owner and, also, the read permission of the area of each event type (accounts:read, conversations:read, communities:read): 422 when creating or changing events without it; 403 permission_denied when reading, changing, deleting or testing a subscription with events of an area the key cannot read."
 	},
 	"tags": [
 		{
 			"name": "WebhookSubscription",
-			"x-displayName": "Suscripciones de webhooks",
-			"description": "Una suscripción recibe, en una URL https, los eventos elegidos de las tres áreas (accounts, conversations y communities) con un solo secreto y un solo historial de entregas."
+			"x-displayName": "Webhook subscriptions",
+			"description": "A subscription receives, on an https URL, the chosen events of the three areas (accounts, conversations and communities) with a single secret and a single delivery history."
 		}
 	],
 	"paths": {
 		"/api/v1/webhooks": {
 			"get": {
 				"operationId": "webhookSubscription.index",
-				"summary": "Listar suscripciones de webhooks",
+				"summary": "List webhook subscriptions",
 				"tags": ["WebhookSubscription"],
 				"x-fc-domain": "accounts",
 				"x-fc-permission": "webhooks:read",
-				"x-fc-proposito": "Usalo para ver todas las suscripciones de la cuenta, también las que crearon otras integraciones o personas.",
-				"x-fc-nota": "Con una clave, además del permiso de la ruta, pide el permiso de lectura del área de cada tipo de evento de la suscripción (accounts:read, conversations:read o communities:read).",
+				"x-fc-purpose": "Use it to see all the subscriptions of the account, also the ones other integrations or people created.",
+				"x-fc-note": "With an API key, besides the route's permission, it needs the read permission of the area of each event type of the subscription (accounts:read, conversations:read or communities:read).",
 				"responses": {
 					"200": {
-						"description": "Lista sin paginar, ordenada por id.",
+						"description": "Unpaginated list, ordered by id.",
 						"content": {
 							"application/json": {
 								"schema": {
@@ -54,12 +54,12 @@
 			},
 			"post": {
 				"operationId": "webhookSubscription.store",
-				"summary": "Crear una suscripción de webhook",
+				"summary": "Create a webhook subscription",
 				"tags": ["WebhookSubscription"],
 				"x-fc-domain": "accounts",
 				"x-fc-permission": "webhooks:write",
-				"x-fc-proposito": "Usalo para registrar una URL https y elegir los eventos que recibe. La respuesta trae el secreto una sola vez: guardalo para verificar la firma.",
-				"x-fc-nota": "Con una clave, además del permiso de la ruta, pide el permiso de lectura del área de cada tipo de evento de la suscripción (accounts:read, conversations:read o communities:read).",
+				"x-fc-purpose": "Use it to register an https URL and choose the events it receives. The response has the secret only once: keep it to verify the signature.",
+				"x-fc-note": "With an API key, besides the route's permission, it needs the read permission of the area of each event type of the subscription (accounts:read, conversations:read or communities:read).",
 				"requestBody": {
 					"required": true,
 					"content": {
@@ -70,7 +70,7 @@
 				},
 				"responses": {
 					"201": {
-						"description": "La suscripción creada, con `secret` (la única vez que se muestra).",
+						"description": "The created subscription, with `secret` (the only time it is shown).",
 						"content": {
 							"application/json": {
 								"schema": { "$ref": "#/components/schemas/SupWebhookSubscriptionCreated" }
@@ -83,16 +83,16 @@
 		"/api/v1/webhooks/{id}": {
 			"get": {
 				"operationId": "webhookSubscription.show",
-				"summary": "Ver una suscripción de webhook",
+				"summary": "Get a webhook subscription",
 				"tags": ["WebhookSubscription"],
 				"x-fc-domain": "accounts",
 				"x-fc-permission": "webhooks:read",
-				"x-fc-proposito": "Usalo para ver la URL, los eventos, el filtro y el estado de una suscripción. Nunca trae el secreto.",
-				"x-fc-nota": "Con una clave, además del permiso de la ruta, pide el permiso de lectura del área de cada tipo de evento de la suscripción (accounts:read, conversations:read o communities:read).",
+				"x-fc-purpose": "Use it to see the URL, events, filter and status of a subscription. It never includes the secret.",
+				"x-fc-note": "With an API key, besides the route's permission, it needs the read permission of the area of each event type of the subscription (accounts:read, conversations:read or communities:read).",
 				"parameters": [{ "$ref": "#/components/parameters/SupWebhookSubscriptionId" }],
 				"responses": {
 					"200": {
-						"description": "La suscripción.",
+						"description": "The subscription.",
 						"content": {
 							"application/json": {
 								"schema": { "$ref": "#/components/schemas/SupWebhookSubscription" }
@@ -103,12 +103,12 @@
 			},
 			"put": {
 				"operationId": "webhookSubscription.update",
-				"summary": "Actualizar una suscripción de webhook",
+				"summary": "Update a webhook subscription",
 				"tags": ["WebhookSubscription"],
 				"x-fc-domain": "accounts",
 				"x-fc-permission": "webhooks:write",
-				"x-fc-proposito": "Usalo para cambiar la URL (por ejemplo, cuando cambia tu túnel), los eventos, el filtro o pausar y reactivar una suscripción. Reemplaza la suscripción completa y el secreto no cambia.",
-				"x-fc-nota": "Con una clave, además del permiso de la ruta, pide el permiso de lectura del área de cada tipo de evento de la suscripción (accounts:read, conversations:read o communities:read).",
+				"x-fc-purpose": "Use it to change the URL (for example, when your tunnel changes), the events or the filter, or to pause and resume a subscription. It replaces the whole subscription and the secret does not change.",
+				"x-fc-note": "With an API key, besides the route's permission, it needs the read permission of the area of each event type of the subscription (accounts:read, conversations:read or communities:read).",
 				"parameters": [{ "$ref": "#/components/parameters/SupWebhookSubscriptionId" }],
 				"requestBody": {
 					"required": true,
@@ -120,7 +120,7 @@
 				},
 				"responses": {
 					"200": {
-						"description": "La suscripción actualizada.",
+						"description": "The updated subscription.",
 						"content": {
 							"application/json": {
 								"schema": { "$ref": "#/components/schemas/SupWebhookSubscription" }
@@ -131,13 +131,13 @@
 			},
 			"delete": {
 				"operationId": "webhookSubscription.destroy",
-				"summary": "Eliminar una suscripción de webhook",
+				"summary": "Delete a webhook subscription",
 				"tags": ["WebhookSubscription"],
 				"x-fc-domain": "accounts",
 				"x-fc-permission": "webhooks:write",
 				"x-fc-destructive": true,
-				"x-fc-proposito": "Usalo para dar de baja una suscripción. Sus eventos y su historial de entregas se borran con ella. No borres las que no reconocés: pueden ser de otra integración de la cuenta.",
-				"x-fc-nota": "Con una clave, además del permiso de la ruta, pide el permiso de lectura del área de cada tipo de evento de la suscripción (accounts:read, conversations:read o communities:read).",
+				"x-fc-purpose": "Use it to remove a subscription. Its events and delivery history are deleted with it. Do not delete the ones you do not recognize: they may belong to another integration of the account.",
+				"x-fc-note": "With an API key, besides the route's permission, it needs the read permission of the area of each event type of the subscription (accounts:read, conversations:read or communities:read).",
 				"parameters": [{ "$ref": "#/components/parameters/SupWebhookSubscriptionId" }],
 				"responses": {
 					"204": { "description": "Eliminada." }
@@ -147,17 +147,17 @@
 		"/api/v1/webhooks/{id}/deliveries": {
 			"get": {
 				"operationId": "webhookSubscriptionDelivery.index",
-				"summary": "Listar las entregas de una suscripción",
+				"summary": "List a subscription's deliveries",
 				"tags": ["WebhookSubscription"],
 				"x-fc-domain": "accounts",
 				"x-fc-permission": "webhooks:read",
-				"x-fc-proposito": "Usalo para revisar cada intento de entrega de una suscripción: estado HTTP, error y duración, lo más reciente primero.",
-				"x-fc-nota": "Con una clave, además del permiso de la ruta, pide el permiso de lectura del área de cada tipo de evento de la suscripción (accounts:read, conversations:read o communities:read).",
+				"x-fc-purpose": "Use it to review each delivery attempt of a subscription: HTTP status, error and duration, newest first.",
+				"x-fc-note": "With an API key, besides the route's permission, it needs the read permission of the area of each event type of the subscription (accounts:read, conversations:read or communities:read).",
 				"x-fc-listing": {
 					"per_page_default": 25,
 					"per_page_max": 100,
 					"size_params": ["per_page"],
-					"order": "attempted_at descendente, después id descendente",
+					"order": "attempted_at descending, then id descending",
 					"sortable": []
 				},
 				"parameters": [
@@ -165,13 +165,13 @@
 					{
 						"name": "event_type",
 						"in": "query",
-						"description": "Solo los intentos de este tipo de evento.",
+						"description": "Only the attempts of this event type.",
 						"schema": { "type": "string" }
 					},
 					{
 						"name": "event_id",
 						"in": "query",
-						"description": "Solo los intentos de este evento (`evt_…`).",
+						"description": "Only the attempts of this event (`evt_…`).",
 						"schema": { "type": "string" }
 					},
 					{
@@ -187,7 +187,7 @@
 				],
 				"responses": {
 					"200": {
-						"description": "Página de intentos.",
+						"description": "Page of attempts.",
 						"content": {
 							"application/json": {
 								"schema": {
@@ -219,16 +219,16 @@
 		"/api/v1/webhooks/{id}/test": {
 			"post": {
 				"operationId": "webhookSubscriptionTest.test",
-				"summary": "Enviar un evento de prueba",
+				"summary": "Send a test event",
 				"tags": ["WebhookSubscription"],
 				"x-fc-domain": "accounts",
 				"x-fc-permission": "webhooks:write",
-				"x-fc-proposito": "Usalo para probar tu receptor: envía un único evento webhook.test firmado igual que uno real, sin reintentos, y lo deja en el historial.",
-				"x-fc-nota": "Con una clave, además del permiso de la ruta, pide el permiso de lectura del área de cada tipo de evento de la suscripción (accounts:read, conversations:read o communities:read).",
+				"x-fc-purpose": "Use it to test your receiver: sends a single webhook.test event signed like a real one, without retries, and keeps it in the history.",
+				"x-fc-note": "With an API key, besides the route's permission, it needs the read permission of the area of each event type of the subscription (accounts:read, conversations:read or communities:read).",
 				"parameters": [{ "$ref": "#/components/parameters/SupWebhookSubscriptionId" }],
 				"responses": {
 					"200": {
-						"description": "Resultado del intento (responde 200 aunque el destino falle).",
+						"description": "Result of the attempt (answers 200 even if the destination fails).",
 						"content": {
 							"application/json": {
 								"schema": {
@@ -255,7 +255,7 @@
 				"name": "id",
 				"in": "path",
 				"required": true,
-				"description": "El `id` (UUID) de la suscripción.",
+				"description": "The `id` (UUID) of the subscription.",
 				"schema": { "type": "string", "format": "uuid" }
 			}
 		},
@@ -266,19 +266,19 @@
 					"url": {
 						"type": "string",
 						"maxLength": 2048,
-						"description": "URL `https` pública que recibe las entregas. Sin usuario ni contraseña; una dirección interna se rechaza."
+						"description": "Public `https` URL that receives the deliveries. Without user or password; an internal address is rejected."
 					},
 					"events": {
 						"type": "array",
 						"minItems": 1,
 						"maxItems": 50,
 						"items": { "type": "string" },
-						"description": "Tipos de evento del catálogo (`GET /api/v1/webhooks/events`) que se pueden suscribir. Con una clave, cada tipo pide el permiso de lectura de su área."
+						"description": "Event types of the catalog (`GET /api/v1/webhooks/events`) that can be subscribed to. With an API key, each type needs the read permission of its area."
 					},
 					"description": {
 						"type": ["string", "null"],
 						"maxLength": 160,
-						"description": "Texto para reconocer la suscripción en la lista."
+						"description": "Text to recognize the subscription in the list."
 					},
 					"filters": {
 						"type": ["object", "null"],
@@ -290,7 +290,7 @@
 							}
 						},
 						"additionalProperties": false,
-						"description": "Filtro opcional por campañas (`campaign_ids`): con filtro, un evento sin campaña no se entrega."
+						"description": "Optional filter by campaigns (`campaign_ids`): with a filter, an event without a campaign is not delivered."
 					}
 				},
 				"required": ["url", "events"]
@@ -301,19 +301,19 @@
 					"url": {
 						"type": "string",
 						"maxLength": 2048,
-						"description": "URL `https` pública que recibe las entregas."
+						"description": "Public `https` URL that receives the deliveries."
 					},
 					"events": {
 						"type": "array",
 						"minItems": 1,
 						"maxItems": 50,
 						"items": { "type": "string" },
-						"description": "La lista completa de tipos de evento: reemplaza a la anterior."
+						"description": "The full list of event types: it replaces the previous one."
 					},
 					"description": {
 						"type": ["string", "null"],
 						"maxLength": 160,
-						"description": "Texto para reconocer la suscripción en la lista."
+						"description": "Text to recognize the subscription in the list."
 					},
 					"filters": {
 						"type": ["object", "null"],
@@ -325,12 +325,12 @@
 							}
 						},
 						"additionalProperties": false,
-						"description": "Filtro opcional por campañas (`campaign_ids`)."
+						"description": "Optional filter by campaigns (`campaign_ids`)."
 					},
 					"status": {
 						"type": "string",
 						"enum": ["active", "paused"],
-						"description": "Pausar o reactivar la suscripción. No se puede dejar en `disabled`."
+						"description": "Pause or resume the subscription. It cannot be set to `disabled`."
 					}
 				},
 				"required": ["url", "events"]
@@ -360,7 +360,7 @@
 					{
 						"type": "object",
 						"properties": {
-							"secret": { "type": "string", "description": "`whsec_…`: se muestra solo en esta respuesta." },
+							"secret": { "type": "string", "description": "`whsec_…`: shown only in this response." },
 							"secret_notice": { "type": "string" }
 						},
 						"required": ["secret"]

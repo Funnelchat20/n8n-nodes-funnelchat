@@ -27,7 +27,7 @@ function subscription(overrides: IDataObject = {}): IDataObject {
 	return {
 		id: SUBSCRIPTION_ID,
 		url: WEBHOOK_URL,
-		description: 'n8n · Mi flujo',
+		description: 'n8n · My workflow',
 		events: ['message.received', 'contact.created'],
 		filters: {},
 		status: 'active',
@@ -38,23 +38,23 @@ function subscription(overrides: IDataObject = {}): IDataObject {
 
 const PARAMS = { events: ['message.received', 'contact.created'], options: {} };
 
-describe('ciclo de la suscripción del disparador', () => {
-	it('sin suscripción guardada, checkExists no llama a la API y devuelve false', async () => {
+describe("the trigger's subscription cycle", () => {
+	it('without a stored subscription, checkExists does not call the API and returns false', async () => {
 		const { ctx, calls } = hookContext({ params: PARAMS, responses: [] });
 		await expect(methods.checkExists.call(ctx)).resolves.toBe(false);
 		expect(calls).toHaveLength(0);
 	});
 
-	it('create da de alta la suscripción con la URL de n8n y guarda id y secreto', async () => {
+	it("create registers the subscription with n8n's URL and stores its id and secret", async () => {
 		const { ctx, calls, staticData } = hookContext({
-			params: { ...PARAMS, options: { campaignIds: 'campania-1, campania-2' } },
+			params: { ...PARAMS, options: { campaignIds: 'campaign-1, campaign-2' } },
 			responses: [
 				{
 					status: 201,
 					body: {
-						...subscription({ filters: { campaign_ids: ['campania-1', 'campania-2'] } }),
+						...subscription({ filters: { campaign_ids: ['campaign-1', 'campaign-2'] } }),
 						secret: SIGNING_VALUE,
-						secret_notice: 'Guardá este secreto ahora.',
+						secret_notice: 'Keep this secret now.',
 					},
 				},
 			],
@@ -65,15 +65,15 @@ describe('ciclo de la suscripción del disparador', () => {
 		expect(calls[0].options.body).toEqual({
 			url: WEBHOOK_URL,
 			events: ['message.received', 'contact.created'],
-			description: 'n8n · Mi flujo',
-			filters: { campaign_ids: ['campania-1', 'campania-2'] },
+			description: 'n8n · My workflow',
+			filters: { campaign_ids: ['campaign-1', 'campaign-2'] },
 		});
 		expect(staticData.subscriptions).toEqual({
 			[WEBHOOK_URL]: { id: SUBSCRIPTION_ID, secret: SIGNING_VALUE },
 		});
 	});
 
-	it('checkExists confirma la suscripción guardada si coincide', async () => {
+	it('checkExists confirms the stored subscription if it matches', async () => {
 		const { ctx, calls } = hookContext({
 			params: PARAMS,
 			staticData: {
@@ -85,7 +85,7 @@ describe('ciclo de la suscripción del disparador', () => {
 		expect(calls.map(requestLine)).toEqual([`GET /api/v1/webhooks/${SUBSCRIPTION_ID}`]);
 	});
 
-	it('si cambiaron los eventos, la actualiza en el lugar (el secreto no cambia)', async () => {
+	it('if the events changed, it updates it in place (the secret does not change)', async () => {
 		const stored = {
 			subscriptions: { [WEBHOOK_URL]: { id: SUBSCRIPTION_ID, secret: SIGNING_VALUE } },
 		};
@@ -105,13 +105,13 @@ describe('ciclo de la suscripción del disparador', () => {
 		expect(calls[1].options.body).toEqual({
 			url: WEBHOOK_URL,
 			events: ['group_participant.joined'],
-			description: 'n8n · Mi flujo',
+			description: 'n8n · My workflow',
 			status: 'active',
 		});
 		expect(staticData.subscriptions).toEqual(stored.subscriptions);
 	});
 
-	it('si en Funnelchat ya no existe (404), la olvida y devuelve false', async () => {
+	it('if it no longer exists in Funnelchat (404), it forgets it and returns false', async () => {
 		const { ctx, staticData } = hookContext({
 			params: PARAMS,
 			staticData: {
@@ -123,7 +123,7 @@ describe('ciclo de la suscripción del disparador', () => {
 		expect(staticData.subscriptions).toBeUndefined();
 	});
 
-	it('si quedó deshabilitada, la borra y devuelve false para crear otra', async () => {
+	it('if it was disabled, it deletes it and returns false to create another one', async () => {
 		const { ctx, calls, staticData } = hookContext({
 			params: PARAMS,
 			staticData: {
@@ -142,7 +142,7 @@ describe('ciclo de la suscripción del disparador', () => {
 		expect(staticData.subscriptions).toBeUndefined();
 	});
 
-	it('delete borra la suscripción de esta URL y deja la de la otra URL', async () => {
+	it("delete removes this URL's subscription and keeps the other URL's", async () => {
 		const testId = '11111111-2222-4333-8444-555555555555';
 		const { ctx, calls, staticData } = hookContext({
 			params: PARAMS,
@@ -161,7 +161,7 @@ describe('ciclo de la suscripción del disparador', () => {
 		});
 	});
 
-	it('delete con 404 igual la olvida', async () => {
+	it('delete with a 404 forgets it anyway', async () => {
 		const { ctx, staticData } = hookContext({
 			params: PARAMS,
 			staticData: {
@@ -173,7 +173,7 @@ describe('ciclo de la suscripción del disparador', () => {
 		expect(staticData.subscriptions).toBeUndefined();
 	});
 
-	it('el ciclo completo: crear, confirmar, borrar', async () => {
+	it('the full cycle: create, check, delete', async () => {
 		const staticData: IDataObject = {};
 		const created = hookContext({
 			params: PARAMS,
@@ -204,17 +204,17 @@ describe('ciclo de la suscripción del disparador', () => {
 		]);
 	});
 
-	it('si la respuesta del alta no trae el secreto, falla con un error claro', async () => {
+	it('if the creation response has no secret, it fails with a clear error', async () => {
 		const { ctx } = hookContext({
 			params: PARAMS,
 			responses: [{ status: 201, body: subscription() }],
 		});
 		const error = await methods.create.call(ctx).catch((e: unknown) => e);
 		expect(error).toBeInstanceOf(NodeOperationError);
-		expect((error as Error).message).toContain('no trajo su id o su secreto');
+		expect((error as Error).message).toContain('did not include its id or its secret');
 	});
 
-	it('sin el permiso de lectura del área de un evento, el alta falla con el 422 de accounts', async () => {
+	it("without the read permission of an event's area, creating fails with accounts' 422", async () => {
 		const { ctx, staticData } = hookContext({
 			params: PARAMS,
 			responses: [
@@ -242,7 +242,7 @@ describe('ciclo de la suscripción del disparador', () => {
 	});
 });
 
-describe('entregas: verificación de la firma', () => {
+describe('deliveries: signature check', () => {
 	const body = Buffer.from(vectors.cuerpo, 'utf8');
 	const staticData = {
 		subscriptions: { [WEBHOOK_URL]: { id: SUBSCRIPTION_ID, secret: SIGNING_VALUE } },
@@ -252,7 +252,7 @@ describe('entregas: verificación de la firma', () => {
 		return `t=${t},v1=${createHmac('sha256', key).update(`${t}.`).update(raw).digest('hex')}`;
 	}
 
-	it('una entrega bien firmada arranca el flujo con el evento', async () => {
+	it('a properly signed delivery starts the workflow with the event', async () => {
 		const { ctx, response } = webhookContext({
 			rawBody: body,
 			headers: { 'x-funnelchat-signature': sign(body, SIGNING_VALUE) },
@@ -263,15 +263,15 @@ describe('entregas: verificación de la firma', () => {
 		expect(result.workflowData?.[0][0].json).toEqual(JSON.parse(vectors.cuerpo));
 	});
 
-	it('vale el secreto de cualquiera de sus suscripciones (prueba y producción)', async () => {
-		const otherKey = 'otro-secreto-de-prueba';
+	it('the secret of any of its subscriptions works (test and production)', async () => {
+		const otherKey = 'another-test-secret';
 		const { ctx } = webhookContext({
 			rawBody: body,
 			headers: { 'x-funnelchat-signature': sign(body, otherKey) },
 			staticData: {
 				subscriptions: {
 					[WEBHOOK_URL]: { id: SUBSCRIPTION_ID, secret: SIGNING_VALUE },
-					[TEST_WEBHOOK_URL]: { id: 'otro', secret: otherKey },
+					[TEST_WEBHOOK_URL]: { id: 'other', secret: otherKey },
 				},
 			},
 		});
@@ -279,25 +279,25 @@ describe('entregas: verificación de la firma', () => {
 		expect(result.workflowData).toBeDefined();
 	});
 
-	for (const [nombre, headers, raw] of [
+	for (const [name, headers, raw] of [
 		[
-			'firma de otro secreto',
-			{ 'x-funnelchat-signature': sign(body, 'otro-secreto-de-prueba') },
+			'signature with another secret',
+			{ 'x-funnelchat-signature': sign(body, 'another-test-secret') },
 			body,
 		],
-		['sin cabecera de firma', {}, body],
+		['without a signature header', {}, body],
 		[
-			'cuerpo alterado',
+			'altered body',
 			{ 'x-funnelchat-signature': sign(body, SIGNING_VALUE) },
 			Buffer.from(vectors.cuerpo.replace('Hola', 'Hole')),
 		],
 		[
-			'firma vieja (hace 10 min)',
+			'old signature (10 min ago)',
 			{ 'x-funnelchat-signature': sign(body, SIGNING_VALUE, Math.floor(Date.now() / 1000) - 600) },
 			body,
 		],
 	] as Array<[string, IDataObject, Buffer]>) {
-		it(`rechaza con 400: ${nombre}`, async () => {
+		it(`rejects with 400: ${name}`, async () => {
 			const { ctx, response } = webhookContext({ rawBody: raw, headers, staticData });
 			const result = await trigger.webhook.call(ctx);
 			expect(result).toEqual({ noWebhookResponse: true });
@@ -308,7 +308,7 @@ describe('entregas: verificación de la firma', () => {
 		});
 	}
 
-	it('sin suscripción guardada, ninguna entrega pasa', async () => {
+	it('without a stored subscription, no delivery gets through', async () => {
 		const { ctx, response } = webhookContext({
 			rawBody: body,
 			headers: { 'x-funnelchat-signature': sign(body, SIGNING_VALUE) },
@@ -319,8 +319,8 @@ describe('entregas: verificación de la firma', () => {
 	});
 });
 
-describe('lista de eventos desde el catálogo', () => {
-	it('muestra los tipos que se pueden suscribir, con su estado y área', async () => {
+describe('event list from the catalog', () => {
+	it('shows the types that can be subscribed to, with their status and area, in English when the node knows them', async () => {
 		const { ctx, calls } = loadOptionsContext([
 			{
 				body: {
@@ -357,6 +357,14 @@ describe('lista de eventos desde el catálogo', () => {
 							description: 'Se desconectó.',
 							subscribable: true,
 						},
+						{
+							type: 'nuevo.evento',
+							area: 'conversations',
+							status: 'active',
+							label: 'Evento nuevo',
+							description: 'Un tipo que el nodo todavía no conoce.',
+							subscribable: true,
+						},
 					],
 					meta: { total: 4, active: 3 },
 				},
@@ -366,19 +374,22 @@ describe('lista de eventos desde el catálogo', () => {
 		expect(requestLine(calls[0])).toBe('GET /api/v1/webhooks/events');
 		expect(calls[0].options.baseURL).toBe('https://api-staging.funnelchat.com');
 		expect(options.map((o) => o.value)).toEqual([
-			'message.status_changed',
+			'nuevo.evento',
 			'message.received',
+			'message.status_changed',
 			'device.disconnected',
 		]);
-		expect(options[0]).toEqual({
-			name: 'Estado de mensaje cambiado (message.status_changed)',
+		const statusChanged = EVENT_CATALOG.find((e) => e.type === 'message.status_changed')!;
+		expect(options.find((o) => o.value === 'message.status_changed')).toEqual({
+			name: 'Message status changed (message.status_changed)',
 			value: 'message.status_changed',
-			description:
-				'Cambió el estado. Todavía no se emite (planned). Área: conversations; con una clave pide conversations:read.',
+			description: `${statusChanged.description} Not emitted yet (planned). Area: conversations; with an API key it needs conversations:read.`,
 		});
+		// A type the node does not know yet keeps the catalog's own texts.
+		expect(options[0].name).toBe('Evento nuevo (nuevo.evento)');
 	});
 
-	it('si la clave no puede leer el catálogo, muestra la lista del nodo (catálogo de accounts v1.4.24)', async () => {
+	it("if the key cannot read the catalog, it shows the node's list (accounts v1.4.24 catalog)", async () => {
 		const { ctx, calls } = loadOptionsContext([
 			{
 				status: 403,
@@ -397,7 +408,7 @@ describe('lista de eventos desde el catálogo', () => {
 					const e = EVENT_CATALOG.find((x) => x.type === t)!;
 					return `${e.label} (${e.type})`;
 				};
-				return name(a).localeCompare(name(b), 'es');
+				return name(a).localeCompare(name(b), 'en');
 			}),
 		);
 		for (const type of [
@@ -412,7 +423,7 @@ describe('lista de eventos desde el catálogo', () => {
 			expect(values).toContain(type);
 		expect(values).not.toContain('webhook.test');
 		const form = options.find((o) => o.value === 'whatsapp_form.completed')!;
-		expect(form.name).toBe('Formulario de WhatsApp completado (whatsapp_form.completed)');
-		expect(form.description).toContain('con una clave pide conversations:read');
+		expect(form.name).toBe('WhatsApp form completed (whatsapp_form.completed)');
+		expect(form.description).toContain('with an API key it needs conversations:read');
 	});
 });

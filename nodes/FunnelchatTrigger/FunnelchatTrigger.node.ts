@@ -89,7 +89,7 @@ export function subscriptionBody(this: IHookFunctions, url: string): IDataObject
 	const campaignIds = splitList(options.campaignIds);
 	const workflowName = this.getWorkflow().name;
 	const description =
-		String(options.description ?? '').trim() || `n8n · ${workflowName || 'flujo sin nombre'}`;
+		String(options.description ?? '').trim() || `n8n · ${workflowName || 'unnamed workflow'}`;
 	return {
 		url,
 		events,
@@ -101,23 +101,31 @@ export function subscriptionBody(this: IHookFunctions, url: string): IDataObject
 function webhookUrl(context: IHookFunctions): string {
 	const url = context.getNodeWebhookUrl('default');
 	if (!url)
-		throw new NodeOperationError(context.getNode(), 'n8n no dio la URL del webhook de este nodo.');
+		throw new NodeOperationError(
+			context.getNode(),
+			'n8n did not give the webhook URL of this node.',
+		);
 	return url;
 }
 
-/** One option of the event list, from an entry of the catalog (live or built in). */
+/**
+ * One option of the event list, from an entry of the catalog (live or built in). The live catalog answers in Spanish:
+ * a type the node knows shows its English label and description; status and area always come from the entry.
+ */
 function eventOption(e: IDataObject): INodePropertyOptions {
 	const type = e.type as string;
 	const area = typeof e.area === 'string' ? e.area : undefined;
+	const known = EVENT_CATALOG.find((x) => x.type === type);
+	const label = known?.label ?? e.label;
 	const description = [
-		typeof e.description === 'string' ? e.description : '',
-		e.status === 'planned' ? 'Todavía no se emite (planned).' : '',
-		area ? `Área: ${area}; con una clave pide ${area}:read.` : '',
+		known?.description ?? (typeof e.description === 'string' ? e.description : ''),
+		e.status === 'planned' ? 'Not emitted yet (planned).' : '',
+		area ? `Area: ${area}; with an API key it needs ${area}:read.` : '',
 	]
 		.filter(Boolean)
 		.join(' ');
 	return {
-		name: typeof e.label === 'string' && e.label !== '' ? `${e.label} (${type})` : type,
+		name: typeof label === 'string' && label !== '' ? `${label} (${type})` : type,
 		value: type,
 		...(description ? { description } : {}),
 	};
@@ -144,7 +152,7 @@ export async function getEvents(this: ILoadOptionsFunctions): Promise<INodePrope
 	return entries
 		.filter((e) => typeof e.type === 'string' && e.subscribable !== false)
 		.map(eventOption)
-		.sort((a, b) => a.name.localeCompare(b.name, 'es'));
+		.sort((a, b) => a.name.localeCompare(b.name, 'en'));
 }
 
 export class FunnelchatTrigger implements INodeType {
@@ -158,7 +166,7 @@ export class FunnelchatTrigger implements INodeType {
 		group: ['trigger'],
 		version: 1,
 		subtitle: '={{($parameter["events"] || []).join(", ")}}',
-		description: 'Arranca el flujo con cada evento firmado que Funnelchat manda por webhook',
+		description: 'Starts the workflow with each signed event Funnelchat sends by webhook',
 		defaults: {
 			name: 'Funnelchat Trigger',
 		},
@@ -181,14 +189,13 @@ export class FunnelchatTrigger implements INodeType {
 		properties: [
 			{
 				displayName:
-					'Al activar el flujo se crea una suscripción en Funnelchat (POST /api/v1/webhooks) y al desactivarlo se borra. Con Producción o Staging, la URL de n8n tiene que ser https y pública; con una URL base personalizada (por ejemplo el sandbox local) también sirve una URL local, como http://localhost:5678. Las entregas sin una firma válida se rechazan con 400.',
+					'Activating the workflow creates a subscription in Funnelchat (POST /api/v1/webhooks) and deactivating it deletes it. With Production or Staging, the n8n URL has to be https and public; with a custom base URL (for example the local sandbox) a local URL works too, such as http://localhost:5678. Deliveries without a valid signature are rejected with 400. The event list comes from the Funnelchat catalog (GET /api/v1/webhooks/events), or from the list built into the node if the key cannot read it; with an API key, each event type needs the read permission of its area.',
 				name: 'notice',
 				type: 'notice',
 				default: '',
 			},
 			{
-				// eslint-disable-next-line n8n-nodes-base/node-param-display-name-wrong-for-dynamic-multi-options -- the UI of this package is in Spanish (see README); this rule enforces English wording
-				displayName: 'Eventos',
+				displayName: 'Event Names or IDs',
 				name: 'events',
 				type: 'multiOptions',
 				typeOptions: {
@@ -196,34 +203,32 @@ export class FunnelchatTrigger implements INodeType {
 				},
 				required: true,
 				default: [],
-				// eslint-disable-next-line n8n-nodes-base/node-param-description-wrong-for-dynamic-multi-options -- the UI of this package is in Spanish (see README); this rule enforces English wording
 				description:
-					'Elegilos de la lista, que sale del catálogo de Funnelchat (GET /api/v1/webhooks/events, o la lista del nodo si la clave no puede leerlo), o escribí los tipos con una <a href="https://docs.n8n.io/code/expressions/">expresión</a>. Con una clave, cada tipo pide el permiso de lectura de su área.',
+					'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 			},
 			{
-				displayName: 'Opciones',
+				displayName: 'Options',
 				name: 'options',
 				type: 'collection',
-				placeholder: 'Agregar opción',
+				placeholder: 'Add Option',
 				default: {},
 				options: [
 					{
-						displayName: 'Descripción',
+						displayName: 'Description',
 						name: 'description',
 						type: 'string',
 						default: '',
 						description:
-							'Texto para reconocer la suscripción en Funnelchat (hasta 160 caracteres). Si lo dejás vacío: «n8n · nombre del flujo».',
+							'Text to recognize the subscription in Funnelchat (up to 160 characters). If empty: "n8n · workflow name".',
 					},
 					{
-						// eslint-disable-next-line n8n-nodes-base/node-param-display-name-miscased -- the UI of this package is in Spanish (see README); this rule enforces English wording
-						displayName: 'IDs de campaña',
+						displayName: 'Campaign IDs',
 						name: 'campaignIds',
 						type: 'string',
 						default: '',
-						placeholder: 'campania-1, campania-2',
+						placeholder: 'campaign-1, campaign-2',
 						description:
-							'Recibir solo eventos de estas campañas (filters.campaign_ids), separadas por comas. Con filtro, un evento sin campaña no llega.',
+							'Receive only the events of these campaigns (filters.campaign_ids), separated by commas. With a filter, an event without a campaign does not arrive.',
 					},
 				],
 			},
@@ -252,7 +257,9 @@ export class FunnelchatTrigger implements INodeType {
 				});
 				const current = subscriptionOf(response.body);
 				if (response.statusCode === 404 || !current) {
-					this.logger.info(`Funnelchat: la suscripción ${stored.id} ya no existe; se crea otra`);
+					this.logger.info(
+						`Funnelchat: subscription ${stored.id} no longer exists; creating another one`,
+					);
 					delete subscriptions[url];
 					saveSubscriptions(data, subscriptions);
 					return false;
@@ -260,9 +267,7 @@ export class FunnelchatTrigger implements INodeType {
 
 				// Disabled (key revoked, too many failures): it cannot come back, so it is replaced by a new one.
 				if (current.status === 'disabled') {
-					this.logger.info(
-						`Funnelchat: la suscripción ${stored.id} está deshabilitada; se reemplaza`,
-					);
+					this.logger.info(`Funnelchat: subscription ${stored.id} is disabled; replacing it`);
 					await funnelchatApiRequest.call(this, {
 						method: 'DELETE',
 						url: `${SUBSCRIPTIONS_PATH}/${encodeURIComponent(stored.id)}`,
@@ -308,7 +313,7 @@ export class FunnelchatTrigger implements INodeType {
 				if (!created || typeof created.id !== 'string' || typeof created.secret !== 'string') {
 					throw new NodeOperationError(
 						this.getNode(),
-						'Funnelchat creó la suscripción pero la respuesta no trajo su id o su secreto.',
+						'Funnelchat created the subscription but the response did not include its id or its secret.',
 					);
 				}
 
@@ -330,7 +335,7 @@ export class FunnelchatTrigger implements INodeType {
 					acceptStatuses: [404],
 				});
 				if (response.statusCode === 404) {
-					this.logger.info(`Funnelchat: la suscripción ${stored.id} ya no existía`);
+					this.logger.info(`Funnelchat: subscription ${stored.id} did not exist anymore`);
 				}
 				delete subscriptions[url];
 				saveSubscriptions(data, subscriptions);
@@ -367,7 +372,7 @@ export class FunnelchatTrigger implements INodeType {
 		if (!valid || !event || typeof event !== 'object' || Array.isArray(event)) {
 			this.getResponseObject().status(400).json({
 				error: 'invalid_signature',
-				message: 'La firma X-Funnelchat-Signature no es válida para esta suscripción.',
+				message: 'The X-Funnelchat-Signature signature is not valid for this subscription.',
 			});
 			return { noWebhookResponse: true };
 		}

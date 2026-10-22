@@ -39,7 +39,7 @@ function toScalar(
 		const n = typeof value === 'number' ? value : Number(String(value).trim());
 		if (!Number.isFinite(n)) {
 			throw new RequestBuildError(
-				`«${param.displayName}» tiene que ser un número (recibió ${String(value)}).`,
+				`"${param.displayName}" has to be a number (got ${String(value)}).`,
 				param.name,
 			);
 		}
@@ -82,7 +82,7 @@ function parseJson(value: unknown, param: ParamSpec): unknown {
 	if (typeof value !== 'string') return value;
 	const parsed = tryJson(value);
 	if (parsed === INVALID_JSON) {
-		throw new RequestBuildError(`«${param.displayName}» no es un JSON válido.`, param.name);
+		throw new RequestBuildError(`"${param.displayName}" is not valid JSON.`, param.name);
 	}
 	return parsed;
 }
@@ -171,14 +171,15 @@ export function buildRequest(
 	for (const param of op.params) {
 		const raw = values[param.name];
 		if (param.location === 'path') {
-			if (isEmpty(raw)) throw new RequestBuildError(`Falta «${param.displayName}».`, param.name);
+			if (isEmpty(raw)) throw new RequestBuildError(`Missing "${param.displayName}".`, param.name);
 			const value = String(raw).trim();
 			path = path.replace(`{${param.apiName}}`, encodeURIComponent(value));
 			continue;
 		}
 		if (param.location === 'body' && jsonBody !== undefined) continue;
 		if (isEmpty(raw)) {
-			if (param.required) throw new RequestBuildError(`Falta «${param.displayName}».`, param.name);
+			if (param.required)
+				throw new RequestBuildError(`Missing "${param.displayName}".`, param.name);
 			continue;
 		}
 		const value = coerceValue(param, raw);
@@ -197,10 +198,7 @@ export function buildRequest(
 	if (jsonBody !== undefined) {
 		const parsed = typeof jsonBody === 'string' ? safeJson(jsonBody) : jsonBody;
 		if (parsed === undefined || parsed === null || typeof parsed !== 'object') {
-			throw new RequestBuildError(
-				'El cuerpo JSON tiene que ser un objeto o una lista.',
-				'jsonBody',
-			);
+			throw new RequestBuildError('The JSON body has to be an object or a list.', 'jsonBody');
 		}
 		body = parsed as IDataObject | IDataObject[];
 	}
@@ -212,7 +210,7 @@ export function buildRequest(
 function safeJson(text: string): unknown {
 	const parsed = tryJson(text);
 	if (parsed === INVALID_JSON)
-		throw new RequestBuildError('El cuerpo JSON no es válido.', 'jsonBody');
+		throw new RequestBuildError('The JSON body is not valid.', 'jsonBody');
 	return parsed;
 }
 

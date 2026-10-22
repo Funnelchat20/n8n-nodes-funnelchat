@@ -1,10 +1,10 @@
 {
-	"x-fc-suplemento": {
+	"x-fc-supplement": {
 		"id": "conversations-v1.18.10",
-		"titulo": "Envíos con clave, mensaje por id y formularios de WhatsApp de conversations",
-		"fuente": "conversations tag v1.18.10 @ a580a3d0020c98d9777c4f05437454c52af7ee55 (2026-10-22 01:29 -05:00, el que corre en production), solo lectura",
-		"reemplaza": true,
-		"archivos": [
+		"title": "Sends with an API key, message by ID and WhatsApp forms of conversations",
+		"source": "conversations tag v1.18.10 @ a580a3d0020c98d9777c4f05437454c52af7ee55 (2026-10-22 01:29 -05:00, the one running in production), read only",
+		"replaces": true,
+		"files": [
 			"back/config/platform-gate.php",
 			"back/routes/api/messages.php",
 			"back/routes/api/whatsapp-forms.php",
@@ -22,20 +22,20 @@
 			"back/app/Modules/WhatsappForm/Http/Controllers/WhatsappFormSendController.php",
 			"back/app/Modules/WhatsappForm/Http/Requests/*.php"
 		],
-		"motivo": "La especificación unificada del portal (instantánea del 13-10) es anterior al envío con clave, a la lectura de un mensaje y a los formularios. Las cinco operaciones de envío que ya estaban se reemplazan (mismo operationId, ruta y campos, más los nuevos y la respuesta 200); las demás son nuevas. Los operationId nuevos siguen la forma de Scramble (clase.método) y no están verificados contra una especificación generada. Cuando el portal publique una instantánea que los traiga, sacá este suplemento del config."
+		"reason": "The portal's unified specification (13-10 snapshot) predates sending with an API key, reading a message and the forms. The five send operations it already had are replaced (same operationId, route and fields, plus the new ones and the 200 response); the rest are new. The new operationIds follow the Scramble form (class.method) and are not checked against a generated specification. When the portal publishes a snapshot that has them, remove this supplement from the config."
 	},
 	"tags": [
 		{
 			"name": "WhatsappForm",
-			"x-displayName": "Formularios de WhatsApp",
-			"description": "Formularios nativos de WhatsApp: se arman, se publican en uno o más números, se envían a un contacto y sus respuestas llegan con el aviso whatsapp_form.completed."
+			"x-displayName": "WhatsApp forms",
+			"description": "Native WhatsApp forms: built, published on one or more numbers, sent to a contact, and their answers arrive with the whatsapp_form.completed event."
 		}
 	],
 	"paths": {
 		"/api/v1/contacts/{contact}/message": {
 			"post": {
 				"operationId": "conversation.sendMessage",
-				"summary": "Enviar un mensaje a un contacto",
+				"summary": "Send a message to a contact",
 				"tags": [
 					"Conversation"
 				],
@@ -76,7 +76,7 @@
 									"file": {
 										"type": "string",
 										"maxLength": 4096,
-										"description": "URL http(s) del archivo (también firmada o sin extensión, con Tipo de archivo) o el nombre de un archivo ya subido."
+										"description": "http(s) URL of the file (also signed or without an extension, with File Type) or the name of an already uploaded file."
 									},
 									"temporal_uuid": {
 										"type": "string"
@@ -163,7 +163,7 @@
 											"sticker",
 											null
 										],
-										"description": "Qué es el archivo, cuando Archivo es una URL que no muestra su extensión (por ejemplo una URL firmada). Sin él, una URL así responde 422 en file_type."
+										"description": "What the file is, when File is a URL that does not show its extension (for example a signed URL). Without it, such a URL answers 422 on file_type."
 									},
 									"file_name": {
 										"type": [
@@ -171,7 +171,7 @@
 											"null"
 										],
 										"maxLength": 255,
-										"description": "Nombre con el que llega el documento (sin / \\ ? #). Hace falta para un document cuya URL no termina en una extensión conocida."
+										"description": "Name the document arrives with (without / \\ ? #). Needed for a document whose URL does not end in a known extension."
 									},
 									"client_reference": {
 										"type": [
@@ -179,7 +179,7 @@
 											"null"
 										],
 										"maxLength": 64,
-										"description": "Tu identificador para este envío (1 a 64 caracteres ASCII visibles, sin espacios). Vuelve en el mensaje y en el aviso message.status_changed, para relacionarlos con tu sistema."
+										"description": "Your own identifier for this send (1 to 64 visible ASCII characters, no spaces). It comes back in the message and in the message.status_changed event, to match them with your system."
 									}
 								},
 								"required": [
@@ -193,7 +193,7 @@
 				},
 				"responses": {
 					"200": {
-						"description": "El mensaje en cola.",
+						"description": "The queued message.",
 						"content": {
 							"application/json": {
 								"schema": {
@@ -209,16 +209,16 @@
 					}
 				},
 				"x-fc-permission": "conversations:send",
-				"x-fc-proposito": "Usalo para enviarle a un contacto un mensaje de texto o un archivo desde uno de tus números, con opción de responder a un mensaje previo, sumar opciones o vista previa de link.",
 				"x-fc-domain": "conversations",
-				"x-fc-nota": "Con una clave responde 200 con el mensaje en cola (status queued) y su id; el resultado llega después en el aviso message.status_changed. Pasan las guardas de WhatsApp: ventana de 24 horas (422 window_closed), ritmo (429 rate_limited) y antibloqueo (422 antiblock_…). Con una clave, Teléfono o ID de WhatsApp es obligatorio y tiene que ser el del contacto (si no, 422 recipient_mismatch). Si el contacto agotó los contactos activos del mes, 429 mac_lockout_24h.",
-				"x-fc-reemplaza": "spec"
+				"x-fc-purpose": "Use it to send a contact a text message or a file from one of your numbers, optionally replying to a previous message, with options or a link preview.",
+				"x-fc-note": "With an API key it answers 200 with the queued message (status queued) and its ID; the result comes later in the message.status_changed event. The WhatsApp guards apply: 24-hour window (422 window_closed), pace (429 rate_limited) and anti-blocking (422 antiblock_…). With an API key, Phone or WhatsApp ID is required and must be the contact's (otherwise 422 recipient_mismatch). If the account is in the 24-hour lockout for monthly active contacts, 429 mac_lockout_24h.",
+				"x-fc-replaces": "spec"
 			}
 		},
 		"/api/v1/message/send-message": {
 			"post": {
 				"operationId": "message.sendMessage",
-				"summary": "Enviar un mensaje",
+				"summary": "Send a message",
 				"tags": [
 					"Message"
 				],
@@ -241,7 +241,7 @@
 									"file": {
 										"type": "string",
 										"maxLength": 4096,
-										"description": "URL http(s) del archivo (también firmada o sin extensión, con Tipo de archivo) o el nombre de un archivo ya subido."
+										"description": "http(s) URL of the file (also signed or without an extension, with File Type) or the name of an already uploaded file."
 									},
 									"temporal_uuid": {
 										"type": "string"
@@ -269,7 +269,7 @@
 											"sticker",
 											null
 										],
-										"description": "Qué es el archivo, cuando Archivo es una URL que no muestra su extensión (por ejemplo una URL firmada). Sin él, una URL así responde 422 en file_type."
+										"description": "What the file is, when File is a URL that does not show its extension (for example a signed URL). Without it, such a URL answers 422 on file_type."
 									},
 									"file_name": {
 										"type": [
@@ -277,7 +277,7 @@
 											"null"
 										],
 										"maxLength": 255,
-										"description": "Nombre con el que llega el documento (sin / \\ ? #). Hace falta para un document cuya URL no termina en una extensión conocida."
+										"description": "Name the document arrives with (without / \\ ? #). Needed for a document whose URL does not end in a known extension."
 									},
 									"client_reference": {
 										"type": [
@@ -285,7 +285,7 @@
 											"null"
 										],
 										"maxLength": 64,
-										"description": "Tu identificador para este envío (1 a 64 caracteres ASCII visibles, sin espacios). Vuelve en el mensaje y en el aviso message.status_changed, para relacionarlos con tu sistema."
+										"description": "Your own identifier for this send (1 to 64 visible ASCII characters, no spaces). It comes back in the message and in the message.status_changed event, to match them with your system."
 									}
 								},
 								"required": [
@@ -298,7 +298,7 @@
 				},
 				"responses": {
 					"200": {
-						"description": "El mensaje en cola.",
+						"description": "The queued message.",
 						"content": {
 							"application/json": {
 								"schema": {
@@ -314,16 +314,16 @@
 					}
 				},
 				"x-fc-permission": "conversations:send",
-				"x-fc-proposito": "Sirve para enviar un mensaje de texto o un archivo a un contacto, indicando en el cuerpo el `contact_id` y el número desde el que sale.",
 				"x-fc-domain": "conversations",
-				"x-fc-nota": "Con una clave responde 200 con el mensaje en cola (status queued) y su id; el resultado llega después en el aviso message.status_changed. Pasan las guardas de WhatsApp: ventana de 24 horas (422 window_closed), ritmo (429 rate_limited) y antibloqueo (422 antiblock_…).",
-				"x-fc-reemplaza": "spec"
+				"x-fc-purpose": "Sends a message to a contact from one of your numbers, given the contact and the number in the body.",
+				"x-fc-note": "With an API key it answers 200 with the queued message (status queued) and its ID; the result comes later in the message.status_changed event. The WhatsApp guards apply: 24-hour window (422 window_closed), pace (429 rate_limited) and anti-blocking (422 antiblock_…).",
+				"x-fc-replaces": "spec"
 			}
 		},
 		"/api/v1/contacts/{contact}/messages/{message}/forward": {
 			"post": {
 				"operationId": "forwardMessage.store",
-				"summary": "Reenviar un mensaje",
+				"summary": "Forward a message",
 				"tags": [
 					"ForwardMessage"
 				],
@@ -379,7 +379,7 @@
 											"null"
 										],
 										"maxLength": 64,
-										"description": "Tu identificador para este envío (1 a 64 caracteres ASCII visibles, sin espacios). Vuelve en el mensaje y en el aviso message.status_changed, para relacionarlos con tu sistema."
+										"description": "Your own identifier for this send (1 to 64 visible ASCII characters, no spaces). It comes back in the message and in the message.status_changed event, to match them with your system."
 									}
 								},
 								"required": [
@@ -392,7 +392,7 @@
 				},
 				"responses": {
 					"200": {
-						"description": "Un resultado por destino, en el orden pedido.",
+						"description": "One result per target, in the requested order.",
 						"content": {
 							"application/json": {
 								"schema": {
@@ -441,16 +441,16 @@
 					}
 				},
 				"x-fc-permission": "conversations:send",
-				"x-fc-proposito": "Usalo para reenviar un mensaje de una conversación a otros contactos, eligiendo desde qué número sale cada envío; la respuesta indica el resultado por destino.",
 				"x-fc-domain": "conversations",
-				"x-fc-nota": "Con una clave responde 200 con un resultado por destino: queued con su mensaje, o blocked con el motivo (reason).",
-				"x-fc-reemplaza": "spec"
+				"x-fc-purpose": "Use it to forward a message of a conversation to up to 5 other contacts.",
+				"x-fc-note": "With an API key it answers 200 with one result per target: queued with its message, or blocked with the reason.",
+				"x-fc-replaces": "spec"
 			}
 		},
 		"/api/v1/contacts/{contact}/message/contact-card": {
 			"post": {
 				"operationId": "contactCard.store",
-				"summary": "Enviar una tarjeta de contacto",
+				"summary": "Send a contact card",
 				"tags": [
 					"ContactCard"
 				],
@@ -489,7 +489,7 @@
 											"null"
 										],
 										"maxLength": 64,
-										"description": "Tu identificador para este envío (1 a 64 caracteres ASCII visibles, sin espacios). Vuelve en el mensaje y en el aviso message.status_changed, para relacionarlos con tu sistema."
+										"description": "Your own identifier for this send (1 to 64 visible ASCII characters, no spaces). It comes back in the message and in the message.status_changed event, to match them with your system."
 									}
 								},
 								"required": [
@@ -503,7 +503,7 @@
 				},
 				"responses": {
 					"200": {
-						"description": "Un mensaje por tarjeta, en cola.",
+						"description": "One queued message per card.",
 						"content": {
 							"application/json": {
 								"schema": {
@@ -522,16 +522,16 @@
 					}
 				},
 				"x-fc-permission": "conversations:send",
-				"x-fc-proposito": "Sirve para compartirle a un contacto una o más tarjetas de contacto desde uno de tus números, por ejemplo para pasarle el contacto de un vendedor o de soporte.",
 				"x-fc-domain": "conversations",
-				"x-fc-nota": "Con una clave responde 200 con un mensaje en cola por tarjeta (status queued); el resultado llega después en el aviso message.status_changed. Pasan las guardas de WhatsApp: ventana de 24 horas (422 window_closed), ritmo (429 rate_limited) y antibloqueo (422 antiblock_…).",
-				"x-fc-reemplaza": "spec"
+				"x-fc-purpose": "Sends a contact up to 5 contact cards of the account, one message per card.",
+				"x-fc-note": "With an API key it answers 200 with one queued message per card (status queued); the result comes later in the message.status_changed event. The WhatsApp guards apply: 24-hour window (422 window_closed), pace (429 rate_limited) and anti-blocking (422 antiblock_…).",
+				"x-fc-replaces": "spec"
 			}
 		},
 		"/api/v1/devices/{device}/templates/{template}/send-template": {
 			"post": {
 				"operationId": "messageTemplate.send",
-				"summary": "Enviar una plantilla",
+				"summary": "Send a template",
 				"tags": [
 					"MessageTemplate"
 				],
@@ -586,7 +586,7 @@
 											"null"
 										],
 										"maxLength": 64,
-										"description": "Tu identificador para este envío (1 a 64 caracteres ASCII visibles, sin espacios). Vuelve en el mensaje y en el aviso message.status_changed, para relacionarlos con tu sistema."
+										"description": "Your own identifier for this send (1 to 64 visible ASCII characters, no spaces). It comes back in the message and in the message.status_changed event, to match them with your system."
 									}
 								},
 								"required": [
@@ -599,7 +599,7 @@
 				},
 				"responses": {
 					"200": {
-						"description": "El mensaje en cola.",
+						"description": "The queued message.",
 						"content": {
 							"application/json": {
 								"schema": {
@@ -615,22 +615,22 @@
 					}
 				},
 				"x-fc-permission": "conversations:send",
-				"x-fc-proposito": "Sirve para enviar una plantilla desde uno de tus números a un teléfono o contacto, completando sus variables, por ejemplo un aviso, un recordatorio o una confirmación.",
 				"x-fc-domain": "conversations",
-				"x-fc-nota": "Con una clave responde 200 con el mensaje en cola (status queued) y su id; el resultado llega en el aviso message.status_changed. Una plantilla no pide la ventana de 24 horas.",
-				"x-fc-reemplaza": "spec"
+				"x-fc-purpose": "Use it to send an approved WhatsApp template to a contact, with its variables, also outside the 24-hour window.",
+				"x-fc-note": "With an API key it answers 200 with the queued message (status queued) and its ID; the result comes in the message.status_changed event. A template does not need the 24-hour window.",
+				"x-fc-replaces": "spec"
 			}
 		},
 		"/api/v1/contacts/{contact}/messages/{message}": {
 			"get": {
 				"operationId": "showMessage",
-				"summary": "Ver un mensaje",
+				"summary": "Get a message",
 				"tags": [
 					"Message"
 				],
 				"x-fc-domain": "conversations",
 				"x-fc-permission": "conversations:read",
-				"x-fc-proposito": "Usalo para consultar el estado de un mensaje por su id (el que devolvió el envío): queued, sent, delivered, read o failed, con el error y tu client_reference.",
+				"x-fc-purpose": "Use it to check the status of a message by its ID (the one the send returned): queued, sent, delivered, read or failed, with the error and your client_reference.",
 				"parameters": [
 					{
 						"name": "contact",
@@ -639,7 +639,7 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Contacto del mensaje."
+						"description": "Contact of the message."
 					},
 					{
 						"name": "message",
@@ -648,12 +648,12 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Id del mensaje."
+						"description": "Message ID."
 					}
 				],
 				"responses": {
 					"200": {
-						"description": "El mensaje, sin envoltorio.",
+						"description": "The message, unwrapped.",
 						"content": {
 							"application/json": {
 								"schema": {
@@ -663,7 +663,7 @@
 						}
 					},
 					"404": {
-						"description": "No existe o no es de la cuenta."
+						"description": "It does not exist or is not of the account."
 					}
 				}
 			}
@@ -671,13 +671,13 @@
 		"/api/v1/forms": {
 			"get": {
 				"operationId": "whatsappForm.index",
-				"summary": "Listar formularios",
+				"summary": "List forms",
 				"tags": [
 					"WhatsappForm"
 				],
 				"x-fc-domain": "conversations",
 				"x-fc-permission": "conversations:read",
-				"x-fc-proposito": "Usalo para ver los formularios de WhatsApp de la cuenta, uno por formulario con su versión actual, envíos y respuestas.",
+				"x-fc-purpose": "Use it to see the WhatsApp forms of the account, one row per form with its current version, sends and responses.",
 				"parameters": [
 					{
 						"name": "q",
@@ -685,7 +685,7 @@
 						"schema": {
 							"type": "string"
 						},
-						"description": "Busca por nombre."
+						"description": "Searches by name."
 					},
 					{
 						"name": "status",
@@ -698,7 +698,7 @@
 								"deprecated"
 							]
 						},
-						"description": "Estado."
+						"description": "Status."
 					},
 					{
 						"name": "device_id",
@@ -706,7 +706,7 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Solo los de este número."
+						"description": "Only the ones of this number."
 					},
 					{
 						"name": "per_page",
@@ -732,7 +732,7 @@
 				},
 				"responses": {
 					"200": {
-						"description": "Formularios, paginados.",
+						"description": "Forms, paginated.",
 						"content": {
 							"application/json": {
 								"schema": {
@@ -767,13 +767,13 @@
 			},
 			"post": {
 				"operationId": "whatsappForm.store",
-				"summary": "Crear un formulario",
+				"summary": "Create a form",
 				"tags": [
 					"WhatsappForm"
 				],
 				"x-fc-domain": "conversations",
 				"x-fc-permission": "conversations:write",
-				"x-fc-proposito": "Usalo para crear un formulario en borrador desde una plantilla (blank lo arranca vacío) para uno o más números. Después se edita, se valida y se publica.",
+				"x-fc-purpose": "Use it to create a draft form from a template (blank starts it empty) for one or more numbers. Then it is edited, validated and published.",
 				"requestBody": {
 					"required": true,
 					"content": {
@@ -787,18 +787,18 @@
 								"properties": {
 									"device_id": {
 										"type": "integer",
-										"description": "Número principal del formulario."
+										"description": "Main number of the form."
 									},
 									"device_ids": {
 										"type": "array",
 										"items": {
 											"type": "integer"
 										},
-										"description": "Otros números (hasta 50)."
+										"description": "Other numbers (up to 50)."
 									},
 									"template_key": {
 										"type": "string",
-										"description": "Clave de la plantilla de formulario (de Listar plantillas de formulario); blank para empezar vacío."
+										"description": "Key of the form template (from List form templates); blank to start empty."
 									}
 								}
 							}
@@ -807,7 +807,7 @@
 				},
 				"responses": {
 					"201": {
-						"description": "El formulario creado, su lint y sus números.",
+						"description": "The created form, its lint and its numbers.",
 						"content": {
 							"application/json": {
 								"schema": {
@@ -822,16 +822,16 @@
 		"/api/v1/forms/templates": {
 			"get": {
 				"operationId": "whatsappForm.templates",
-				"summary": "Listar plantillas de formulario",
+				"summary": "List form templates",
 				"tags": [
 					"WhatsappForm"
 				],
 				"x-fc-domain": "conversations",
 				"x-fc-permission": "conversations:read",
-				"x-fc-proposito": "Usalo para ver con qué plantillas se puede crear un formulario.",
+				"x-fc-purpose": "Use it to see which templates a form can be created from.",
 				"responses": {
 					"200": {
-						"description": "Plantillas.",
+						"description": "Templates.",
 						"content": {
 							"application/json": {
 								"schema": {
@@ -868,13 +868,13 @@
 		"/api/v1/forms/{id}": {
 			"get": {
 				"operationId": "whatsappForm.show",
-				"summary": "Ver un formulario",
+				"summary": "Get a form",
 				"tags": [
 					"WhatsappForm"
 				],
 				"x-fc-domain": "conversations",
 				"x-fc-permission": "conversations:read",
-				"x-fc-proposito": "Usalo para ver una versión de un formulario con su definición, su lint, sus versiones y sus números.",
+				"x-fc-purpose": "Use it to see a version of a form with its definition, its lint, its versions and its numbers.",
 				"parameters": [
 					{
 						"name": "id",
@@ -883,7 +883,7 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones)."
+						"description": "ID of a version of the form (id from List forms or from its versions)."
 					}
 				],
 				"responses": {
@@ -901,13 +901,13 @@
 			},
 			"put": {
 				"operationId": "whatsappForm.update",
-				"summary": "Guardar un formulario",
+				"summary": "Save a form",
 				"tags": [
 					"WhatsappForm"
 				],
 				"x-fc-domain": "conversations",
 				"x-fc-permission": "conversations:write",
-				"x-fc-proposito": "Usalo para guardar la definición de un borrador (pantallas y preguntas). Un formulario publicado no se edita: creá una versión nueva.",
+				"x-fc-purpose": "Use it to save the definition of a draft (screens and questions). A published form is not edited: create a new version.",
 				"parameters": [
 					{
 						"name": "id",
@@ -916,7 +916,7 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones)."
+						"description": "ID of a version of the form (id from List forms or from its versions)."
 					}
 				],
 				"requestBody": {
@@ -931,18 +931,18 @@
 								"properties": {
 									"name": {
 										"type": "string",
-										"description": "Nombre (hasta 120 caracteres)."
+										"description": "Name (up to 120 characters)."
 									},
 									"definition": {
 										"type": "object",
-										"description": "La definición completa: {screens: [...]}, como la devuelve Ver un formulario."
+										"description": "The full definition: {screens: [...]}, as Get a form returns it."
 									},
 									"expected_updated_at": {
 										"type": [
 											"string",
 											"null"
 										],
-										"description": "El updated_at que leíste; si cambió en el medio, 409 STALE."
+										"description": "The updated_at you read; if it changed in between, 409 STALE."
 									}
 								}
 							}
@@ -964,13 +964,13 @@
 			},
 			"delete": {
 				"operationId": "whatsappForm.destroy",
-				"summary": "Eliminar un borrador de formulario",
+				"summary": "Delete a draft form",
 				"tags": [
 					"WhatsappForm"
 				],
 				"x-fc-domain": "conversations",
 				"x-fc-permission": "conversations:write",
-				"x-fc-proposito": "Usalo para borrar una versión en borrador. Una publicada responde 409 PUBLISHED.",
+				"x-fc-purpose": "Use it to delete a draft version. A published one answers 409 PUBLISHED.",
 				"parameters": [
 					{
 						"name": "id",
@@ -979,12 +979,12 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones)."
+						"description": "ID of a version of the form (id from List forms or from its versions)."
 					}
 				],
 				"responses": {
 					"204": {
-						"description": "Borrado."
+						"description": "Deleted."
 					}
 				}
 			}
@@ -992,13 +992,13 @@
 		"/api/v1/forms/{id}/numbers": {
 			"get": {
 				"operationId": "whatsappForm.numbersIndex",
-				"summary": "Ver los números de un formulario",
+				"summary": "Get a form's numbers",
 				"tags": [
 					"WhatsappForm"
 				],
 				"x-fc-domain": "conversations",
 				"x-fc-permission": "conversations:read",
-				"x-fc-proposito": "Usalo para ver en qué números está el formulario y el estado de su publicación en cada uno.",
+				"x-fc-purpose": "Use it to see which numbers the form is on and the status of its publication on each one.",
 				"parameters": [
 					{
 						"name": "id",
@@ -1007,7 +1007,7 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones)."
+						"description": "ID of a version of the form (id from List forms or from its versions)."
 					}
 				],
 				"responses": {
@@ -1025,13 +1025,13 @@
 			},
 			"post": {
 				"operationId": "whatsappForm.addNumber",
-				"summary": "Agregar un número a un formulario",
+				"summary": "Add a number to a form",
 				"tags": [
 					"WhatsappForm"
 				],
 				"x-fc-domain": "conversations",
 				"x-fc-permission": "conversations:write",
-				"x-fc-proposito": "Usalo para sumar un número al formulario; si ya está publicado, se publica también en ese número.",
+				"x-fc-purpose": "Use it to add a number to the form; if it is already published, it is published on that number too.",
 				"parameters": [
 					{
 						"name": "id",
@@ -1040,7 +1040,7 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones)."
+						"description": "ID of a version of the form (id from List forms or from its versions)."
 					}
 				],
 				"requestBody": {
@@ -1055,7 +1055,7 @@
 								"properties": {
 									"device_id": {
 										"type": "integer",
-										"description": "Número a agregar."
+										"description": "Number to add."
 									}
 								}
 							}
@@ -1079,13 +1079,13 @@
 		"/api/v1/forms/{id}/numbers/{deviceId}": {
 			"delete": {
 				"operationId": "whatsappForm.removeNumber",
-				"summary": "Quitar un número de un formulario",
+				"summary": "Remove a number from a form",
 				"tags": [
 					"WhatsappForm"
 				],
 				"x-fc-domain": "conversations",
 				"x-fc-permission": "conversations:write",
-				"x-fc-proposito": "Usalo para sacar un número del formulario. El número principal no se puede quitar (422 PRIMARY_NUMBER).",
+				"x-fc-purpose": "Use it to take a number off the form. The main number cannot be removed (422 PRIMARY_NUMBER).",
 				"parameters": [
 					{
 						"name": "id",
@@ -1094,7 +1094,7 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones)."
+						"description": "ID of a version of the form (id from List forms or from its versions)."
 					},
 					{
 						"name": "deviceId",
@@ -1103,7 +1103,7 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Número a quitar."
+						"description": "Number to remove."
 					}
 				],
 				"responses": {
@@ -1123,13 +1123,13 @@
 		"/api/v1/forms/{id}/numbers/retry": {
 			"post": {
 				"operationId": "whatsappForm.retryNumbers",
-				"summary": "Reintentar la publicación en los números",
+				"summary": "Retry publishing on the numbers",
 				"tags": [
 					"WhatsappForm"
 				],
 				"x-fc-domain": "conversations",
 				"x-fc-permission": "conversations:write",
-				"x-fc-proposito": "Usalo para reintentar la publicación en los números donde falló.",
+				"x-fc-purpose": "Use it to retry the publication on the numbers where it failed.",
 				"parameters": [
 					{
 						"name": "id",
@@ -1138,7 +1138,7 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones)."
+						"description": "ID of a version of the form (id from List forms or from its versions)."
 					}
 				],
 				"responses": {
@@ -1158,13 +1158,13 @@
 		"/api/v1/forms/{id}/versions": {
 			"post": {
 				"operationId": "whatsappForm.storeVersion",
-				"summary": "Crear una versión nueva de un formulario",
+				"summary": "Create a new version of a form",
 				"tags": [
 					"WhatsappForm"
 				],
 				"x-fc-domain": "conversations",
 				"x-fc-permission": "conversations:write",
-				"x-fc-proposito": "Usalo para editar un formulario publicado: crea un borrador nuevo a partir de él, o devuelve el borrador que ya existía (created: false).",
+				"x-fc-purpose": "Use it to edit a published form: creates a new draft from it, or returns the draft that already existed (created: false).",
 				"parameters": [
 					{
 						"name": "id",
@@ -1173,7 +1173,7 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones)."
+						"description": "ID of a version of the form (id from List forms or from its versions)."
 					}
 				],
 				"responses": {
@@ -1193,13 +1193,13 @@
 		"/api/v1/forms/{id}/sync": {
 			"post": {
 				"operationId": "whatsappForm.sync",
-				"summary": "Validar un formulario en Meta",
+				"summary": "Validate a form with Meta",
 				"tags": [
 					"WhatsappForm"
 				],
 				"x-fc-domain": "conversations",
 				"x-fc-permission": "conversations:write",
-				"x-fc-proposito": "Usalo para subir el borrador a Meta y traer sus errores de validación antes de publicar.",
+				"x-fc-purpose": "Use it to upload the draft to Meta and get its validation errors before publishing.",
 				"parameters": [
 					{
 						"name": "id",
@@ -1208,7 +1208,7 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones)."
+						"description": "ID of a version of the form (id from List forms or from its versions)."
 					}
 				],
 				"responses": {
@@ -1228,13 +1228,13 @@
 		"/api/v1/forms/{id}/publish": {
 			"post": {
 				"operationId": "whatsappForm.publish",
-				"summary": "Publicar un formulario",
+				"summary": "Publish a form",
 				"tags": [
 					"WhatsappForm"
 				],
 				"x-fc-domain": "conversations",
 				"x-fc-permission": "conversations:write",
-				"x-fc-proposito": "Usalo para publicar el borrador en sus números. Con errores responde 422 LINT; si Meta lo rechaza, 502 META.",
+				"x-fc-purpose": "Use it to publish the draft on its numbers. With errors it answers 422 LINT; if Meta rejects it, 502 META.",
 				"parameters": [
 					{
 						"name": "id",
@@ -1243,7 +1243,7 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Id de una versión del formulario (id de Listar formularios o de sus versiones)."
+						"description": "ID of a version of the form (id from List forms or from its versions)."
 					}
 				],
 				"responses": {
@@ -1263,13 +1263,13 @@
 		"/api/v1/forms/families/{familyId}/definition": {
 			"get": {
 				"operationId": "whatsappForm.definition",
-				"summary": "Ver la definición publicada de un formulario",
+				"summary": "Get a form's published definition",
 				"tags": [
 					"WhatsappForm"
 				],
 				"x-fc-domain": "conversations",
 				"x-fc-permission": "conversations:read",
-				"x-fc-proposito": "Usalo para leer la definición de la versión vigente de un formulario.",
+				"x-fc-purpose": "Use it to read the definition of the current version of a form.",
 				"parameters": [
 					{
 						"name": "familyId",
@@ -1278,7 +1278,7 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Id del formulario (family_id), el mismo en todas sus versiones."
+						"description": "ID of the form (family_id), the same in all its versions."
 					}
 				],
 				"responses": {
@@ -1298,13 +1298,13 @@
 		"/api/v1/forms/families/{familyId}/versions": {
 			"get": {
 				"operationId": "whatsappForm.versions",
-				"summary": "Listar las versiones de un formulario",
+				"summary": "List a form's versions",
 				"tags": [
 					"WhatsappForm"
 				],
 				"x-fc-domain": "conversations",
 				"x-fc-permission": "conversations:read",
-				"x-fc-proposito": "Usalo para ver todas las versiones de un formulario con su estado y sus respuestas.",
+				"x-fc-purpose": "Use it to see all the versions of a form with their status and responses.",
 				"parameters": [
 					{
 						"name": "familyId",
@@ -1313,7 +1313,7 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Id del formulario (family_id), el mismo en todas sus versiones."
+						"description": "ID of the form (family_id), the same in all its versions."
 					},
 					{
 						"name": "perPage",
@@ -1339,7 +1339,7 @@
 				},
 				"responses": {
 					"200": {
-						"description": "Versiones.",
+						"description": "Versions.",
 						"content": {
 							"application/json": {
 								"schema": {
@@ -1376,13 +1376,13 @@
 		"/api/v1/forms/families/{familyId}/responses": {
 			"get": {
 				"operationId": "whatsappForm.responses",
-				"summary": "Listar las respuestas de un formulario",
+				"summary": "List a form's responses",
 				"tags": [
 					"WhatsappForm"
 				],
 				"x-fc-domain": "conversations",
 				"x-fc-permission": "conversations:read",
-				"x-fc-proposito": "Usalo para traer las respuestas de un formulario, de todas sus versiones, con el contacto y los valores de cada campo.",
+				"x-fc-purpose": "Use it to get the responses of a form, across all its versions, with the contact and the value of each field.",
 				"parameters": [
 					{
 						"name": "familyId",
@@ -1391,7 +1391,7 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Id del formulario (family_id), el mismo en todas sus versiones."
+						"description": "ID of the form (family_id), the same in all its versions."
 					},
 					{
 						"name": "from",
@@ -1400,7 +1400,7 @@
 							"type": "string",
 							"format": "date"
 						},
-						"description": "Desde esta fecha."
+						"description": "From this date."
 					},
 					{
 						"name": "to",
@@ -1409,7 +1409,7 @@
 							"type": "string",
 							"format": "date"
 						},
-						"description": "Hasta esta fecha."
+						"description": "Up to this date."
 					},
 					{
 						"name": "version_id",
@@ -1417,7 +1417,7 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Solo esta versión."
+						"description": "Only this version."
 					},
 					{
 						"name": "origin",
@@ -1425,7 +1425,7 @@
 						"schema": {
 							"type": "string"
 						},
-						"description": "Origen del envío (por ejemplo api o automation)."
+						"description": "Origin of the send (for example api or automation)."
 					},
 					{
 						"name": "status",
@@ -1439,7 +1439,7 @@
 								"unfinished"
 							]
 						},
-						"description": "Estado de la respuesta."
+						"description": "Status of the response."
 					},
 					{
 						"name": "search",
@@ -1447,7 +1447,7 @@
 						"schema": {
 							"type": "string"
 						},
-						"description": "Busca por contacto."
+						"description": "Searches by contact."
 					},
 					{
 						"name": "per_page",
@@ -1473,7 +1473,7 @@
 				},
 				"responses": {
 					"200": {
-						"description": "Respuestas, paginadas.",
+						"description": "Responses, paginated.",
 						"content": {
 							"application/json": {
 								"schema": {
@@ -1510,13 +1510,13 @@
 		"/api/v1/forms/families/{familyId}/responses/{runId}": {
 			"get": {
 				"operationId": "whatsappForm.response",
-				"summary": "Ver una respuesta de un formulario",
+				"summary": "Get a form's response",
 				"tags": [
 					"WhatsappForm"
 				],
 				"x-fc-domain": "conversations",
 				"x-fc-permission": "conversations:read",
-				"x-fc-proposito": "Usalo para ver una respuesta completa: cada respuesta del contacto, los tiempos del envío y lo que hizo el formulario.",
+				"x-fc-purpose": "Use it to see a full response: each answer of the contact, the times of the send and what the form did.",
 				"parameters": [
 					{
 						"name": "familyId",
@@ -1525,7 +1525,7 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Id del formulario (family_id), el mismo en todas sus versiones."
+						"description": "ID of the form (family_id), the same in all its versions."
 					},
 					{
 						"name": "runId",
@@ -1534,7 +1534,7 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Id de la respuesta."
+						"description": "Response ID."
 					}
 				],
 				"responses": {
@@ -1554,13 +1554,13 @@
 		"/api/v1/forms/families/{familyId}/metrics": {
 			"get": {
 				"operationId": "whatsappForm.metrics",
-				"summary": "Ver las métricas de un formulario",
+				"summary": "Get a form's metrics",
 				"tags": [
 					"WhatsappForm"
 				],
 				"x-fc-domain": "conversations",
 				"x-fc-permission": "conversations:read",
-				"x-fc-proposito": "Usalo para ver cuántos formularios se enviaron, entregaron, leyeron y completaron, y las tasas.",
+				"x-fc-purpose": "Use it to see how many forms were sent, delivered, read and completed, and the rates.",
 				"parameters": [
 					{
 						"name": "familyId",
@@ -1569,7 +1569,7 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Id del formulario (family_id), el mismo en todas sus versiones."
+						"description": "ID of the form (family_id), the same in all its versions."
 					},
 					{
 						"name": "from",
@@ -1578,7 +1578,7 @@
 							"type": "string",
 							"format": "date"
 						},
-						"description": "Desde esta fecha."
+						"description": "From this date."
 					},
 					{
 						"name": "to",
@@ -1587,7 +1587,7 @@
 							"type": "string",
 							"format": "date"
 						},
-						"description": "Hasta esta fecha."
+						"description": "Up to this date."
 					},
 					{
 						"name": "version_id",
@@ -1595,7 +1595,7 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Solo esta versión."
+						"description": "Only this version."
 					},
 					{
 						"name": "origin",
@@ -1603,7 +1603,7 @@
 						"schema": {
 							"type": "string"
 						},
-						"description": "Origen del envío (por ejemplo api o automation)."
+						"description": "Origin of the send (for example api or automation)."
 					}
 				],
 				"responses": {
@@ -1623,13 +1623,13 @@
 		"/api/v1/contacts/{contact}/message/form": {
 			"post": {
 				"operationId": "whatsappFormSend.store",
-				"summary": "Enviar un formulario a un contacto",
+				"summary": "Send a form to a contact",
 				"tags": [
 					"WhatsappForm"
 				],
 				"x-fc-domain": "conversations",
 				"x-fc-permission": "conversations:send",
-				"x-fc-proposito": "Usalo para mandarle a un contacto un formulario publicado. Cuando lo completa llega el aviso whatsapp_form.completed con sus respuestas.",
+				"x-fc-purpose": "Use it to send a published form to a contact. When they complete it, the whatsapp_form.completed event arrives with the answers.",
 				"parameters": [
 					{
 						"name": "contact",
@@ -1638,7 +1638,7 @@
 						"schema": {
 							"type": "integer"
 						},
-						"description": "Contacto."
+						"description": "Contact."
 					}
 				],
 				"requestBody": {
@@ -1654,19 +1654,19 @@
 								"properties": {
 									"form_id": {
 										"type": "integer",
-										"description": "Id del formulario (family_id), no el de una versión: se envía la versión publicada."
+										"description": "ID of the form (family_id), not of a version: the published version is sent."
 									},
 									"device_id": {
 										"type": "integer",
-										"description": "Número que lo envía; el formulario tiene que estar publicado en él."
+										"description": "Number that sends it; the form has to be published on it."
 									},
 									"text": {
 										"type": "string",
-										"description": "Texto del mensaje (hasta 1024 caracteres). Por defecto, el nombre del formulario."
+										"description": "Text of the message (up to 1024 characters). By default, the name of the form."
 									},
 									"button_text": {
 										"type": "string",
-										"description": "Texto del botón (hasta 30 caracteres, sin emojis). Por defecto «Abrir»."
+										"description": "Text of the button (up to 30 characters, no emojis). By default \"Abrir\" or \"Open\", by the language of the key's user."
 									},
 									"client_reference": {
 										"type": [
@@ -1674,7 +1674,7 @@
 											"null"
 										],
 										"maxLength": 64,
-										"description": "Tu identificador para este envío (1 a 64 caracteres ASCII visibles, sin espacios). Vuelve en el mensaje y en el aviso message.status_changed, para relacionarlos con tu sistema."
+										"description": "Your own identifier for this send (1 to 64 visible ASCII characters, no spaces). It comes back in the message and in the message.status_changed event, to match them with your system."
 									}
 								}
 							}
@@ -1683,7 +1683,7 @@
 				},
 				"responses": {
 					"200": {
-						"description": "El mensaje en cola, type whatsapp_form.",
+						"description": "The queued message, type whatsapp_form.",
 						"content": {
 							"application/json": {
 								"schema": {
@@ -1698,7 +1698,7 @@
 						}
 					}
 				},
-				"x-fc-nota": "Con una clave responde 200 con el mensaje en cola (status queued) y su id; el resultado llega después en el aviso message.status_changed. Pasan las guardas de WhatsApp: ventana de 24 horas (422 window_closed), ritmo (429 rate_limited) y antibloqueo (422 antiblock_…). Errores propios: 404 form_not_found y 422 form_not_published, form_not_on_number, number_not_eligible."
+				"x-fc-note": "With an API key it answers 200 with the queued message (status queued) and its ID; the result comes later in the message.status_changed event. The WhatsApp guards apply: 24-hour window (422 window_closed), pace (429 rate_limited) and anti-blocking (422 antiblock_…). Its own errors: 404 form_not_found and 422 form_not_published, form_not_on_number, number_not_eligible."
 			}
 		}
 	},
@@ -1709,15 +1709,15 @@
 				"properties": {
 					"id": {
 						"type": "integer",
-						"description": "Id del mensaje."
+						"description": "Message ID."
 					},
 					"contact_id": {
 						"type": "integer",
-						"description": "Contacto."
+						"description": "Contact."
 					},
 					"device_id": {
 						"type": "integer",
-						"description": "Número."
+						"description": "Number."
 					},
 					"direction": {
 						"type": "string",
@@ -1728,7 +1728,7 @@
 					},
 					"type": {
 						"type": "string",
-						"description": "Tipo público del mensaje (text, image, document, contact, template, whatsapp_form…)."
+						"description": "Public type of the message (text, image, document, contact, template, whatsapp_form…)."
 					},
 					"status": {
 						"type": [

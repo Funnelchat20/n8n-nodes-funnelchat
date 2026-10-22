@@ -6,12 +6,12 @@
 	"resources": {
 		"credentialDocumentation": [
 			{
-				"url": "https://github.com/Funnelchat20/n8n-nodes-funnelchat#credencial"
+				"url": "https://github.com/Funnelchat20/n8n-nodes-funnelchat#credential"
 			}
 		],
 		"primaryDocumentation": [
 			{
-				"url": "https://github.com/Funnelchat20/n8n-nodes-funnelchat#nodo-funnelchat"
+				"url": "https://github.com/Funnelchat20/n8n-nodes-funnelchat#the-funnelchat-node"
 			}
 		]
 	}

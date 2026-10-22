@@ -1,7 +1,7 @@
 import type { INodeProperties, INodePropertyOptions } from 'n8n-workflow';
 import type { OperationSpec, ParamSpec, ResourceSpec } from './operationTypes';
 
-/** Required parameters and path parameters are shown as fields; the rest go into the «Filtros» and «Campos adicionales» collections. */
+/** Required parameters and path parameters are shown as fields; the rest go into the "Filters" and "Additional Fields" collections. */
 export function isTopLevel(param: ParamSpec): boolean {
 	return param.location === 'path' || param.required;
 }
@@ -84,21 +84,20 @@ function operationProperties(op: OperationSpec): INodeProperties[] {
 	if (jsonOption) {
 		props.push(
 			{
-				displayName: 'Enviar el cuerpo como JSON',
+				displayName: 'Send Body as JSON',
 				name: 'useJsonBody',
 				type: 'boolean',
 				default: false,
-				// eslint-disable-next-line n8n-nodes-base/node-param-description-boolean-without-whether -- the UI of this package is in Spanish (see README); this rule enforces English wording
 				description:
-					'Si está activo, escribís el cuerpo completo del pedido en JSON en vez de completar los campos uno por uno',
+					'Whether to write the whole request body in JSON instead of filling in the fields one by one',
 				displayOptions: { show },
 			},
 			{
-				displayName: 'Cuerpo (JSON)',
+				displayName: 'Body (JSON)',
 				name: 'jsonBody',
 				type: 'json',
 				default: '{}',
-				description: 'El cuerpo del pedido tal como lo describe la referencia del portal',
+				description: "The request body as the portal's reference describes it",
 				displayOptions: { show: { ...show, useJsonBody: [true] } },
 			},
 		);
@@ -107,22 +106,20 @@ function operationProperties(op: OperationSpec): INodeProperties[] {
 	if (hasPagination(op)) {
 		props.push(
 			{
-				displayName: 'Devolver todo',
+				displayName: 'Return All',
 				name: 'returnAll',
 				type: 'boolean',
 				default: false,
-				// eslint-disable-next-line n8n-nodes-base/node-param-description-boolean-without-whether, n8n-nodes-base/node-param-description-wrong-for-return-all -- the UI of this package is in Spanish (see README); this rule enforces English wording
-				description: 'Si está activo, trae todas las páginas; si no, hasta el límite',
+				description: 'Whether to return all results or only up to a given limit',
 				displayOptions: { show },
 			},
 			{
-				displayName: 'Límite',
+				displayName: 'Limit',
 				name: 'limit',
 				type: 'number',
 				typeOptions: { minValue: 1 },
 				default: 50,
-				// eslint-disable-next-line n8n-nodes-base/node-param-description-wrong-for-limit -- the UI of this package is in Spanish (see README); this rule enforces English wording
-				description: 'Cantidad máxima de resultados',
+				description: 'Max number of results to return',
 				displayOptions: { show: { ...show, returnAll: [false] } },
 			},
 		);
@@ -131,10 +128,10 @@ function operationProperties(op: OperationSpec): INodeProperties[] {
 	const optionalQuery = op.params.filter((p) => !isTopLevel(p) && p.location === 'query');
 	if (optionalQuery.length) {
 		props.push({
-			displayName: op.method === 'GET' ? 'Filtros' : 'Opciones de consulta',
+			displayName: op.method === 'GET' ? 'Filters' : 'Query Options',
 			name: 'filters',
 			type: 'collection',
-			placeholder: op.method === 'GET' ? 'Agregar filtro' : 'Agregar opción',
+			placeholder: op.method === 'GET' ? 'Add Filter' : 'Add Option',
 			default: {},
 			displayOptions: { show },
 			options: optionalQuery.map((p) => fieldProperty(p, false)),
@@ -144,10 +141,10 @@ function operationProperties(op: OperationSpec): INodeProperties[] {
 	const optionalBody = op.params.filter((p) => !isTopLevel(p) && p.location === 'body');
 	if (optionalBody.length) {
 		props.push({
-			displayName: 'Campos adicionales',
+			displayName: 'Additional Fields',
 			name: 'additionalFields',
 			type: 'collection',
-			placeholder: 'Agregar campo',
+			placeholder: 'Add Field',
 			default: {},
 			displayOptions: { show: bodyShow },
 			options: optionalBody.map((p) => fieldProperty(p, false)),
@@ -165,7 +162,7 @@ export function buildProperties(
 	const defaultResource = resources[0]?.value ?? '';
 	const props: INodeProperties[] = [
 		{
-			displayName: 'Recurso',
+			displayName: 'Resource',
 			name: 'resource',
 			type: 'options',
 			noDataExpression: true,
@@ -185,7 +182,7 @@ export function buildProperties(
 		if (ops.length === 0) continue;
 		const defaultOperation = (ops.find((o) => o.list) ?? ops[0]).value;
 		props.push({
-			displayName: 'Operación',
+			displayName: 'Operation',
 			name: 'operation',
 			type: 'options',
 			noDataExpression: true,

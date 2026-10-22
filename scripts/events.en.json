@@ -1,0 +1,215 @@
+{
+	"$comment": "English label and description of each event type of spec/eventos-webhooks.json (copied from the accounts catalog, in Spanish, and checked by its SHA-256). scripts/generate.mjs takes the trigger's built-in event list texts from here and refuses to generate if a subscribable type has no entry. The live catalog the trigger reads from the API is shown as the API returns it.",
+	"device.disconnected": {
+		"label": "Number disconnected",
+		"description": "One of the account's WhatsApp numbers disconnected and can no longer send or receive."
+	},
+	"device.connected": {
+		"label": "Number connected",
+		"description": "One of the account's WhatsApp numbers got connected: when the QR code is scanned or a WhatsApp Cloud number finishes its setup."
+	},
+	"billing.payment_failed": {
+		"label": "Payment failed",
+		"description": "A subscription charge could not be processed (Stripe subscriptions only). Sent once per invoice, on the first failed attempt; not repeated on charge retries. AI top-ups are not included."
+	},
+	"billing.plan_blocked": {
+		"label": "Plan blocked",
+		"description": "The plan was blocked because of a charge that was not processed."
+	},
+	"billing.upcoming_charge": {
+		"label": "Upcoming charge",
+		"description": "The next subscription charge is near (Stripe subscriptions only); the notice arrives a few days before the charge date."
+	},
+	"subscription.expiring": {
+		"label": "Subscription expiring",
+		"description": "The subscription is about to expire."
+	},
+	"subscription.trial_ending": {
+		"label": "Trial ending",
+		"description": "The trial period is about to end; the notice arrives 1 to 3 days before the end, depending on how it was purchased."
+	},
+	"subscription.reactivated": {
+		"label": "Subscription reactivated",
+		"description": "The scheduled cancellation of the subscription was reverted (Stripe subscriptions only): it stays active and renews on the given date."
+	},
+	"subscription.cancellation_confirmed": {
+		"label": "Cancellation confirmed",
+		"description": "The cancellation of the subscription was confirmed (Stripe subscriptions only): access is kept until the given date."
+	},
+	"subscription.dormant_ending": {
+		"label": "Dormant period ending",
+		"description": "The dormant account period is about to end (the notice arrives about 7 days before); on that date the given charge is attempted."
+	},
+	"ai_quota.low_balance": {
+		"label": "AI quota low",
+		"description": "The account's AI message quota is about to run out."
+	},
+	"ai_quota.topup_succeeded": {
+		"label": "AI top-up succeeded",
+		"description": "An AI quota top-up was credited."
+	},
+	"ai_quota.topup_failed": {
+		"label": "AI top-up failed",
+		"description": "An AI quota top-up could not be processed."
+	},
+	"mac.usage_80": {
+		"label": "Monthly active contacts at 80%",
+		"description": "The account reached 80% of its monthly active contacts for the cycle."
+	},
+	"mac.usage_100": {
+		"label": "Monthly active contacts at 100%",
+		"description": "The account used up its monthly active contacts for the cycle; a 24-hour grace period starts, and its end comes in grace_expires_at."
+	},
+	"mac.expiring": {
+		"label": "Monthly active contacts expiring",
+		"description": "Some monthly active contacts expire in the next 7 days."
+	},
+	"account.blocked": {
+		"label": "Account blocked",
+		"description": "The account was blocked for usage: the 24-hour grace period after using up the monthly active contacts ended without being settled."
+	},
+	"message.received": {
+		"label": "Message received",
+		"description": "A contact wrote to one of the account's WhatsApp numbers. device_id identifies that number and may be null."
+	},
+	"flow.completed": {
+		"label": "Flow completed",
+		"description": "A contact finished an automation flow."
+	},
+	"broadcast.finished": {
+		"label": "Broadcast finished",
+		"description": "A broadcast reached its final state (sent, failed or partially failed), with its counts."
+	},
+	"contact.stage_changed": {
+		"label": "Contact changed stage",
+		"description": "A contact moved to another stage of a board."
+	},
+	"message.status_changed": {
+		"label": "Message status changed",
+		"description": "The delivery status of a sent message changed: status is sent, delivered, read or failed, with previous_status, the error when it failed, and the client_reference sent with the message."
+	},
+	"conversation.closed": {
+		"label": "Conversation closed",
+		"description": "The conversation with a contact was closed."
+	},
+	"conversation.assigned": {
+		"label": "Conversation assigned",
+		"description": "The conversation with a contact was assigned to a person or to the AI."
+	},
+	"contact.tag_added": {
+		"label": "Tag added to a contact",
+		"description": "A tag was added to a contact."
+	},
+	"broadcast.paused": {
+		"label": "Broadcast paused",
+		"description": "A broadcast was paused because of the number's quality."
+	},
+	"contact.tag_removed": {
+		"label": "Tag removed from a contact",
+		"description": "A tag was removed from a contact."
+	},
+	"contact.created": {
+		"label": "Contact created",
+		"description": "A contact was created."
+	},
+	"template.status_changed": {
+		"label": "Template status changed",
+		"description": "The status of a WhatsApp template changed."
+	},
+	"flow.failed": {
+		"label": "Flow failed",
+		"description": "An automation flow failed."
+	},
+	"whatsapp_form.completed": {
+		"label": "WhatsApp form completed",
+		"description": "A contact completed a WhatsApp form sent from one of the account's numbers, with the form, the message_id of the send, the contact, the number and the answers."
+	},
+	"group.created": {
+		"label": "Group created",
+		"description": "A campaign group was created."
+	},
+	"group.invite_link_down": {
+		"label": "Invite link down",
+		"description": "A group's invite link stopped working."
+	},
+	"group.invite_link_renewed": {
+		"label": "Invite link renewed",
+		"description": "A group's invite link was renewed."
+	},
+	"group_participant.joined": {
+		"label": "Participant joined",
+		"description": "A person joined a group."
+	},
+	"group_participant.left": {
+		"label": "Participant left",
+		"description": "A person left a group."
+	},
+	"scheduled_message.group_delivery_failed": {
+		"label": "Scheduled message not delivered to a group",
+		"description": "A scheduled message could not be delivered to a group. It replaces the campaigns' failed message alert and covers more cases."
+	},
+	"scheduled_message.response_received": {
+		"label": "Reply to a scheduled message",
+		"description": "A reply to a scheduled message was received."
+	},
+	"poll.voted": {
+		"label": "Poll vote",
+		"description": "Someone voted in a poll sent to a group."
+	},
+	"pipeline.finished": {
+		"label": "Pipeline finished",
+		"description": "A campaign pipeline finished running."
+	},
+	"group.blocked": {
+		"label": "Group blocked",
+		"description": "A campaign group was blocked and cannot be used."
+	},
+	"group.recovered": {
+		"label": "Group recovered",
+		"description": "A group that was blocked is available again."
+	},
+	"campaign.status_changed": {
+		"label": "Campaign status changed",
+		"description": "A campaign changed status."
+	},
+	"scheduled_message.finished": {
+		"label": "Scheduled message finished",
+		"description": "A scheduled message finished going out to its groups, with its result and the count of groups that failed."
+	},
+	"group_action.failed": {
+		"label": "Group action failed",
+		"description": "A group action failed as a whole (if it finished with per-person results, group_action.completed arrives instead). If the API asked for it, action.uuid is the action_id it returned."
+	},
+	"daily_report.generated": {
+		"label": "Daily report generated",
+		"description": "The account's daily report was generated (clicks, joins and leaves)."
+	},
+	"campaign.no_groups_available": {
+		"label": "Campaign without available groups",
+		"description": "A campaign has no groups to send the people who come in through its link to."
+	},
+	"group.full": {
+		"label": "Group full",
+		"description": "A group went from not full to full."
+	},
+	"group_action.completed": {
+		"label": "Group action completed",
+		"description": "A group action finished. action.uuid is the action_id the API returned when it was requested, action.type says which action it was, and result depends on the type."
+	},
+	"group.message_received": {
+		"label": "Message received in a group",
+		"description": "A person wrote a message in a group."
+	},
+	"group.reaction_added": {
+		"label": "Reaction in a group",
+		"description": "A person reacted to a message in a group."
+	},
+	"group_join_request.created": {
+		"label": "Request to join a group",
+		"description": "A person asked to join an official group that requires approval, and the request is pending. It can be approved or rejected through the API with the person's phone."
+	},
+	"group_join_request.revoked": {
+		"label": "Request to join withdrawn",
+		"description": "A person withdrew a pending request to join a group before it was approved or rejected."
+	}
+}

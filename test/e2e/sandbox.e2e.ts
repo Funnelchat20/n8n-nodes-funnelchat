@@ -14,7 +14,7 @@ import { startReceiver } from './receiver.mjs';
 
 /*
  * End to end against a running funnelchat-sandbox (Funnelchat20/funnelchat-sandbox, branch feat/inicial): the real
- * HTTP of the node, with a credential on the «Personalizado» environment. Skipped unless FUNNELCHAT_SANDBOX_URL is set:
+ * HTTP of the node, with a credential on the "Custom" environment. Skipped unless FUNNELCHAT_SANDBOX_URL is set:
  *
  *   FUNNELCHAT_SANDBOX_URL=http://127.0.0.1:4010 npm run test:e2e
  *
@@ -79,18 +79,18 @@ async function until<T>(what: string, check: () => T | undefined, seconds = 15):
 	for (;;) {
 		const value = check();
 		if (value !== undefined) return value;
-		if (Date.now() > end) throw new Error(`No llegó a tiempo: ${what}`);
+		if (Date.now() > end) throw new Error(`Did not arrive in time: ${what}`);
 		await sleep(200);
 	}
 }
 
-describe.skipIf(!SANDBOX)('e2e contra el sandbox', () => {
+describe.skipIf(!SANDBOX)('e2e against the sandbox', () => {
 	beforeEach(async () => {
 		const reset = await fetch(`${SANDBOX}/_sandbox/reset`, { method: 'POST' });
 		expect(reset.ok).toBe(true);
 	});
 
-	it('enviar un mensaje devuelve el mensaje en cola, y se lee por id', async () => {
+	it('sending a message returns the queued message, and it can be read by ID', async () => {
 		const [queued] = await run({
 			resource: 'conversation',
 			operation: 'conversation.sendMessage',
@@ -98,14 +98,14 @@ describe.skipIf(!SANDBOX)('e2e contra el sandbox', () => {
 			device_id: String(DEVICE),
 			contact_id: String(CONTACT),
 			useJsonBody: false,
-			additionalFields: { phone: PHONE, text: 'Hola desde n8n', client_reference: 'e2e-envio-1' },
+			additionalFields: { phone: PHONE, text: 'Hello from n8n', client_reference: 'e2e-send-1' },
 		});
 		expect(queued).toMatchObject({
 			contact_id: CONTACT,
 			device_id: DEVICE,
 			direction: 'outbound',
 			status: 'queued',
-			client_reference: 'e2e-envio-1',
+			client_reference: 'e2e-send-1',
 		});
 		expect(typeof queued.id).toBe('number');
 
@@ -115,10 +115,10 @@ describe.skipIf(!SANDBOX)('e2e contra el sandbox', () => {
 			contact: String(CONTACT),
 			message: String(queued.id),
 		});
-		expect(read).toMatchObject({ id: queued.id, client_reference: 'e2e-envio-1' });
+		expect(read).toMatchObject({ id: queued.id, client_reference: 'e2e-send-1' });
 	});
 
-	it('archivo por URL sin extensión: sin tipo responde 422 en file_type; con tipo, sale', async () => {
+	it('file by URL without an extension: without a type it answers 422 on file_type; with one, it goes out', async () => {
 		const params = {
 			resource: 'conversation',
 			operation: 'conversation.sendMessage',
@@ -143,7 +143,7 @@ describe.skipIf(!SANDBOX)('e2e contra el sandbox', () => {
 		expect(queued).toMatchObject({ status: 'queued', type: 'document' });
 	});
 
-	it('un error de la API trae su X-Request-Id, también con «continuar ante errores»', async () => {
+	it('an API error carries its X-Request-Id, also with Continue On Fail', async () => {
 		const error = (await run({
 			resource: 'conversation',
 			operation: 'showMessage',
@@ -169,7 +169,7 @@ describe.skipIf(!SANDBOX)('e2e contra el sandbox', () => {
 		expect(out[0].json).toMatchObject({ httpCode: '404', requestId: expect.any(String) });
 	});
 
-	describe('disparador', () => {
+	describe('trigger', () => {
 		let hook: Awaited<ReturnType<typeof startReceiver>>;
 		beforeAll(async () => {
 			hook = await startReceiver();
@@ -202,7 +202,7 @@ describe.skipIf(!SANDBOX)('e2e contra el sandbox', () => {
 			return new FunnelchatTrigger().webhook.call(ctx);
 		}
 
-		it('alta, aviso firmado de message.status_changed con la referencia propia, y baja', async () => {
+		it('subscribe, signed message.status_changed with the client reference, and unsubscribe', async () => {
 			hook.deliveries.length = 0;
 			const staticData: IDataObject = {};
 			const methods = new FunnelchatTrigger().webhookMethods.default;
@@ -219,7 +219,7 @@ describe.skipIf(!SANDBOX)('e2e contra el sandbox', () => {
 				device_id: String(DEVICE),
 				contact_id: String(CONTACT),
 				useJsonBody: false,
-				additionalFields: { phone: PHONE, text: 'Hola', client_reference: 'e2e-aviso-1' },
+				additionalFields: { phone: PHONE, text: 'Hello', client_reference: 'e2e-event-1' },
 			});
 
 			const delivery = await until('message.status_changed sent', () =>
@@ -234,7 +234,7 @@ describe.skipIf(!SANDBOX)('e2e contra el sandbox', () => {
 			expect(event.type).toBe('message.status_changed');
 			expect(event.data).toMatchObject({
 				message_id: queued.id,
-				client_reference: 'e2e-aviso-1',
+				client_reference: 'e2e-event-1',
 			});
 
 			// A forged delivery does not start the workflow.
@@ -248,7 +248,7 @@ describe.skipIf(!SANDBOX)('e2e contra el sandbox', () => {
 			expect(staticData.subscriptions).toBeUndefined();
 		});
 
-		it('formulario: crear, publicar, enviar y recibir whatsapp_form.completed', async () => {
+		it('form: create, publish, send and receive whatsapp_form.completed', async () => {
 			hook.deliveries.length = 0;
 			const staticData: IDataObject = {};
 			const methods = new FunnelchatTrigger().webhookMethods.default;

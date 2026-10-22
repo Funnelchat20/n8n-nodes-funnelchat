@@ -1,7 +1,7 @@
 {
 	"name": "n8n-nodes-funnelchat",
 	"version": "0.1.0",
-	"description": "Nodo comunitario de n8n para la API pública de Funnelchat: acciones sobre contactos, conversaciones, plantillas, grupos, números y webhooks, y un disparador por webhooks firmados.",
+	"description": "n8n community node for the Funnelchat public API: actions on contacts, conversations and messages, templates, WhatsApp forms, groups, numbers and webhooks, and a trigger for signed webhooks.",
 	"license": "MIT",
 	"homepage": "https://developers-portal.funnelchat.app/docs/",
 	"keywords": [

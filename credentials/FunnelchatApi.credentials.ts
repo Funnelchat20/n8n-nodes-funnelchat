@@ -22,11 +22,11 @@ export class FunnelchatApi implements ICredentialType {
 
 	icon: Icon = { light: 'file:../icons/funnelchat.svg', dark: 'file:../icons/funnelchat.dark.svg' };
 
-	documentationUrl = 'https://github.com/Funnelchat20/n8n-nodes-funnelchat#credencial';
+	documentationUrl = 'https://github.com/Funnelchat20/n8n-nodes-funnelchat#credential';
 
 	properties: INodeProperties[] = [
 		{
-			displayName: 'Clave de API',
+			displayName: 'API Key',
 			name: 'apiKey',
 			type: 'string',
 			typeOptions: { password: true },
@@ -34,15 +34,15 @@ export class FunnelchatApi implements ICredentialType {
 			default: '',
 			placeholder: '<id>|fc_live_...',
 			description:
-				'La clave completa que creaste en la pantalla Desarrolladores de Funnelchat, tal como se mostró (id|fc_live_…). Se manda como Authorization: Bearer.',
+				'The full key you created on the Developers screen of Funnelchat, as it was shown (id|fc_live_…). It is sent as Authorization: Bearer.',
 		},
 		{
-			displayName: 'Entorno',
+			displayName: 'Environment',
 			name: 'environment',
 			type: 'options',
 			options: [
 				{
-					name: 'Producción',
+					name: 'Production',
 					value: 'production',
 					description: 'https://api.funnelchat.com',
 				},
@@ -52,23 +52,23 @@ export class FunnelchatApi implements ICredentialType {
 					description: 'https://api-staging.funnelchat.com',
 				},
 				{
-					name: 'Personalizado',
+					name: 'Custom',
 					value: 'custom',
-					description: 'Otra URL base, por ejemplo el sandbox local en http://localhost:4010',
+					description: 'Another base URL, for example the local sandbox on http://localhost:4010',
 				},
 			],
 			default: 'production',
-			description: 'A qué URL base van los pedidos. Una clave de producción no sirve en staging.',
+			description: 'Which base URL the requests go to. A production key does not work on staging.',
 		},
 		{
-			displayName: 'URL base',
+			displayName: 'Base URL',
 			name: 'baseUrl',
 			type: 'string',
 			required: true,
 			default: '',
 			placeholder: 'http://localhost:4010',
 			description:
-				'Empieza con http:// o https:// y no termina en /. Sin /api/v1: el nodo lo agrega. Si n8n corre en Docker y el sandbox en tu máquina, usá http://host.docker.internal:4010.',
+				'Starts with http:// or https:// and does not end in /. Without /api/v1: the node adds it. If n8n runs in Docker and the sandbox on your machine, use http://host.docker.internal:4010.',
 			displayOptions: {
 				show: {
 					environment: ['custom'],
@@ -86,11 +86,11 @@ export class FunnelchatApi implements ICredentialType {
 		},
 	};
 
-	// `GET /api/v1/me` («Ver mi cuenta»): the cheapest read of the specification. It needs `accounts:read`.
+	// `GET /api/v1/me` (Get my account): the cheapest read of the specification. It needs `accounts:read`.
 	test: ICredentialTestRequest = {
 		request: {
 			baseURL:
-				'={{$credentials.environment === "custom" ? ((($credentials.baseUrl || "").startsWith("http://") || ($credentials.baseUrl || "").startsWith("https://")) && !($credentials.baseUrl || "").endsWith("/") ? $credentials.baseUrl : "https://url-base-invalida.invalid") : ($credentials.environment === "staging" ? "https://api-staging.funnelchat.com" : "https://api.funnelchat.com")}}',
+				'={{$credentials.environment === "custom" ? ((($credentials.baseUrl || "").startsWith("http://") || ($credentials.baseUrl || "").startsWith("https://")) && !($credentials.baseUrl || "").endsWith("/") ? $credentials.baseUrl : "https://invalid-base-url.invalid") : ($credentials.environment === "staging" ? "https://api-staging.funnelchat.com" : "https://api.funnelchat.com")}}',
 			url: '/api/v1/me',
 			method: 'GET',
 			headers: { Accept: 'application/json' },

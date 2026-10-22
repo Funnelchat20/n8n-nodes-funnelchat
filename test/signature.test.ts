@@ -5,132 +5,131 @@ import vectors from './fixtures/firmas.json';
 
 /*
  * The vectors of the portal (developers-portal feat/armar-funnelchat-portal @ dd7cd42, tests/test_firmas.py): the same
- * secret, the same raw body and the same thirteen cases of `casos()`, in the same order and with the same names. On top
- * of that, a fixed-timestamp vector signed by the portal's own `firmar()` and the cases of the brief (several `v1`).
+ * secret, the same raw body and the same thirteen cases of `casos()`, in the same order (their names translated). On
+ * top of that, a fixed-timestamp vector signed by the portal's own `firmar()` and the cases of the brief (several
+ * `v1`). The fixture keeps the portal's own keys (`secreto`, `cuerpo`, `vector_fijo`…).
  */
 
 const KEY = vectors.secreto;
 const BODY = Buffer.from(vectors.cuerpo, 'utf8');
 
-function firmar(body: Buffer, key: string, t: number): string {
+/** The portal's `firmar()`: `t=<t>,v1=<HMAC-SHA256 of "<t>." + raw body>`. */
+function sign(body: Buffer, key: string, t: number): string {
 	const v1 = createHmac('sha256', key).update(`${t}.`).update(body).digest('hex');
 	return `t=${t},v1=${v1}`;
 }
 
 interface Case {
-	nombre: string;
-	cuerpo: Buffer;
-	cabecera: string;
-	clave: string;
-	esperado: boolean;
+	name: string;
+	body: Buffer;
+	header: string;
+	key: string;
+	expected: boolean;
 }
 
-function casos(t: number): Case[] {
-	const ok = firmar(BODY, KEY, t);
+function cases(t: number): Case[] {
+	const ok = sign(BODY, KEY, t);
 	const v1 = ok.split('v1=')[1];
-	const v1Alterada = (v1[0] !== '0' ? '0' : '1') + v1.slice(1);
-	const cuerpoAlterado = Buffer.from(vectors.cuerpo.replace('Hola', 'Hole'), 'utf8');
-	const cuerpoReserializado = Buffer.from(
-		JSON.stringify(JSON.parse(vectors.cuerpo), null, 2),
-		'utf8',
-	);
-	const cuerpoUtf8 = Buffer.from(vectors.cuerpo_utf8, 'utf8');
-	const sinPrefijo = vectors.secreto_sin_prefijo;
+	const alteredV1 = (v1[0] !== '0' ? '0' : '1') + v1.slice(1);
+	const alteredBody = Buffer.from(vectors.cuerpo.replace('Hola', 'Hole'), 'utf8');
+	const reserializedBody = Buffer.from(JSON.stringify(JSON.parse(vectors.cuerpo), null, 2), 'utf8');
+	const utf8Body = Buffer.from(vectors.cuerpo_utf8, 'utf8');
+	const withoutPrefix = vectors.secreto_sin_prefijo;
 	return [
-		{ nombre: 'firma correcta', cuerpo: BODY, cabecera: ok, clave: KEY, esperado: true },
+		{ name: 'correct signature', body: BODY, header: ok, key: KEY, expected: true },
 		{
-			nombre: 'cuerpo alterado (un carácter)',
-			cuerpo: cuerpoAlterado,
-			cabecera: ok,
-			clave: KEY,
-			esperado: false,
+			name: 'altered body (one character)',
+			body: alteredBody,
+			header: ok,
+			key: KEY,
+			expected: false,
 		},
 		{
-			nombre: 'cuerpo re-serializado (mismo JSON, otros espacios)',
-			cuerpo: cuerpoReserializado,
-			cabecera: ok,
-			clave: KEY,
-			esperado: false,
+			name: 're-serialized body (same JSON, other whitespace)',
+			body: reserializedBody,
+			header: ok,
+			key: KEY,
+			expected: false,
 		},
 		{
-			nombre: 'firma alterada (un dígito)',
-			cuerpo: BODY,
-			cabecera: `t=${t},v1=${v1Alterada}`,
-			clave: KEY,
-			esperado: false,
+			name: 'altered signature (one digit)',
+			body: BODY,
+			header: `t=${t},v1=${alteredV1}`,
+			key: KEY,
+			expected: false,
 		},
-		{ nombre: 'secreto equivocado', cuerpo: BODY, cabecera: ok, clave: `${KEY}x`, esperado: false },
+		{ name: 'wrong secret', body: BODY, header: ok, key: `${KEY}x`, expected: false },
 		{
-			nombre: 'timestamp alterado en la cabecera',
-			cuerpo: BODY,
-			cabecera: `t=${t + 1},v1=${v1}`,
-			clave: KEY,
-			esperado: false,
-		},
-		{
-			nombre: 'timestamp viejo (hace 10 min), bien firmado',
-			cuerpo: BODY,
-			cabecera: firmar(BODY, KEY, t - 600),
-			clave: KEY,
-			esperado: false,
+			name: 'altered timestamp in the header',
+			body: BODY,
+			header: `t=${t + 1},v1=${v1}`,
+			key: KEY,
+			expected: false,
 		},
 		{
-			nombre: 'cabecera mal formada',
-			cuerpo: BODY,
-			cabecera: `sha256=${v1}`,
-			clave: KEY,
-			esperado: false,
-		},
-		{ nombre: 'cabecera sin v1', cuerpo: BODY, cabecera: `t=${t}`, clave: KEY, esperado: false },
-		{ nombre: 'cabecera vacía', cuerpo: BODY, cabecera: '', clave: KEY, esperado: false },
-		{
-			nombre: 'cuerpo UTF-8 (ñ, emoji) firmado sobre los bytes crudos',
-			cuerpo: cuerpoUtf8,
-			cabecera: firmar(cuerpoUtf8, KEY, t),
-			clave: KEY,
-			esperado: true,
+			name: 'old timestamp (10 min ago), properly signed',
+			body: BODY,
+			header: sign(BODY, KEY, t - 600),
+			key: KEY,
+			expected: false,
 		},
 		{
-			nombre: 'secreto sin prefijo whsec_ (se usa tal cual)',
-			cuerpo: BODY,
-			cabecera: firmar(BODY, sinPrefijo, t),
-			clave: sinPrefijo,
-			esperado: true,
+			name: 'malformed header',
+			body: BODY,
+			header: `sha256=${v1}`,
+			key: KEY,
+			expected: false,
+		},
+		{ name: 'header without v1', body: BODY, header: `t=${t}`, key: KEY, expected: false },
+		{ name: 'empty header', body: BODY, header: '', key: KEY, expected: false },
+		{
+			name: 'UTF-8 body (ñ, emoji) signed over the raw bytes',
+			body: utf8Body,
+			header: sign(utf8Body, KEY, t),
+			key: KEY,
+			expected: true,
 		},
 		{
-			nombre: 'secreto con prefijo recortado por error',
-			cuerpo: BODY,
-			cabecera: ok,
-			clave: KEY.replace(/^whsec_/, ''),
-			esperado: false,
+			name: 'secret without the whsec_ prefix (used as is)',
+			body: BODY,
+			header: sign(BODY, withoutPrefix, t),
+			key: withoutPrefix,
+			expected: true,
+		},
+		{
+			name: 'secret with its prefix cut by mistake',
+			body: BODY,
+			header: ok,
+			key: KEY.replace(/^whsec_/, ''),
+			expected: false,
 		},
 	];
 }
 
-describe('verifySignature con los vectores del portal (tests/test_firmas.py)', () => {
+describe("verifySignature with the portal's vectors (tests/test_firmas.py)", () => {
 	const nowMs = Date.now();
 	const t = Math.floor(nowMs / 1000);
 
-	it('el cuerpo del fixture son los bytes que firma el portal', () => {
+	it("the fixture's body is the bytes the portal signs", () => {
 		expect(createHash('sha256').update(BODY).digest('hex')).toBe(vectors.sha256_cuerpo);
 	});
 
-	for (const c of casos(t)) {
-		it(c.nombre, () => {
-			expect(verifySignature(c.cuerpo, c.cabecera, c.clave, 300, nowMs)).toBe(c.esperado);
+	for (const c of cases(t)) {
+		it(c.name, () => {
+			expect(verifySignature(c.body, c.header, c.key, 300, nowMs)).toBe(c.expected);
 		});
 	}
 });
 
-describe('vector fijo firmado por firmar() del portal', () => {
+describe("fixed vector signed by the portal's firmar()", () => {
 	const fixed = vectors.vector_fijo;
 	const at = fixed.t * 1000;
 
-	it('acepta la cabecera calculada por la implementación de referencia', () => {
+	it('accepts the header computed by the reference implementation', () => {
 		expect(verifySignature(BODY, fixed.cabecera, KEY, 300, at)).toBe(true);
 	});
 
-	it('acepta el cuerpo UTF-8 y el secreto sin prefijo de referencia', () => {
+	it('accepts the reference UTF-8 body and the secret without prefix', () => {
 		expect(
 			verifySignature(Buffer.from(vectors.cuerpo_utf8, 'utf8'), fixed.cabecera_utf8, KEY, 300, at),
 		).toBe(true);
@@ -139,15 +138,15 @@ describe('vector fijo firmado por firmar() del portal', () => {
 		).toBe(true);
 	});
 
-	it('calcula exactamente el mismo v1', () => {
-		expect(firmar(BODY, KEY, fixed.t)).toBe(fixed.cabecera);
+	it('computes exactly the same v1', () => {
+		expect(sign(BODY, KEY, fixed.t)).toBe(fixed.cabecera);
 	});
 
-	it('acepta el cuerpo como texto además de como bytes', () => {
+	it('accepts the body as text as well as bytes', () => {
 		expect(verifySignature(vectors.cuerpo, fixed.cabecera, KEY, 300, at)).toBe(true);
 	});
 
-	it('tolera hasta 300 s de diferencia, en los dos sentidos, y rechaza 301', () => {
+	it('tolerates up to 300 s of difference, both ways, and rejects 301', () => {
 		expect(verifySignature(BODY, fixed.cabecera, KEY, 300, at + 300_000)).toBe(true);
 		expect(verifySignature(BODY, fixed.cabecera, KEY, 300, at - 300_000)).toBe(true);
 		expect(verifySignature(BODY, fixed.cabecera, KEY, 300, at + 301_000)).toBe(false);
@@ -155,34 +154,34 @@ describe('vector fijo firmado por firmar() del portal', () => {
 	});
 });
 
-describe('varias v1 en la cabecera', () => {
+describe('several v1 in the header', () => {
 	const fixed = vectors.vector_fijo;
 	const at = fixed.t * 1000;
 	const good = fixed.cabecera.split('v1=')[1];
-	const other = firmar(BODY, 'otro-secreto-de-prueba', fixed.t).split('v1=')[1];
+	const other = sign(BODY, 'another-test-secret', fixed.t).split('v1=')[1];
 
-	it('acepta si alguna coincide, esté primera o última', () => {
+	it('accepts if any matches, first or last', () => {
 		expect(verifySignature(BODY, `t=${fixed.t},v1=${other},v1=${good}`, KEY, 300, at)).toBe(true);
 		expect(verifySignature(BODY, `t=${fixed.t},v1=${good},v1=${other}`, KEY, 300, at)).toBe(true);
 		expect(verifySignature(BODY, `t=${fixed.t}, v1=${other}, v1=${good}`, KEY, 300, at)).toBe(true);
 	});
 
-	it('rechaza si ninguna coincide', () => {
+	it('rejects if none matches', () => {
 		expect(verifySignature(BODY, `t=${fixed.t},v1=${other},v1=${other}`, KEY, 300, at)).toBe(false);
 	});
 });
 
-describe('entradas inválidas', () => {
+describe('invalid input', () => {
 	const fixed = vectors.vector_fijo;
 	const at = fixed.t * 1000;
 
-	it('sin cabecera o sin secreto, rechaza', () => {
+	it('without a header or a secret, it rejects', () => {
 		expect(verifySignature(BODY, undefined, KEY, 300, at)).toBe(false);
 		expect(verifySignature(BODY, fixed.cabecera, '', 300, at)).toBe(false);
 		expect(verifySignature(BODY, fixed.cabecera, undefined, 300, at)).toBe(false);
 	});
 
-	it('un t que no es un entero, rechaza', () => {
+	it('a t that is not an integer, it rejects', () => {
 		const v1 = fixed.cabecera.split('v1=')[1];
 		expect(verifySignature(BODY, `t=1790000000.0,v1=${v1}`, KEY, 300, at)).toBe(false);
 		expect(verifySignature(BODY, `t=-1790000000,v1=${v1}`, KEY, 300, at)).toBe(false);

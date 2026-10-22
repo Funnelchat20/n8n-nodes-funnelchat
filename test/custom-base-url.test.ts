@@ -8,18 +8,18 @@ import vectors from './fixtures/firmas.json';
 import { executeContext, hookContext, requestLine } from './mocks';
 
 /*
- * The «Personalizado» environment: a base URL of its own, for example the local sandbox
+ * The "Custom" environment: a base URL of its own, for example the local sandbox
  * (Funnelchat20/funnelchat-sandbox, http://localhost:4010).
  */
 
 const SANDBOX = 'http://localhost:4010';
 
-describe('credencial con URL base personalizada', () => {
+describe('credential with a custom base URL', () => {
 	const credential = new FunnelchatApi();
 	const environment = credential.properties.find((p) => p.name === 'environment');
 	const baseUrl = credential.properties.find((p) => p.name === 'baseUrl');
 
-	it('el entorno ofrece Producción, Staging y Personalizado', () => {
+	it('the environment offers Production, Staging and Custom', () => {
 		expect(environment?.options?.map((o) => ('value' in o ? o.value : undefined))).toEqual([
 			'production',
 			'staging',
@@ -28,9 +28,9 @@ describe('credencial con URL base personalizada', () => {
 		expect(environment?.default).toBe('production');
 	});
 
-	it('la URL base es obligatoria y solo aparece con Personalizado', () => {
+	it('the base URL is required and only shows with Custom', () => {
 		expect(baseUrl).toMatchObject({
-			displayName: 'URL base',
+			displayName: 'Base URL',
 			type: 'string',
 			required: true,
 			placeholder: SANDBOX,
@@ -38,55 +38,55 @@ describe('credencial con URL base personalizada', () => {
 		});
 	});
 
-	it('la prueba de la credencial usa esa URL, y una inválida apunta a un host .invalid', () => {
+	it('the credential test uses that URL, and an invalid one points to an .invalid host', () => {
 		const expression = String(credential.test.request.baseURL);
 		expect(expression).toContain('$credentials.environment === "custom"');
 		expect(expression).toContain('$credentials.baseUrl');
-		expect(expression).toContain('https://url-base-invalida.invalid');
+		expect(expression).toContain('https://invalid-base-url.invalid');
 		expect(expression).toContain('https://api-staging.funnelchat.com');
 		expect(expression).toContain('https://api.funnelchat.com');
 		expect(credential.test.request.url).toBe('/api/v1/me');
 	});
 });
 
-describe('validación de la URL base', () => {
+describe('base URL validation', () => {
 	it.each([
 		SANDBOX,
 		'http://127.0.0.1:4010',
 		'http://host.docker.internal:4010',
 		'https://sandbox.example.com',
-		'https://sandbox.example.com/prefijo',
-	])('acepta %s', (value) => {
+		'https://sandbox.example.com/prefix',
+	])('accepts %s', (value) => {
 		expect(isValidBaseUrl(value)).toBe(true);
 		expect(baseUrlFor('custom', value)).toBe(value);
 	});
 
 	it.each([
-		['con barra final', 'http://localhost:4010/'],
-		['con barra final después de un camino', 'https://sandbox.example.com/prefijo/'],
-		['sin protocolo', 'localhost:4010'],
-		['con otro protocolo', 'ftp://localhost:4010'],
-		['sin host', 'http://'],
-		['vacía', ''],
-		['con espacios alrededor', ' http://localhost:4010'],
-		['con query', 'http://localhost:4010?x=1'],
-		['con fragmento', 'http://localhost:4010#x'],
-	])('rechaza una URL %s', (_name, value) => {
+		['with a trailing slash', 'http://localhost:4010/'],
+		['with a trailing slash after a path', 'https://sandbox.example.com/prefix/'],
+		['without a protocol', 'localhost:4010'],
+		['with another protocol', 'ftp://localhost:4010'],
+		['without a host', 'http://'],
+		['empty', ''],
+		['with surrounding spaces', ' http://localhost:4010'],
+		['with a query', 'http://localhost:4010?x=1'],
+		['with a fragment', 'http://localhost:4010#x'],
+	])('rejects a URL %s', (_name, value) => {
 		expect(isValidBaseUrl(value)).toBe(false);
 		expect(baseUrlFor('custom', value)).toBeUndefined();
 	});
 
-	it('Producción y Staging no cambian y no miran la URL base', () => {
+	it('Production and Staging do not change and ignore the base URL', () => {
 		expect(baseUrlFor('production', SANDBOX)).toBe('https://api.funnelchat.com');
 		expect(baseUrlFor('staging', SANDBOX)).toBe('https://api-staging.funnelchat.com');
 		expect(baseUrlFor(undefined)).toBe('https://api.funnelchat.com');
 	});
 });
 
-describe('el nodo contra una URL base personalizada', () => {
+describe('the node against a custom base URL', () => {
 	const node = new Funnelchat();
 
-	it('Crear o actualizar un contacto va a la URL del sandbox con la ruta completa', async () => {
+	it("Create or update a contact goes to the sandbox's URL with the full route", async () => {
 		const { ctx, calls } = executeContext({
 			environment: 'custom',
 			baseUrl: SANDBOX,
@@ -108,7 +108,7 @@ describe('el nodo contra una URL base personalizada', () => {
 		expect(calls[0].options.body).toEqual({ phone: '5491100000099', name: 'Ana' });
 	});
 
-	it('los listados paginan igual contra el sandbox', async () => {
+	it('lists paginate the same against the sandbox', async () => {
 		const { ctx, calls } = executeContext({
 			environment: 'custom',
 			baseUrl: 'http://host.docker.internal:4010',
@@ -126,7 +126,7 @@ describe('el nodo contra una URL base personalizada', () => {
 		]);
 	});
 
-	it('con una URL base inválida no sale ningún pedido y el error dice por qué', async () => {
+	it('with an invalid base URL no request goes out and the error says why', async () => {
 		const { ctx, calls } = executeContext({
 			environment: 'custom',
 			baseUrl: 'http://localhost:4010/',
@@ -136,18 +136,18 @@ describe('el nodo contra una URL base personalizada', () => {
 		const error = await node.execute.call(ctx).catch((e: unknown) => e);
 		expect(error).toBeInstanceOf(NodeOperationError);
 		expect((error as Error).message).toBe(
-			'La URL base de la credencial no es válida: tiene que empezar con http:// o https:// y no terminar en /.',
+			"The credential's base URL is not valid: it has to start with http:// or https:// and not end in /.",
 		);
 		expect((error as NodeOperationError).description).toContain('http://localhost:4010/');
 		expect(calls).toHaveLength(0);
 	});
 });
 
-describe('el disparador con una URL base personalizada y n8n local', () => {
+describe('the trigger with a custom base URL and a local n8n', () => {
 	const methods = new FunnelchatTrigger().webhookMethods.default;
 	const LOCAL_WEBHOOK = 'http://localhost:5678/webhook/abc123/webhook';
 
-	it('suscribe la URL local de n8n en el sandbox y la borra al desactivar', async () => {
+	it("subscribes n8n's local URL in the sandbox and deletes it on deactivation", async () => {
 		const created = hookContext({
 			environment: 'custom',
 			baseUrl: SANDBOX,
