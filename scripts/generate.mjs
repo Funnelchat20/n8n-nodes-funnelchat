@@ -2,7 +2,8 @@
 /**
  * Generates the operation table of the Funnelchat node from the unified OpenAPI specification.
  *
- *   npm run generate            writes nodes/Funnelchat/generated/operations.ts and the operations block of the README
+ *   npm run generate            writes nodes/Funnelchat/generated/operations.ts, the operations block of the README and
+ *                               nodes/FunnelchatTrigger/generated/events.ts (the trigger's built-in event list)
  *   npm run generate -- --check exits 1 if those files are not what the specification produces (used by the tests)
  *
  * Everything that depends on the API comes from the specification (and its supplements): operations, short names
@@ -539,6 +540,52 @@ export function generate(root = ROOT) {
 	return { operationsTs, readmeBlock, summary, warnings, total: ordered.length };
 }
 
+// ---------------------------------------------------------------------------------------------------------------
+// Event catalog of the trigger
+// ---------------------------------------------------------------------------------------------------------------
+
+/**
+ * The trigger's built-in event list, from a copy of `GET /api/v1/webhooks/events` (`{data: [...]}`). The trigger shows
+ * the live catalog; this list is what it shows when the catalog cannot be read (for example, a key without
+ * `accounts:read`).
+ */
+export function generateEvents(root = ROOT) {
+	const config = readJson(root, CONFIG_PATH);
+	if (!config.eventCatalog) return undefined;
+	const text = readFileSync(resolve(root, config.eventCatalog), 'utf8');
+	const sha = createHash('sha256').update(text).digest('hex');
+	if (config.provenance) {
+		const provenance = readFileSync(resolve(root, config.provenance), 'utf8');
+		if (!provenance.includes(sha)) {
+			throw new Error(
+				`${config.provenance} no registra el catálogo de eventos copiado (sha256 ${sha}): anotá de dónde salió antes de generar.`,
+			);
+		}
+	}
+	const body = JSON.parse(text);
+	const entries = Array.isArray(body) ? body : (body.data ?? []);
+	const events = entries
+		.filter((e) => typeof e.type === 'string' && e.subscribable !== false)
+		.map((e) => ({
+			type: e.type,
+			area: e.area,
+			status: e.status,
+			label: cleanText(e.label),
+			description: firstSentences(String(e.description ?? '').replace(/`/g, ''), 200),
+		}));
+	const ts =
+		[
+			'// Generado por scripts/generate.mjs a partir de spec/eventos-webhooks.json.',
+			'// No editar a mano: reemplazá el catálogo copiado y corré `npm run generate`.',
+			`// Catálogo: sha256 ${sha}.`,
+			'',
+			"import type { CatalogEvent } from '../catalogTypes';",
+			'',
+		].join('\n') +
+		`\nexport const EVENT_CATALOG: CatalogEvent[] = ${JSON.stringify(events, null, '\t')};\n`;
+	return { ts, total: events.length, path: resolve(root, config.eventsOutput) };
+}
+
 function renderReadmeBlock(resources, operations, source) {
 	const lines = [README_START, ''];
 	lines.push(
@@ -583,11 +630,13 @@ export function expectedFiles(root = ROOT) {
 	const result = generate(root);
 	const readmePath = resolve(root, config.readme);
 	const readme = replaceReadmeBlock(readFileSync(readmePath, 'utf8'), result.readmeBlock);
+	const events = generateEvents(root);
 	return {
 		result,
 		files: [
 			{ path: resolve(root, config.output), content: result.operationsTs },
 			{ path: readmePath, content: readme },
+			...(events ? [{ path: events.path, content: events.ts }] : []),
 		],
 	};
 }

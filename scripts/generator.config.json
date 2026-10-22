@@ -4,6 +4,8 @@
 	"provenance": "spec/PROCEDENCIA.md",
 	"supplements": ["spec/suplementos/accounts-webhook-subscriptions.json"],
 	"output": "nodes/Funnelchat/generated/operations.ts",
+	"eventCatalog": "spec/eventos-webhooks.json",
+	"eventsOutput": "nodes/FunnelchatTrigger/generated/events.ts",
 	"readme": "README.md",
 	"resources": [
 		{

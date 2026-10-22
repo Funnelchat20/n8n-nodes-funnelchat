@@ -2,6 +2,7 @@ import { createHmac } from 'crypto';
 import { NodeApiError, NodeOperationError, type IDataObject } from 'n8n-workflow';
 import { describe, expect, it } from 'vitest';
 import { FunnelchatTrigger, getEvents } from '../nodes/FunnelchatTrigger/FunnelchatTrigger.node';
+import { EVENT_CATALOG } from '../nodes/FunnelchatTrigger/generated/events';
 import vectors from './fixtures/firmas.json';
 import {
 	hookContext,
@@ -365,7 +366,46 @@ describe('lista de eventos desde el catálogo', () => {
 		expect(options[0]).toEqual({
 			name: 'Estado de mensaje cambiado (message.status_changed)',
 			value: 'message.status_changed',
-			description: 'Cambió el estado. Todavía no se emite (planned). Área: conversations.',
+			description:
+				'Cambió el estado. Todavía no se emite (planned). Área: conversations; con una clave pide conversations:read.',
 		});
+	});
+
+	it('si la clave no puede leer el catálogo, muestra la lista del nodo (catálogo de accounts v1.4.24)', async () => {
+		const { ctx, calls } = loadOptionsContext([
+			{
+				status: 403,
+				body: {
+					error: 'permission_denied',
+					message: 'Esta API key no tiene el permiso accounts:read.',
+				},
+			},
+		]);
+		const options = await getEvents.call(ctx);
+		expect(calls).toHaveLength(1);
+		const values = options.map((o) => o.value);
+		expect(values).toEqual(
+			EVENT_CATALOG.map((e) => e.type).sort((a, b) => {
+				const name = (t: string) => {
+					const e = EVENT_CATALOG.find((x) => x.type === t)!;
+					return `${e.label} (${e.type})`;
+				};
+				return name(a).localeCompare(name(b), 'es');
+			}),
+		);
+		for (const type of [
+			'message.received',
+			'message.status_changed',
+			'whatsapp_form.completed',
+			'group.message_received',
+			'group_action.completed',
+			'group.reaction_added',
+			'device.disconnected',
+		])
+			expect(values).toContain(type);
+		expect(values).not.toContain('webhook.test');
+		const form = options.find((o) => o.value === 'whatsapp_form.completed')!;
+		expect(form.name).toBe('Formulario de WhatsApp completado (whatsapp_form.completed)');
+		expect(form.description).toContain('con una clave pide conversations:read');
 	});
 });

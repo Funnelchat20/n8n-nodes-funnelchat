@@ -46,6 +46,22 @@ pero no están en la lista `allowed` de `back/config/platform-gate.php`, así qu
 `GET /api/v1/webhooks/events` (incluidas en la especificación unificada). Además, cada acción exige que la clave sea
 del titular de la cuenta.
 
+## `eventos-webhooks.json` — catálogo de eventos de los webhooks
+
+La lista de eventos que el disparador muestra cuando no puede leer el catálogo en vivo (`GET /api/v1/webhooks/events`
+pide `accounts:read`). Tiene la forma de esa respuesta (`{data: [...], meta}`), así que una copia nueva del catálogo
+(por ejemplo `snapshots/accounts/events.json` del portal) lo reemplaza tal cual. El generador la convierte en
+`nodes/FunnelchatTrigger/generated/events.ts` (sin los tipos que no se pueden suscribir, como `webhook.test`).
+
+| Dato | Valor |
+|---|---|
+| Repo | `accounts` (Funnelchat20), solo lectura |
+| Commit | tag `v1.4.24` @ `300cc8435e6fa17e2ac274b88289a2cc7b945fcd` (2026-10-22 08:31 -03:00), el que corre en production |
+| Archivos | `back/app/Modules/Webhook/Catalogs/Areas/AccountsEvents.php`, `ConversationsEvents.php`, `CommunitiesEvents.php` y `Catalogs/WebhookEventCatalog.php` (forma publicada: `type`, `area`, `status`, `is_critical`, `label`, `description`, `subscribable`) |
+| Cómo | Extraído del código con un script (no de una llamada a la API): 54 tipos, 49 `active`, `webhook.test` no suscribible |
+| SHA-256 | `c3da43bf6e9368e562249e3ee82450a15b8f974b6dd36b476aecd57c8ebfa7e4` |
+| Copiado | 2026-10-22 |
+
 ## Firma de los webhooks
 
 El algoritmo de `nodes/shared/signature.ts` y los vectores de `test/fixtures/firmas.json` salen de

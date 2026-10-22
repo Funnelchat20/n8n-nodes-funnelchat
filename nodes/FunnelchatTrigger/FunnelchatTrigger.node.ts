@@ -12,6 +12,7 @@ import {
 } from 'n8n-workflow';
 import { SIGNATURE_HEADER, verifySignature } from '../shared/signature';
 import { funnelchatApiRequest } from '../shared/transport';
+import { EVENT_CATALOG } from './generated/events';
 
 /*
  * The trigger subscribes through the unified webhook subscriptions of accounts (`/api/v1/webhooks`). Those routes
@@ -100,29 +101,45 @@ function webhookUrl(context: IHookFunctions): string {
 	return url;
 }
 
+/** One option of the event list, from an entry of the catalog (live or built in). */
+function eventOption(e: IDataObject): INodePropertyOptions {
+	const type = e.type as string;
+	const area = typeof e.area === 'string' ? e.area : undefined;
+	const description = [
+		typeof e.description === 'string' ? e.description : '',
+		e.status === 'planned' ? 'Todavía no se emite (planned).' : '',
+		area ? `Área: ${area}; con una clave pide ${area}:read.` : '',
+	]
+		.filter(Boolean)
+		.join(' ');
+	return {
+		name: typeof e.label === 'string' && e.label !== '' ? `${e.label} (${type})` : type,
+		value: type,
+		...(description ? { description } : {}),
+	};
+}
+
+/**
+ * The event types that can be subscribed to, from the live catalog (`GET /api/v1/webhooks/events`, which asks for
+ * `accounts:read`). If the catalog cannot be read, the list built into the node (`generated/events.ts`, copied from
+ * the catalog of accounts) is shown instead, so a key without that permission can still pick its events.
+ */
 export async function getEvents(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-	const response = await funnelchatApiRequest.call(this, { method: 'GET', url: CATALOG_PATH });
-	const body = response.body as IDataObject | IDataObject[] | undefined;
-	const entries = (
-		Array.isArray(body) ? body : Array.isArray(body?.data) ? body?.data : []
-	) as IDataObject[];
+	let entries: IDataObject[];
+	try {
+		const response = await funnelchatApiRequest.call(this, { method: 'GET', url: CATALOG_PATH });
+		const body = response.body as IDataObject | IDataObject[] | undefined;
+		entries = (
+			Array.isArray(body) ? body : Array.isArray(body?.data) ? body?.data : []
+		) as IDataObject[];
+	} catch {
+		entries = [];
+	}
+	if (!entries.some((e) => typeof e.type === 'string'))
+		entries = EVENT_CATALOG as unknown as IDataObject[];
 	return entries
 		.filter((e) => typeof e.type === 'string' && e.subscribable !== false)
-		.map((e) => {
-			const type = e.type as string;
-			const description = [
-				typeof e.description === 'string' ? e.description : '',
-				e.status === 'planned' ? 'Todavía no se emite (planned).' : '',
-				typeof e.area === 'string' ? `Área: ${e.area}.` : '',
-			]
-				.filter(Boolean)
-				.join(' ');
-			return {
-				name: typeof e.label === 'string' && e.label !== '' ? `${e.label} (${type})` : type,
-				value: type,
-				...(description ? { description } : {}),
-			};
-		})
+		.map(eventOption)
 		.sort((a, b) => a.name.localeCompare(b.name, 'es'));
 }
 
@@ -177,7 +194,7 @@ export class FunnelchatTrigger implements INodeType {
 				default: [],
 				// eslint-disable-next-line n8n-nodes-base/node-param-description-wrong-for-dynamic-multi-options -- the UI of this package is in Spanish (see README); this rule enforces English wording
 				description:
-					'Elegilos de la lista, que sale del catálogo de Funnelchat (GET /api/v1/webhooks/events), o escribí los tipos con una <a href="https://docs.n8n.io/code/expressions/">expresión</a>. Con una clave, cada tipo pide el permiso de lectura de su área.',
+					'Elegilos de la lista, que sale del catálogo de Funnelchat (GET /api/v1/webhooks/events, o la lista del nodo si la clave no puede leerlo), o escribí los tipos con una <a href="https://docs.n8n.io/code/expressions/">expresión</a>. Con una clave, cada tipo pide el permiso de lectura de su área.',
 			},
 			{
 				displayName: 'Opciones',

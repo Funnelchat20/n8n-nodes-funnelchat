@@ -3,3 +3,4 @@ node_modules
 nodes/Funnelchat/generated
 spec
 package-lock.json
+nodes/FunnelchatTrigger/generated

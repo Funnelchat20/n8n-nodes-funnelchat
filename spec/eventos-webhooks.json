@@ -1,0 +1,494 @@
+{
+	"data": [
+		{
+			"type": "device.disconnected",
+			"area": "accounts",
+			"status": "active",
+			"is_critical": true,
+			"label": "Número desconectado",
+			"description": "Uno de los números de WhatsApp de la cuenta se desconectó y dejó de poder enviar o recibir.",
+			"subscribable": true
+		},
+		{
+			"type": "device.connected",
+			"area": "accounts",
+			"status": "active",
+			"is_critical": false,
+			"label": "Número conectado",
+			"description": "Uno de los números de WhatsApp de la cuenta quedó conectado: al escanear el código QR o al terminar el alta de un número de WhatsApp Cloud.",
+			"subscribable": true
+		},
+		{
+			"type": "billing.payment_failed",
+			"area": "accounts",
+			"status": "active",
+			"is_critical": true,
+			"label": "Pago fallido",
+			"description": "Un cobro de la suscripción no pudo procesarse (solo suscripciones de Stripe). Se emite una vez por factura (el primer intento fallido); no se repite en los reintentos de cobro. No incluye las recargas de IA.",
+			"subscribable": true
+		},
+		{
+			"type": "billing.plan_blocked",
+			"area": "accounts",
+			"status": "planned",
+			"is_critical": true,
+			"label": "Plan bloqueado",
+			"description": "El plan quedó bloqueado por un cobro no procesado.",
+			"subscribable": true
+		},
+		{
+			"type": "billing.upcoming_charge",
+			"area": "accounts",
+			"status": "active",
+			"is_critical": false,
+			"label": "Próximo cobro",
+			"description": "Se acerca el próximo cobro de la suscripción (solo suscripciones de Stripe); el aviso llega unos días antes de la fecha de cobro.",
+			"subscribable": true
+		},
+		{
+			"type": "subscription.expiring",
+			"area": "accounts",
+			"status": "planned",
+			"is_critical": false,
+			"label": "Suscripción por vencer",
+			"description": "La suscripción está próxima a vencer.",
+			"subscribable": true
+		},
+		{
+			"type": "subscription.trial_ending",
+			"area": "accounts",
+			"status": "active",
+			"is_critical": false,
+			"label": "Trial por terminar",
+			"description": "El período de prueba está por terminar; el aviso llega entre 1 y 3 días antes del final, según cómo se contrató (en las suscripciones de Stripe, el aviso de Stripe).",
+			"subscribable": true
+		},
+		{
+			"type": "subscription.reactivated",
+			"area": "accounts",
+			"status": "active",
+			"is_critical": false,
+			"label": "Suscripción reactivada",
+			"description": "Se revirtió la cancelación programada de la suscripción (solo suscripciones de Stripe): sigue vigente y se renueva en la fecha indicada.",
+			"subscribable": true
+		},
+		{
+			"type": "subscription.cancellation_confirmed",
+			"area": "accounts",
+			"status": "active",
+			"is_critical": false,
+			"label": "Cancelación confirmada",
+			"description": "Quedó confirmada la cancelación de la suscripción (solo suscripciones de Stripe): se conserva el acceso hasta la fecha indicada.",
+			"subscribable": true
+		},
+		{
+			"type": "subscription.dormant_ending",
+			"area": "accounts",
+			"status": "active",
+			"is_critical": false,
+			"label": "Período dormido por terminar",
+			"description": "El período de cuenta en reposo está por terminar (el aviso llega unos 7 días antes); en esa fecha se intenta el cobro indicado.",
+			"subscribable": true
+		},
+		{
+			"type": "ai_quota.low_balance",
+			"area": "accounts",
+			"status": "planned",
+			"is_critical": false,
+			"label": "Cuota de IA baja",
+			"description": "La cuota de mensajes de IA de la cuenta está por agotarse.",
+			"subscribable": true
+		},
+		{
+			"type": "ai_quota.topup_succeeded",
+			"area": "accounts",
+			"status": "planned",
+			"is_critical": false,
+			"label": "Recarga de IA exitosa",
+			"description": "Una recarga de cuota de IA se acreditó correctamente.",
+			"subscribable": true
+		},
+		{
+			"type": "ai_quota.topup_failed",
+			"area": "accounts",
+			"status": "planned",
+			"is_critical": true,
+			"label": "Recarga de IA fallida",
+			"description": "Una recarga de cuota de IA no pudo procesarse.",
+			"subscribable": true
+		},
+		{
+			"type": "mac.usage_80",
+			"area": "accounts",
+			"status": "active",
+			"is_critical": false,
+			"label": "Contactos activos al 80%",
+			"description": "La cuenta alcanzó el 80% de sus contactos activos mensuales del ciclo.",
+			"subscribable": true
+		},
+		{
+			"type": "mac.usage_100",
+			"area": "accounts",
+			"status": "active",
+			"is_critical": true,
+			"label": "Contactos activos al 100%",
+			"description": "La cuenta agotó sus contactos activos mensuales del ciclo; se abre una gracia de 24 horas cuyo vencimiento viaja en `grace_expires_at`.",
+			"subscribable": true
+		},
+		{
+			"type": "mac.expiring",
+			"area": "accounts",
+			"status": "active",
+			"is_critical": false,
+			"label": "Contactos activos por expirar",
+			"description": "Hay contactos activos mensuales que vencen en los próximos 7 días.",
+			"subscribable": true
+		},
+		{
+			"type": "account.blocked",
+			"area": "accounts",
+			"status": "active",
+			"is_critical": true,
+			"label": "Cuenta bloqueada",
+			"description": "La cuenta quedó bloqueada por consumo: terminó la gracia de 24 horas tras agotar los contactos activos mensuales sin que se regularizara.",
+			"subscribable": true
+		},
+		{
+			"type": "webhook.test",
+			"area": "accounts",
+			"status": "active",
+			"is_critical": false,
+			"label": "Evento de prueba",
+			"description": "Evento de prueba enviado por `POST webhooks/{id}/test`; no se puede suscribir.",
+			"subscribable": false
+		},
+		{
+			"type": "message.received",
+			"area": "conversations",
+			"status": "active",
+			"is_critical": false,
+			"label": "Mensaje recibido",
+			"description": "Un contacto le escribió a un número de WhatsApp de la cuenta. `device_id` identifica ese número y puede venir `null`.",
+			"subscribable": true
+		},
+		{
+			"type": "flow.completed",
+			"area": "conversations",
+			"status": "active",
+			"is_critical": false,
+			"label": "Flujo completado",
+			"description": "Un contacto terminó un flujo de automatización.",
+			"subscribable": true
+		},
+		{
+			"type": "broadcast.finished",
+			"area": "conversations",
+			"status": "active",
+			"is_critical": false,
+			"label": "Campaña finalizada",
+			"description": "Una campaña llegó a su estado final (enviada, fallida o con fallos parciales), con sus conteos.",
+			"subscribable": true
+		},
+		{
+			"type": "contact.stage_changed",
+			"area": "conversations",
+			"status": "active",
+			"is_critical": false,
+			"label": "Contacto cambió de etapa",
+			"description": "Un contacto cambió de etapa en un tablero.",
+			"subscribable": true
+		},
+		{
+			"type": "message.status_changed",
+			"area": "conversations",
+			"status": "active",
+			"is_critical": false,
+			"label": "Estado de mensaje cambiado",
+			"description": "Cambió el estado de entrega de un mensaje enviado: `status` es `sent`, `delivered`, `read` o `failed`. `previous_status` es el estado que el mensaje tenía justo antes de este cambio y es `null` en tres casos: es el primer aviso del mensaje, es el mismo estado que `status` (por ejemplo, el proveedor confirma el `sent` que ya registró el envío) o no se pudo leer. `error` solo viene cuando `status` es `failed`: `code` es el código numérico del proveedor y `title` su título, y cualquiera de los dos puede ser `null` si el proveedor no los informa. `error.reason` es `null` cuando el fallo lo informó el proveedor; cuando Funnelchat decidió que un mensaje enviado con clave no salía (por ejemplo, por saldo insuficiente o ventana de 24 horas cerrada) trae el motivo (`device_unavailable`, `insufficient_balance`, `window_closed`, `recipient_unreachable`, `template_not_found`, `template_unresolved_placeholder`, `not_queued` o `not_sent`), `code` es `null` y `title` es un texto llano en el idioma de la cuenta. Un mensaje enviado con clave que Funnelchat no llegó a enviar avisa `failed` con `previous_status` `null`. `client_reference` es el identificador propio que el integrador envió con el mensaje, para relacionar el evento con su envío; viene `null` si no envió ninguno.",
+			"subscribable": true
+		},
+		{
+			"type": "conversation.closed",
+			"area": "conversations",
+			"status": "active",
+			"is_critical": false,
+			"label": "Conversación cerrada",
+			"description": "Se cerró la conversación con un contacto.",
+			"subscribable": true
+		},
+		{
+			"type": "conversation.assigned",
+			"area": "conversations",
+			"status": "active",
+			"is_critical": false,
+			"label": "Conversación asignada",
+			"description": "Se asignó la conversación con un contacto a una persona o a la IA.",
+			"subscribable": true
+		},
+		{
+			"type": "contact.tag_added",
+			"area": "conversations",
+			"status": "active",
+			"is_critical": false,
+			"label": "Etiqueta agregada a un contacto",
+			"description": "Se agregó una etiqueta a un contacto.",
+			"subscribable": true
+		},
+		{
+			"type": "broadcast.paused",
+			"area": "conversations",
+			"status": "active",
+			"is_critical": false,
+			"label": "Campaña pausada",
+			"description": "Una campaña se pausó por calidad del número.",
+			"subscribable": true
+		},
+		{
+			"type": "contact.tag_removed",
+			"area": "conversations",
+			"status": "active",
+			"is_critical": false,
+			"label": "Etiqueta quitada de un contacto",
+			"description": "Se quitó una etiqueta de un contacto.",
+			"subscribable": true
+		},
+		{
+			"type": "contact.created",
+			"area": "conversations",
+			"status": "active",
+			"is_critical": false,
+			"label": "Contacto creado",
+			"description": "Se creó un contacto.",
+			"subscribable": true
+		},
+		{
+			"type": "template.status_changed",
+			"area": "conversations",
+			"status": "active",
+			"is_critical": false,
+			"label": "Plantilla cambió de estado",
+			"description": "Cambió el estado de una plantilla de WhatsApp.",
+			"subscribable": true
+		},
+		{
+			"type": "flow.failed",
+			"area": "conversations",
+			"status": "active",
+			"is_critical": false,
+			"label": "Flujo fallido",
+			"description": "Un flujo de automatización falló.",
+			"subscribable": true
+		},
+		{
+			"type": "whatsapp_form.completed",
+			"area": "conversations",
+			"status": "active",
+			"is_critical": false,
+			"label": "Formulario de WhatsApp completado",
+			"description": "Un contacto completó un formulario de WhatsApp que se le envió desde un número de la cuenta. `form.id` identifica el formulario y es el mismo en todas sus versiones; `form.version_id` es la versión que se le envió. `message_id` es el id público del mensaje con el que se envió el formulario (el mismo que devolvió el envío, si se hizo por API) y viene `null` si el envío no tuvo un mensaje público. `contact_id` identifica al contacto y `device_id`, al número. `answers` trae las respuestas en el orden del formulario, como una lista de `{key, label, value}`: `key` es la clave del campo y `label`, su etiqueta. `value` puede ser texto, número, booleano, una lista de textos (en las preguntas de opción múltiple) o `null`; las fechas llegan como texto en formato ISO 8601.",
+			"subscribable": true
+		},
+		{
+			"type": "group.created",
+			"area": "communities",
+			"status": "active",
+			"is_critical": false,
+			"label": "Grupo creado",
+			"description": "Se creó un grupo de una campaña.",
+			"subscribable": true
+		},
+		{
+			"type": "group.invite_link_down",
+			"area": "communities",
+			"status": "active",
+			"is_critical": false,
+			"label": "Link de invitación caído",
+			"description": "El link de invitación de un grupo dejó de funcionar.",
+			"subscribable": true
+		},
+		{
+			"type": "group.invite_link_renewed",
+			"area": "communities",
+			"status": "active",
+			"is_critical": false,
+			"label": "Link de invitación renovado",
+			"description": "Se renovó el link de invitación de un grupo.",
+			"subscribable": true
+		},
+		{
+			"type": "group_participant.joined",
+			"area": "communities",
+			"status": "active",
+			"is_critical": false,
+			"label": "Participante se unió",
+			"description": "Una persona entró a un grupo.",
+			"subscribable": true
+		},
+		{
+			"type": "group_participant.left",
+			"area": "communities",
+			"status": "active",
+			"is_critical": false,
+			"label": "Participante salió",
+			"description": "Una persona salió de un grupo.",
+			"subscribable": true
+		},
+		{
+			"type": "scheduled_message.group_delivery_failed",
+			"area": "communities",
+			"status": "active",
+			"is_critical": false,
+			"label": "Mensaje programado no entregado a un grupo",
+			"description": "Un mensaje programado no pudo entregarse a un grupo. Reemplaza la alerta «mensaje fallido» de las campañas y avisa en más casos.",
+			"subscribable": true
+		},
+		{
+			"type": "scheduled_message.response_received",
+			"area": "communities",
+			"status": "active",
+			"is_critical": false,
+			"label": "Respuesta a un mensaje programado",
+			"description": "Se recibió una respuesta a un mensaje programado.",
+			"subscribable": true
+		},
+		{
+			"type": "poll.voted",
+			"area": "communities",
+			"status": "active",
+			"is_critical": false,
+			"label": "Voto en una encuesta",
+			"description": "Alguien votó en una encuesta enviada a un grupo.",
+			"subscribable": true
+		},
+		{
+			"type": "pipeline.finished",
+			"area": "communities",
+			"status": "active",
+			"is_critical": false,
+			"label": "Pipeline finalizado",
+			"description": "Terminó la ejecución de un pipeline de una campaña.",
+			"subscribable": true
+		},
+		{
+			"type": "group.blocked",
+			"area": "communities",
+			"status": "active",
+			"is_critical": false,
+			"label": "Grupo bloqueado",
+			"description": "Un grupo de una campaña quedó bloqueado y no puede usarse.",
+			"subscribable": true
+		},
+		{
+			"type": "group.recovered",
+			"area": "communities",
+			"status": "active",
+			"is_critical": false,
+			"label": "Grupo recuperado",
+			"description": "Un grupo que estaba bloqueado volvió a estar disponible.",
+			"subscribable": true
+		},
+		{
+			"type": "campaign.status_changed",
+			"area": "communities",
+			"status": "active",
+			"is_critical": false,
+			"label": "Cambio de estado de campaña",
+			"description": "Una campaña cambió de estado.",
+			"subscribable": true
+		},
+		{
+			"type": "scheduled_message.finished",
+			"area": "communities",
+			"status": "active",
+			"is_critical": false,
+			"label": "Mensaje programado finalizado",
+			"description": "Terminó el envío de un mensaje programado a sus grupos, con su resultado y el conteo de grupos con fallas.",
+			"subscribable": true
+		},
+		{
+			"type": "group_action.failed",
+			"area": "communities",
+			"status": "active",
+			"is_critical": false,
+			"label": "Acción sobre un grupo fallida",
+			"description": "Una acción sobre un grupo falló entera (si terminó con resultados por persona, llega `group_action.completed`). Si la pidió la API, `action.uuid` es el mismo `action_id` que devolvió al pedirla y `pipeline` viene `null`. Si la ejecutó una campaña o un pipeline, `action.uuid` viene `null`, y `pipeline` trae ese pipeline (`uuid` y `name`) o viene `null` fuera de un pipeline. `reason` es el motivo de la falla. `group` y `campaign` pueden venir `null`.",
+			"subscribable": true
+		},
+		{
+			"type": "daily_report.generated",
+			"area": "communities",
+			"status": "active",
+			"is_critical": false,
+			"label": "Reporte diario generado",
+			"description": "Se generó el reporte diario de la cuenta (clics, ingresos y salidas).",
+			"subscribable": true
+		},
+		{
+			"type": "campaign.no_groups_available",
+			"area": "communities",
+			"status": "active",
+			"is_critical": false,
+			"label": "Campaña sin grupos disponibles",
+			"description": "Una campaña no tiene grupos a los que dirigir a las personas que entran por su link.",
+			"subscribable": true
+		},
+		{
+			"type": "group.full",
+			"area": "communities",
+			"status": "active",
+			"is_critical": false,
+			"label": "Grupo lleno",
+			"description": "Un grupo pasó de no estar lleno a estarlo.",
+			"subscribable": true
+		},
+		{
+			"type": "group_action.completed",
+			"area": "communities",
+			"status": "active",
+			"is_critical": false,
+			"label": "Acción sobre un grupo completada",
+			"description": "Terminó una acción sobre un grupo. `action.uuid` es el mismo `action_id` que devolvió la API al pedirla, y `action.type` dice qué acción fue. `result` depende del tipo de acción: en las que reciben una lista de teléfonos (agregar o quitar participantes, nombrar o quitar administradores) trae `participants`, con el resultado por persona: `identity`, `identity_type`, `status` (`added`, `removed`, `promoted` o `demoted` según la acción, o `failed`) y `reason`, que es `null` salvo cuando `status` es `failed`; al crear un grupo o renovar su link de invitación trae `invite_link`; al enviar un mensaje trae `message.uid`; en las demás (cambiar el nombre, la descripción, la foto o los ajustes) viene como objeto vacío (`{}`). `group` y `campaign` pueden venir `null`.",
+			"subscribable": true
+		},
+		{
+			"type": "group.message_received",
+			"area": "communities",
+			"status": "active",
+			"is_critical": false,
+			"label": "Mensaje recibido en un grupo",
+			"description": "Una persona escribió un mensaje en un grupo.",
+			"subscribable": true
+		},
+		{
+			"type": "group.reaction_added",
+			"area": "communities",
+			"status": "active",
+			"is_critical": false,
+			"label": "Reacción en un grupo",
+			"description": "Una persona reaccionó a un mensaje de un grupo.",
+			"subscribable": true
+		},
+		{
+			"type": "group_join_request.created",
+			"area": "communities",
+			"status": "active",
+			"is_critical": false,
+			"label": "Solicitud para unirse a un grupo",
+			"description": "Una persona pidió unirse a un grupo oficial que pide aprobación para entrar, y su solicitud quedó pendiente. Si el grupo es de una campaña, también llega a las suscripciones filtradas por esa campaña. Se aprueba o rechaza por API con el teléfono de la persona, cuando el número anuncia `groups.join_requests` en `\"list_and_decide\"`; el resultado por persona llega en `group_action.completed`.",
+			"subscribable": true
+		},
+		{
+			"type": "group_join_request.revoked",
+			"area": "communities",
+			"status": "active",
+			"is_critical": false,
+			"label": "Solicitud para unirse retirada",
+			"description": "Una persona retiró su solicitud pendiente para unirse a un grupo antes de que se aprobara o rechazara. Trae los mismos campos que `group_join_request.created`.",
+			"subscribable": true
+		}
+	],
+	"meta": {
+		"total": 54,
+		"active": 49
+	}
+}
