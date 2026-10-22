@@ -535,6 +535,7 @@ npm run generate -- --check   # lo generado está al día con spec/
 npm run lint                  # linter de n8n para nodos comunitarios (modo estricto)
 npm run build
 npm test                      # vitest, sin red ni claves: respuestas simuladas
+FUNNELCHAT_SANDBOX_URL=http://127.0.0.1:4010 npm run test:e2e   # e2e contra un sandbox levantado
 npm run dev                   # levanta n8n en http://localhost:5678 con el nodo cargado
 ```
 
@@ -544,6 +545,8 @@ npm run dev                   # levanta n8n en http://localhost:5678 con el nodo
 - `nodes/shared/`: el transporte (clave, URL base, errores, `429`) y la verificación de la firma.
 - `test/`: la firma con los vectores del portal, el armado de pedidos y la paginación, el ciclo crear, confirmar y
   borrar suscripción del disparador, y la URL base personalizada.
+- `test/e2e/`: el nodo con HTTP real contra el sandbox: envío y lectura de un mensaje, archivo por URL, `X-Request-Id`
+  en los errores y el ciclo del disparador con un aviso firmado de verdad. Sin `FUNNELCHAT_SANDBOX_URL` se saltea.
 
 La interfaz está en español. Algunas reglas del linter de n8n exigen textos en inglés (por ejemplo, que la descripción
 de un booleano empiece con «Whether»); donde chocan, la excepción está marcada en el código con su motivo.
