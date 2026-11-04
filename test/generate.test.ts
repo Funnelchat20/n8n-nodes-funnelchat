@@ -121,6 +121,104 @@ describe('generation from the specification', () => {
 		});
 	});
 
+	it('connecting a number comes from accounts v1.5.97, with the operationIds of the portal', () => {
+		const fromSupplement = OPERATIONS.filter((o) => o.source === 'accounts-v1.5.97');
+		expect(fromSupplement.map((o) => `${o.method} ${o.path} ${o.value} ${o.permission}`)).toEqual([
+			'GET /api/v1/devices device.index accounts:read',
+			'POST /api/v1/devices deviceProvisioning.store accounts:operate',
+			'GET /api/v1/devices/{device}/qr deviceProvisioning.qr accounts:operate',
+			'GET /api/v1/connect-links connectLink.index accounts:read',
+			'POST /api/v1/connect-links connectLink.store accounts:operate',
+			'GET /api/v1/connect-links/{link} connectLink.show accounts:read',
+			'DELETE /api/v1/connect-links/{link} connectLink.destroy accounts:operate',
+		]);
+		for (const o of fromSupplement) {
+			expect(o.resource, o.value).toBe('device');
+			// accounts:operate here gives control of a number; it is not an irreversible operation.
+			expect(o.notice ?? '', o.value).not.toContain('Irreversible');
+		}
+		expect(OPERATIONS.find((o) => o.value === 'device.destroy')!.notice).toContain(
+			'Irreversible operation',
+		);
+		const list = OPERATIONS.find((o) => o.value === 'device.index')!;
+		expect(list.list).toEqual({ pagination: 'page', sizeParam: 'perPage', maxPageSize: 100 });
+		expect(list.params.map((p) => `${p.location}:${p.apiName}`)).toEqual([
+			'query:external_reference',
+		]);
+		const link = OPERATIONS.find((o) => o.value === 'connectLink.store')!;
+		expect(link.params.filter((p) => p.required).map((p) => p.apiName)).toEqual(['type']);
+		expect(link.params.find((p) => p.apiName === 'type')!.options).toEqual(['qr', 'meta']);
+		expect(SPEC_SOURCE.supplements.find((x) => x.id === 'accounts-v1.5.97')).toMatchObject({
+			used: 6,
+			replaced: 1,
+		});
+	});
+
+	it('a message to a group comes from communities v2.35.5, in the Groups resource', () => {
+		const send = OPERATIONS.find((o) => o.value === 'apiGroupAction.sendMessage')!;
+		expect(`${send.resource} ${send.method} ${send.path} ${send.permission}`).toBe(
+			'group POST /api/v1/groups/{group}/messages communities:send',
+		);
+		expect(send.params.filter((p) => p.required).map((p) => p.apiName)).toEqual([
+			'group',
+			'device_id',
+			'type',
+		]);
+		expect(send.params.find((p) => p.apiName === 'type')!.options).toEqual([
+			'text',
+			'image',
+			'video',
+			'audio',
+			'document',
+		]);
+		expect(send.notice).toContain('Get a group action');
+		const show = OPERATIONS.find((o) => o.value === 'apiGroupAction.show')!;
+		expect(`${show.resource} ${show.method} ${show.path} ${show.permission}`).toBe(
+			'group GET /api/v1/groups/actions/{action} communities:read',
+		);
+	});
+
+	it('the first use is all there: numbers, contacts, a text, a template, a message, groups', () => {
+		for (const value of [
+			'device.index',
+			'device.status',
+			'deviceProvisioning.store',
+			'deviceProvisioning.qr',
+			'connectLink.store',
+			'contact.store',
+			'message.sendMessage',
+			'conversation.sendMessage',
+			'messageTemplate.send',
+			'showMessage',
+			'group.index',
+			'apiGroupAction.sendMessage',
+		])
+			expect(
+				OPERATIONS.find((o) => o.value === value),
+				value,
+			).toBeDefined();
+	});
+
+	it('the default operation of each resource does not change (saved workflows rely on it)', () => {
+		const node = new Funnelchat();
+		const defaults = Object.fromEntries(
+			node.description.properties
+				.filter((p) => p.name === 'operation')
+				.map((p) => [p.displayOptions!.show!.resource![0], p.default]),
+		);
+		expect(defaults).toEqual({
+			contact: 'contact.customFields',
+			conversation: 'conversation.getLatestMessages',
+			template: 'messageTemplate.quickReplyButtons',
+			form: 'whatsappForm.responses',
+			tag: 'tag.index',
+			customField: 'customField.index',
+			group: 'campaign.participantEvents',
+			device: 'deviceConnectionEvent.index',
+			webhook: 'webhookSubscriptionDelivery.index',
+		});
+	});
+
 	it('paginated lists offer "Return All"', () => {
 		const node = new Funnelchat();
 		const returnAll = node.description.properties.filter((p) => p.name === 'returnAll');

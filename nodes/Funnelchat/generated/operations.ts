@@ -21,6 +21,19 @@ export const SPEC_SOURCE: SpecSource = {
 			"used": 20,
 			"ignored": 0,
 			"replaced": 5
+		},
+		{
+			"id": "accounts-v1.5.97",
+			"source": "accounts tag v1.5.97 @ 558332bcf1ffdb8e064fd3a1f7fafc67c4f95e8d (the one running in production on 2026-11-04), read only with git show",
+			"used": 6,
+			"ignored": 0,
+			"replaced": 1
+		},
+		{
+			"id": "communities-v2.35.5",
+			"source": "communities tag v2.35.5 @ 2be913d45b123466cc9aa26a73343e9d2b1c68b1 (the one running in production on 2026-11-04), read only with git show",
+			"used": 2,
+			"ignored": 0
 		}
 	]
 };
@@ -59,12 +72,12 @@ export const RESOURCES: ResourceSpec[] = [
 	{
 		"value": "group",
 		"name": "Groups",
-		"description": "WhatsApp groups of the account and its campaigns, with their participants, joins and leaves."
+		"description": "WhatsApp groups of the account and its campaigns: list them, send them a message, and see their participants, joins and leaves."
 	},
 	{
 		"value": "device",
 		"name": "Numbers",
-		"description": "The account's WhatsApp numbers: status, health, queue, logs, username and profile."
+		"description": "The account's WhatsApp numbers: list them and their status, connect one by QR or with a connect link, and their health, queue, logs, username and profile."
 	},
 	{
 		"value": "webhook",
@@ -4866,6 +4879,123 @@ export const OPERATIONS: OperationSpec[] = [
 	},
 	{
 		"resource": "group",
+		"value": "apiGroupAction.sendMessage",
+		"name": "Send a message to a group",
+		"description": "Sends a text or one media file to a WhatsApp group now, from one of your numbers. It answers at once with an action_id; the message goes out right after. Permission: communities:send.",
+		"method": "POST",
+		"path": "/api/v1/groups/{group}/messages",
+		"permission": "communities:send",
+		"notice": "Asynchronous: it answers 202 with action_id and status queued. Read the outcome with \"Get a group action\" (result.message.uid is the message's ID in WhatsApp) or with the group_action.completed and group_action.failed events. With a QR number it goes out at the pace of low-speed scheduled messages; with an official number the 24-hour window and the number's quality are checked first. While group actions are not enabled for the API, it answers 403 route_not_available.",
+		"source": "communities-v2.35.5",
+		"body": {
+			"required": true,
+			"root": "object"
+		},
+		"params": [
+			{
+				"name": "group",
+				"apiName": "group",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "Group UID",
+				"description": "The group's uid, as List groups returns it (for example 120363012345678901@g.us). In the API: group.",
+				"valueType": "string"
+			},
+			{
+				"name": "device_id",
+				"apiName": "device_id",
+				"location": "body",
+				"required": true,
+				"kind": "number",
+				"displayName": "Number ID",
+				"description": "The number that sends: connected, and an admin of the group (a QR number) or the group's own number (an official one). In the API: device_id.",
+				"valueType": "integer"
+			},
+			{
+				"name": "type",
+				"apiName": "type",
+				"location": "body",
+				"required": true,
+				"kind": "options",
+				"displayName": "Type",
+				"description": "In the API: type.",
+				"valueType": "string",
+				"options": [
+					"text",
+					"image",
+					"video",
+					"audio",
+					"document"
+				]
+			},
+			{
+				"name": "text",
+				"apiName": "text",
+				"location": "body",
+				"required": false,
+				"kind": "string",
+				"displayName": "Text",
+				"description": "Only with type text, and required there. In the API: text.",
+				"valueType": "string"
+			},
+			{
+				"name": "media_url",
+				"apiName": "media_url",
+				"location": "body",
+				"required": false,
+				"kind": "string",
+				"displayName": "Media URL",
+				"description": "Only with image, video, audio or document, and required there: a public https URL that ends in an extension WhatsApp accepts for the type. In the API: media_url.",
+				"valueType": "string"
+			},
+			{
+				"name": "caption",
+				"apiName": "caption",
+				"location": "body",
+				"required": false,
+				"kind": "string",
+				"displayName": "Caption",
+				"description": "Only with image or video. In the API: caption.",
+				"valueType": "string"
+			},
+			{
+				"name": "file_name",
+				"apiName": "file_name",
+				"location": "body",
+				"required": false,
+				"kind": "string",
+				"displayName": "File Name",
+				"description": "Only with document: the name it arrives with. In the API: file_name.",
+				"valueType": "string"
+			}
+		]
+	},
+	{
+		"resource": "group",
+		"value": "apiGroupAction.show",
+		"name": "Get a group action",
+		"description": "Gets the status (queued, running, completed or failed) and the result of a group action, such as a message sent to a group. Permission: communities:read.",
+		"method": "GET",
+		"path": "/api/v1/groups/actions/{action}",
+		"permission": "communities:read",
+		"notice": "An action of another account or workspace answers 404 action_not_found, like one that does not exist. While group actions are not enabled for the API, it answers 403 route_not_available.",
+		"source": "communities-v2.35.5",
+		"params": [
+			{
+				"name": "action",
+				"apiName": "action",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "Action ID",
+				"description": "The action_id the action answered. In the API: action.",
+				"valueType": "string"
+			}
+		]
+	},
+	{
+		"resource": "group",
 		"value": "campaign.participants",
 		"name": "List a campaign's participants",
 		"description": "Lists the participants of a campaign, with a search by phone and whether they are admins. Permission: communities:read.",
@@ -5442,17 +5572,28 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "device",
 		"value": "device.index",
 		"name": "List numbers",
-		"description": "Lists your WhatsApp numbers with their provider, whether they are connected and active, and their health, and gets the IDs the other operations use. Permission: accounts:read.",
+		"description": "Lists your WhatsApp numbers with their provider, whether they are connected (connected) and active, and their health, and gets the IDs the other operations use. External Reference finds the number a connect link created. Permission: accounts:read.",
 		"method": "GET",
 		"path": "/api/v1/devices",
 		"permission": "accounts:read",
-		"source": "spec",
+		"source": "accounts-v1.5.97",
 		"list": {
 			"pagination": "page",
 			"sizeParam": "perPage",
 			"maxPageSize": 100
 		},
-		"params": []
+		"params": [
+			{
+				"name": "external_reference",
+				"apiName": "external_reference",
+				"location": "query",
+				"required": false,
+				"kind": "string",
+				"displayName": "External Reference",
+				"description": "Only the numbers with exactly this reference: yours, given when creating the number or the connect link. In the API: external_reference.",
+				"valueType": "string"
+			}
+		]
 	},
 	{
 		"resource": "device",
@@ -6036,6 +6177,304 @@ export const OPERATIONS: OperationSpec[] = [
 				"kind": "string",
 				"displayName": "Number ID",
 				"description": "The device ID. In the API: device.",
+				"valueType": "integer"
+			}
+		]
+	},
+	{
+		"resource": "device",
+		"value": "deviceProvisioning.store",
+		"name": "Create a number to connect by QR",
+		"description": "Creates a number of the account that connects by scanning a QR code with the WhatsApp app. Then read its QR with \"Get a number's QR code\", or send your customer a connect link instead. Permission: accounts:operate.",
+		"method": "POST",
+		"path": "/api/v1/devices",
+		"permission": "accounts:operate",
+		"notice": "Needs a key of the account owner (403 connect_not_allowed) and a place in the plan (403 numbers_not_included or number_limit_reached). While a QR number has never been connected, it answers 409 pending_number_exists with its device_id: connect it or delete it. A QR number is not official: WhatsApp may restrict it if it sends messages people do not expect.",
+		"source": "accounts-v1.5.97",
+		"body": {
+			"required": true,
+			"root": "object"
+		},
+		"params": [
+			{
+				"name": "connection",
+				"apiName": "connection",
+				"location": "body",
+				"required": true,
+				"kind": "options",
+				"displayName": "Connection",
+				"description": "How the number connects. Only qr: an official number is connected with a connect link of type meta. In the API: connection.",
+				"valueType": "string",
+				"options": [
+					"qr"
+				]
+			},
+			{
+				"name": "alias",
+				"apiName": "alias",
+				"location": "body",
+				"required": false,
+				"kind": "string",
+				"displayName": "Alias",
+				"description": "Name shown in the panel. In the API: alias.",
+				"valueType": "string"
+			},
+			{
+				"name": "external_reference",
+				"apiName": "external_reference",
+				"location": "body",
+				"required": false,
+				"kind": "string",
+				"displayName": "External Reference",
+				"description": "Your own reference for this number (for example, your customer's ID). Not unique. It comes back in the number and in the device.* events. In the API: external_reference.",
+				"valueType": "string"
+			},
+			{
+				"name": "same_number_as",
+				"apiName": "same_number_as",
+				"location": "body",
+				"required": false,
+				"kind": "number",
+				"displayName": "Same Number As (Number ID)",
+				"description": "ID of a number of the account connected to the official API in coexistence: the QR connection is added to that same number and takes no new place in the plan. In the API: same_number_as.",
+				"valueType": "integer"
+			},
+			{
+				"name": "country",
+				"apiName": "country",
+				"location": "body",
+				"required": false,
+				"kind": "string",
+				"displayName": "Country",
+				"description": "Country the WhatsApp session is opened from, two letters (for example mx): the country of the phone that will scan the QR. Without it, co (Colombia). In the API: country.",
+				"valueType": "string"
+			}
+		]
+	},
+	{
+		"resource": "device",
+		"value": "deviceProvisioning.qr",
+		"name": "Get a number's QR code",
+		"description": "Gets the QR code that connects a QR number: scan it with the WhatsApp app (Linked devices). Once connected, connected is true and the device.connected event arrives. Permission: accounts:operate.",
+		"method": "GET",
+		"path": "/api/v1/devices/{device}/qr",
+		"permission": "accounts:operate",
+		"notice": "WhatsApp changes the code every few seconds until it is scanned: ask again every expires_in seconds (5) and show only the last one. qr_code is a PNG as a data URI, or null while the session starts. An official number answers 422 provider_unsupported. In n8n a connect link is simpler: its page shows the QR and renews it on its own.",
+		"source": "accounts-v1.5.97",
+		"params": [
+			{
+				"name": "device",
+				"apiName": "device",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "Number ID",
+				"description": "The number ID. In the API: device.",
+				"valueType": "integer"
+			}
+		]
+	},
+	{
+		"resource": "device",
+		"value": "connectLink.index",
+		"name": "List connect links",
+		"description": "Lists the account's connect links, newest first and without their url, filtered by status or by your reference. Permission: accounts:read.",
+		"method": "GET",
+		"path": "/api/v1/connect-links",
+		"permission": "accounts:read",
+		"source": "accounts-v1.5.97",
+		"list": {
+			"pagination": "page",
+			"sizeParam": "perPage",
+			"maxPageSize": 100
+		},
+		"params": [
+			{
+				"name": "status",
+				"apiName": "status",
+				"location": "query",
+				"required": false,
+				"kind": "options",
+				"displayName": "Status",
+				"description": "In the API: status.",
+				"valueType": "string",
+				"options": [
+					"pending",
+					"completed",
+					"failed",
+					"expired",
+					"revoked"
+				]
+			},
+			{
+				"name": "external_reference",
+				"apiName": "external_reference",
+				"location": "query",
+				"required": false,
+				"kind": "string",
+				"displayName": "External Reference",
+				"description": "Only the links with exactly this reference. In the API: external_reference.",
+				"valueType": "string"
+			}
+		]
+	},
+	{
+		"resource": "device",
+		"value": "connectLink.store",
+		"name": "Create a connect link",
+		"description": "Creates a single-use link for your customer to connect a WhatsApp number to your account from a Funnelchat page, without the panel: send them the url of the response. Permission: accounts:operate.",
+		"method": "POST",
+		"path": "/api/v1/connect-links",
+		"permission": "accounts:operate",
+		"notice": "The url appears only in this response, and whoever has it can connect a number to your account while the link is pending: treat it as a secret. With type qr the page shows the QR, and your customer has 10 minutes from tapping its button to scan it. While the official sign-up by link is not enabled, type meta answers 503 meta_connect_disabled. The result comes in device.connected (with connect_link_id and external_reference), in the return_url or with \"Get a connect link\". Up to 20 pending links per account.",
+		"source": "accounts-v1.5.97",
+		"body": {
+			"required": true,
+			"root": "object"
+		},
+		"params": [
+			{
+				"name": "type",
+				"apiName": "type",
+				"location": "body",
+				"required": true,
+				"kind": "options",
+				"displayName": "Type",
+				"description": "qr: a number connected by scanning a QR code. meta: an official number, with Meta's Embedded Signup. In the API: type.",
+				"valueType": "string",
+				"options": [
+					"qr",
+					"meta"
+				]
+			},
+			{
+				"name": "allowed_connection_types",
+				"apiName": "allowed_connection_types",
+				"location": "body",
+				"required": false,
+				"kind": "multiOptions",
+				"displayName": "Allowed Connection Types",
+				"description": "Only with type meta, and required there: coexistence keeps the number in the WhatsApp Business app; dedicated is a number only for the API. In the API: allowed_connection_types.",
+				"valueType": "string",
+				"options": [
+					"coexistence",
+					"dedicated"
+				]
+			},
+			{
+				"name": "provision_us_number",
+				"apiName": "provision_us_number",
+				"location": "body",
+				"required": false,
+				"kind": "boolean",
+				"displayName": "Offer a US Number",
+				"description": "Only with type meta: also offer a US number of Funnelchat's pool (always dedicated). In the API: provision_us_number.",
+				"valueType": "boolean"
+			},
+			{
+				"name": "device_id",
+				"apiName": "device_id",
+				"location": "body",
+				"required": false,
+				"kind": "number",
+				"displayName": "Number ID to Reconnect",
+				"description": "Reconnect this number of the account instead of adding one (it takes no new place). In the API: device_id.",
+				"valueType": "integer"
+			},
+			{
+				"name": "same_number_as",
+				"apiName": "same_number_as",
+				"location": "body",
+				"required": false,
+				"kind": "number",
+				"displayName": "Same Number As (Number ID)",
+				"description": "Only with type qr: add QR to this number of the account in coexistence. In the API: same_number_as.",
+				"valueType": "integer"
+			},
+			{
+				"name": "country",
+				"apiName": "country",
+				"location": "body",
+				"required": false,
+				"kind": "string",
+				"displayName": "Country",
+				"description": "Only with type qr and without Number ID: country the WhatsApp session is opened from, two letters (the country of your customer's phone). In the API: country.",
+				"valueType": "string"
+			},
+			{
+				"name": "external_reference",
+				"apiName": "external_reference",
+				"location": "body",
+				"required": false,
+				"kind": "string",
+				"displayName": "External Reference",
+				"description": "Your own reference: it is copied to the number the link creates and comes in device.connected. In the API: external_reference.",
+				"valueType": "string"
+			},
+			{
+				"name": "return_url",
+				"apiName": "return_url",
+				"location": "body",
+				"required": false,
+				"kind": "string",
+				"displayName": "Return URL",
+				"description": "https address the page sends your customer to at the end, with the result in the query string (connect_link_id, status, and device_id or error_code). In the API: return_url.",
+				"valueType": "string"
+			},
+			{
+				"name": "expires_in_minutes",
+				"apiName": "expires_in_minutes",
+				"location": "body",
+				"required": false,
+				"kind": "number",
+				"displayName": "Expires In (Minutes)",
+				"description": "How long the link lives: 30 to 10080 minutes (7 days); 1440 (24 hours) by default. In the API: expires_in_minutes.",
+				"valueType": "integer"
+			}
+		]
+	},
+	{
+		"resource": "device",
+		"value": "connectLink.show",
+		"name": "Get a connect link",
+		"description": "Gets a connect link's current status (pending, completed, failed, expired or revoked) and, once completed, the device_id of the number it connected. Permission: accounts:read.",
+		"method": "GET",
+		"path": "/api/v1/connect-links/{link}",
+		"permission": "accounts:read",
+		"notice": "error_code says why it did not complete: link_expired, already_used, revoked, quota_exceeded, trial_number_blocked, facebook_auth_failed, meta_error, number_not_owned, qr_timeout or provider_error.",
+		"source": "accounts-v1.5.97",
+		"params": [
+			{
+				"name": "link",
+				"apiName": "link",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "Connect Link ID",
+				"description": "The connect link ID. In the API: link.",
+				"valueType": "integer"
+			}
+		]
+	},
+	{
+		"resource": "device",
+		"value": "connectLink.destroy",
+		"name": "Revoke a connect link",
+		"description": "Revokes a pending connect link: its page then answers that the link no longer works. If the page had already created a number that is not connected yet, that number is deleted. Permission: accounts:operate.",
+		"method": "DELETE",
+		"path": "/api/v1/connect-links/{link}",
+		"permission": "accounts:operate",
+		"notice": "Only a pending link: otherwise it answers 409 link_not_pending.",
+		"source": "accounts-v1.5.97",
+		"params": [
+			{
+				"name": "link",
+				"apiName": "link",
+				"location": "path",
+				"required": true,
+				"kind": "string",
+				"displayName": "Connect Link ID",
+				"description": "The connect link ID. In the API: link.",
 				"valueType": "integer"
 			}
 		]

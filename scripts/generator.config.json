@@ -4,7 +4,9 @@
 	"provenance": "spec/PROVENANCE.md",
 	"supplements": [
 		"spec/supplements/accounts-webhook-subscriptions.json",
-		"spec/supplements/conversations-v1.18.10.json"
+		"spec/supplements/conversations-v1.18.10.json",
+		"spec/supplements/accounts-v1.5.97.json",
+		"spec/supplements/communities-v2.35.5.json"
 	],
 	"output": "nodes/Funnelchat/generated/operations.ts",
 	"eventCatalog": "spec/webhook-events.json",
@@ -57,15 +59,17 @@
 		{
 			"value": "group",
 			"name": "Groups",
-			"description": "WhatsApp groups of the account and its campaigns, with their participants, joins and leaves.",
-			"tags": ["Grupos", "Participantes"]
+			"description": "WhatsApp groups of the account and its campaigns: list them, send them a message, and see their participants, joins and leaves.",
+			"tags": ["Grupos", "Acciones de grupo", "Participantes"]
 		},
 		{
 			"value": "device",
 			"name": "Numbers",
-			"description": "The account's WhatsApp numbers: status, health, queue, logs, username and profile.",
+			"description": "The account's WhatsApp numbers: list them and their status, connect one by QR or with a connect link, and their health, queue, logs, username and profile.",
 			"tags": [
 				"Device",
+				"DeviceProvisioning",
+				"ConnectLink",
 				"DeviceHealth",
 				"DeviceConnectionEvent",
 				"DeviceLogs",
@@ -92,7 +96,14 @@
 		"interactiveMessage.storePoll": "Not open to API keys in conversations v1.18.10 (outside the allowed list of config/platform-gate.php): a key gets 403 route_not_available.",
 		"interactiveMessage.storeEvent": "Not open to API keys in conversations v1.18.10 (outside the allowed list of config/platform-gate.php): a key gets 403 route_not_available.",
 		"messageReaction.update": "With an API key it answers 202 without a body: a reaction is not a message with an ID. If the provider does not support it, 422 with reason provider_unsupported.",
-		"messageReaction.destroy": "With an API key it answers 202 without a body: a reaction is not a message with an ID. If the provider does not support it, 422 with reason provider_unsupported."
+		"messageReaction.destroy": "With an API key it answers 202 without a body: a reaction is not a message with an ID. If the provider does not support it, 422 with reason provider_unsupported.",
+		"deviceProvisioning.store": "Needs a key of the account owner (403 connect_not_allowed) and a place in the plan (403 numbers_not_included or number_limit_reached). While a QR number has never been connected, it answers 409 pending_number_exists with its device_id: connect it or delete it. A QR number is not official: WhatsApp may restrict it if it sends messages people do not expect.",
+		"deviceProvisioning.qr": "WhatsApp changes the code every few seconds until it is scanned: ask again every expires_in seconds (5) and show only the last one. qr_code is a PNG as a data URI, or null while the session starts. An official number answers 422 provider_unsupported. In n8n a connect link is simpler: its page shows the QR and renews it on its own.",
+		"connectLink.store": "The url appears only in this response, and whoever has it can connect a number to your account while the link is pending: treat it as a secret. With type qr the page shows the QR, and your customer has 10 minutes from tapping its button to scan it. While the official sign-up by link is not enabled, type meta answers 503 meta_connect_disabled. The result comes in device.connected (with connect_link_id and external_reference), in the return_url or with \"Get a connect link\". Up to 20 pending links per account.",
+		"connectLink.show": "error_code says why it did not complete: link_expired, already_used, revoked, quota_exceeded, trial_number_blocked, facebook_auth_failed, meta_error, number_not_owned, qr_timeout or provider_error.",
+		"connectLink.destroy": "Only a pending link: otherwise it answers 409 link_not_pending.",
+		"apiGroupAction.sendMessage": "Asynchronous: it answers 202 with action_id and status queued. Read the outcome with \"Get a group action\" (result.message.uid is the message's ID in WhatsApp) or with the group_action.completed and group_action.failed events. With a QR number it goes out at the pace of low-speed scheduled messages; with an official number the 24-hour window and the number's quality are checked first. While group actions are not enabled for the API, it answers 403 route_not_available.",
+		"apiGroupAction.show": "An action of another account or workspace answers 404 action_not_found, like one that does not exist. While group actions are not enabled for the API, it answers 403 route_not_available."
 	},
 	"labels": {
 		"active_conversation": "Active Conversation",
@@ -257,7 +268,17 @@
 		"version_id": "Version ID",
 		"origin": "Origin",
 		"familyId": "Form ID",
-		"runId": "Response ID"
+		"runId": "Response ID",
+		"connection": "Connection",
+		"external_reference": "External Reference",
+		"same_number_as": "Same Number As (Number ID)",
+		"country": "Country",
+		"allowed_connection_types": "Allowed Connection Types",
+		"provision_us_number": "Offer a US Number",
+		"return_url": "Return URL",
+		"expires_in_minutes": "Expires In (Minutes)",
+		"media_url": "Media URL",
+		"caption": "Caption"
 	},
 	"labelsByOperationPrefix": {
 		"contactNote": {
@@ -287,6 +308,15 @@
 		},
 		"showMessage": {
 			"message": "Message ID"
+		},
+		"connectLink": {
+			"link": "Connect Link ID",
+			"device_id": "Number ID to Reconnect"
+		},
+		"apiGroupAction": {
+			"group": "Group UID",
+			"action": "Action ID",
+			"device_id": "Number ID"
 		}
 	},
 	"fieldDescriptions": {

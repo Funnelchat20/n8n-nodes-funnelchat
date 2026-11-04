@@ -238,7 +238,7 @@
 	},
 	"device.index": {
 		"name": "List numbers",
-		"purpose": "Lists your WhatsApp numbers with their provider, whether they are connected and active, and their health, and gets the IDs the other operations use."
+		"purpose": "Lists your WhatsApp numbers with their provider, whether they are connected (connected) and active, and their health, and gets the IDs the other operations use. External Reference finds the number a connect link created."
 	},
 	"device.me": {
 		"name": "Get a number's WhatsApp profile",
@@ -383,5 +383,37 @@
 	"webhookDelivery.index": {
 		"name": "List a webhook's deliveries",
 		"purpose": "Use it to debug a webhook endpoint: each delivery attempt, newest first."
+	},
+	"deviceProvisioning.store": {
+		"name": "Create a number to connect by QR",
+		"purpose": "Creates a number of the account that connects by scanning a QR code with the WhatsApp app. Then read its QR with \"Get a number's QR code\", or send your customer a connect link instead."
+	},
+	"deviceProvisioning.qr": {
+		"name": "Get a number's QR code",
+		"purpose": "Gets the QR code that connects a QR number: scan it with the WhatsApp app (Linked devices). Once connected, connected is true and the device.connected event arrives."
+	},
+	"connectLink.store": {
+		"name": "Create a connect link",
+		"purpose": "Creates a single-use link for your customer to connect a WhatsApp number to your account from a Funnelchat page, without the panel: send them the url of the response."
+	},
+	"connectLink.index": {
+		"name": "List connect links",
+		"purpose": "Lists the account's connect links, newest first and without their url, filtered by status or by your reference."
+	},
+	"connectLink.show": {
+		"name": "Get a connect link",
+		"purpose": "Gets a connect link's current status (pending, completed, failed, expired or revoked) and, once completed, the device_id of the number it connected."
+	},
+	"connectLink.destroy": {
+		"name": "Revoke a connect link",
+		"purpose": "Revokes a pending connect link: its page then answers that the link no longer works. If the page had already created a number that is not connected yet, that number is deleted."
+	},
+	"apiGroupAction.sendMessage": {
+		"name": "Send a message to a group",
+		"purpose": "Sends a text or one media file to a WhatsApp group now, from one of your numbers. It answers at once with an action_id; the message goes out right after."
+	},
+	"apiGroupAction.show": {
+		"name": "Get a group action",
+		"purpose": "Gets the status (queued, running, completed or failed) and the result of a group action, such as a message sent to a group."
 	}
 }

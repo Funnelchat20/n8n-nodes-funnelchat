@@ -352,8 +352,11 @@ function buildOperation(ctx, doc, path, method, op, resource, source) {
 	}
 
 	const notices = [];
+	// `:operate` routes are irreversible unless the source says otherwise: accounts also puts there the ones that give
+	// control of a number (create one, its QR, connect links), with `x-fc-destructive: false`.
 	const destructive =
-		op['x-fc-destructive'] === true || String(op['x-fc-permission'] ?? '').endsWith(':operate');
+		op['x-fc-destructive'] === true ||
+		(op['x-fc-destructive'] !== false && String(op['x-fc-permission'] ?? '').endsWith(':operate'));
 	if (destructive) {
 		notices.push(
 			String(op['x-fc-permission'] ?? '').endsWith(':operate')

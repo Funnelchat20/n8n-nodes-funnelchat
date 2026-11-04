@@ -146,7 +146,7 @@ export class Funnelchat implements INodeType {
 		version: 1,
 		subtitle: '={{$parameter["operation"]}}',
 		description:
-			'Contacts, conversations and messages, templates, WhatsApp forms, tags, custom fields, groups, numbers and webhooks of the Funnelchat public API',
+			'Connect WhatsApp numbers, send messages and templates, and work with contacts, groups, WhatsApp forms, tags, custom fields and webhooks of the Funnelchat public API',
 		defaults: {
 			name: 'Funnelchat',
 		},

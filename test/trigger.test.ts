@@ -204,6 +204,71 @@ describe("the trigger's subscription cycle", () => {
 		]);
 	});
 
+	it('the first use: it subscribes to message.status_changed by name', async () => {
+		const { ctx, calls } = hookContext({
+			params: { events: ['message.status_changed'], options: {} },
+			responses: [
+				{
+					status: 201,
+					body: {
+						...subscription({ events: ['message.status_changed'] }),
+						secret: SIGNING_VALUE,
+					},
+				},
+			],
+		});
+		await expect(methods.create.call(ctx)).resolves.toBe(true);
+		expect((calls[0].options.body as IDataObject).events).toEqual(['message.status_changed']);
+	});
+
+	for (const events of [['*'], ['message.*'], ['message.received', '*']]) {
+		it(`a wildcard (${events.join(', ')}) is refused before calling the API: message.status_changed goes by name`, async () => {
+			const { ctx, calls, staticData } = hookContext({
+				params: { events, options: {} },
+				responses: [],
+			});
+			const error = (await methods.create.call(ctx).catch((e: unknown) => e)) as NodeOperationError;
+			expect(error).toBeInstanceOf(NodeOperationError);
+			expect(error.message).toContain('by name');
+			expect(error.description).toContain('message.status_changed');
+			expect(calls).toHaveLength(0);
+			expect(staticData.subscriptions).toBeUndefined();
+		});
+	}
+
+	it('a wildcard is refused also when checking an existing subscription', async () => {
+		const { ctx, calls } = hookContext({
+			params: { events: ['*'], options: {} },
+			staticData: {
+				subscriptions: { [WEBHOOK_URL]: { id: SUBSCRIPTION_ID, secret: SIGNING_VALUE } },
+			},
+			responses: [{ body: subscription() }],
+		});
+		await expect(methods.checkExists.call(ctx)).rejects.toThrow('by name');
+		expect(calls.map(requestLine)).toEqual([`GET /api/v1/webhooks/${SUBSCRIPTION_ID}`]);
+	});
+
+	it('events from an expression may come as text separated by commas, without blanks or repeats', async () => {
+		const { ctx, calls } = hookContext({
+			params: {
+				events: 'message.status_changed, message.received,,message.status_changed',
+				options: {},
+			},
+			responses: [{ status: 201, body: { ...subscription(), secret: SIGNING_VALUE } }],
+		});
+		await methods.create.call(ctx);
+		expect((calls[0].options.body as IDataObject).events).toEqual([
+			'message.status_changed',
+			'message.received',
+		]);
+	});
+
+	it('without events, it says so instead of calling the API', async () => {
+		const { ctx, calls } = hookContext({ params: { events: [], options: {} }, responses: [] });
+		await expect(methods.create.call(ctx)).rejects.toThrow('Choose at least one event');
+		expect(calls).toHaveLength(0);
+	});
+
 	it('if the creation response has no secret, it fails with a clear error', async () => {
 		const { ctx } = hookContext({
 			params: PARAMS,
@@ -261,6 +326,35 @@ describe('deliveries: signature check', () => {
 		const result = await trigger.webhook.call(ctx);
 		expect(response.status).not.toHaveBeenCalled();
 		expect(result.workflowData?.[0][0].json).toEqual(JSON.parse(vectors.cuerpo));
+	});
+
+	it('the event reaches the workflow as it came, with data.workspace_id (accounts v1.5.97)', async () => {
+		// The shape of message.status_changed in conversations v1.19.7, stamped with the workspace by accounts.
+		const event = {
+			id: 'evt_000000000000000000000002',
+			type: 'message.status_changed',
+			version: 1,
+			occurred_at: '2026-11-04T12:00:05Z',
+			data: {
+				message_id: 1001,
+				contact_id: 2001,
+				device_id: 4,
+				status: 'read',
+				previous_status: 'delivered',
+				error: null,
+				occurred_at: '2026-11-04T12:00:05Z',
+				client_reference: 'order-981',
+				workspace_id: 37,
+			},
+		};
+		const raw = Buffer.from(JSON.stringify(event), 'utf8');
+		const { ctx } = webhookContext({
+			rawBody: raw,
+			headers: { 'x-funnelchat-signature': sign(raw, SIGNING_VALUE) },
+			staticData,
+		});
+		const result = await trigger.webhook.call(ctx);
+		expect(result.workflowData?.[0][0].json).toEqual(event);
 	});
 
 	it('the secret of any of its subscriptions works (test and production)', async () => {
@@ -389,7 +483,7 @@ describe('event list from the catalog', () => {
 		expect(options[0].name).toBe('Evento nuevo (nuevo.evento)');
 	});
 
-	it("if the key cannot read the catalog, it shows the node's list (accounts v1.4.24 catalog)", async () => {
+	it("if the key cannot read the catalog, it shows the node's list (accounts v1.5.97 catalog)", async () => {
 		const { ctx, calls } = loadOptionsContext([
 			{
 				status: 403,
@@ -411,6 +505,16 @@ describe('event list from the catalog', () => {
 				return name(a).localeCompare(name(b), 'en');
 			}),
 		);
+		// The six of the first use, all of them emitted today, and the rest of the catalog.
+		for (const type of [
+			'device.connected',
+			'device.disconnected',
+			'message.received',
+			'message.status_changed',
+			'group_participant.joined',
+			'group_participant.left',
+		])
+			expect(EVENT_CATALOG.find((e) => e.type === type)?.status, type).toBe('active');
 		for (const type of [
 			'message.received',
 			'message.status_changed',
@@ -419,8 +523,11 @@ describe('event list from the catalog', () => {
 			'group_action.completed',
 			'group.reaction_added',
 			'device.disconnected',
+			'device.deleted',
+			'device.health_changed',
 		])
 			expect(values).toContain(type);
+		expect(values).toHaveLength(58);
 		expect(values).not.toContain('webhook.test');
 		const form = options.find((o) => o.value === 'whatsapp_form.completed')!;
 		expect(form.name).toBe('WhatsApp form completed (whatsapp_form.completed)');
