@@ -4885,7 +4885,7 @@ export const OPERATIONS: OperationSpec[] = [
 		"method": "POST",
 		"path": "/api/v1/groups/{group}/messages",
 		"permission": "communities:send",
-		"notice": "Asynchronous: it answers 202 with action_id and status queued. Read the outcome with \"Get a group action\" (result.message.uid is the message's ID in WhatsApp) or with the group_action.completed and group_action.failed events. With a QR number it goes out at the pace of low-speed scheduled messages; with an official number the 24-hour window and the number's quality are checked first. While group actions are not enabled for the API, it answers 403 route_not_available.",
+		"notice": "Asynchronous: it answers 202 with action_id and status queued. Read the outcome with \"Get a group action\" (result.message.uid is the message's ID in WhatsApp) or with the group_action.completed and group_action.failed events. With a QR number it goes out at the pace of low-speed scheduled messages; with an official number the 24-hour window and the number's quality are checked first.",
 		"source": "communities-v2.35.5",
 		"body": {
 			"required": true,
@@ -4979,7 +4979,7 @@ export const OPERATIONS: OperationSpec[] = [
 		"method": "GET",
 		"path": "/api/v1/groups/actions/{action}",
 		"permission": "communities:read",
-		"notice": "An action of another account or workspace answers 404 action_not_found, like one that does not exist. While group actions are not enabled for the API, it answers 403 route_not_available.",
+		"notice": "An action of another account or workspace answers 404 action_not_found, like one that does not exist.",
 		"source": "communities-v2.35.5",
 		"params": [
 			{

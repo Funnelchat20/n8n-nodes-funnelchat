@@ -176,6 +176,9 @@ describe('generation from the specification', () => {
 		expect(`${show.resource} ${show.method} ${show.path} ${show.permission}`).toBe(
 			'group GET /api/v1/groups/actions/{action} communities:read',
 		);
+		// Group actions are on in production (API_GROUP_ACTIONS_ENABLED=true, 04-11): no "may be off" notice.
+		for (const o of [send, show])
+			expect(o.notice ?? '', o.value).not.toContain('route_not_available');
 	});
 
 	it('the first use is all there: numbers, contacts, a text, a template, a message, groups', () => {

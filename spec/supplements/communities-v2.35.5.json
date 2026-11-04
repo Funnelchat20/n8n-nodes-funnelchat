@@ -15,7 +15,7 @@
 			"back/app/Modules/Shared/Enums/ApiDocsGroup.php"
 		],
 		"reason": "The portal's unified specification (13-10 snapshot) does not have the public group actions. These two are the ones the first use needs: send a message to a group and read how it went. The operationIds follow the Scramble form (class.method) and are not checked against a generated specification; the tag is the one communities documents them under (ApiDocsGroup::GroupActions). When the portal publishes a unified specification that has them, remove this supplement from the config.",
-		"key_access": "ApiRouteCatalog: POST groups/{group}/messages is Send (communities:send), GET groups/actions/{action} is Read (communities:read). Both are behind the kill switch API_GROUP_ACTIONS_ENABLED (off by default): while it is off, every caller gets 403 route_not_available. Whether it is on in production is an environment value that the code does not show."
+		"key_access": "ApiRouteCatalog: POST groups/{group}/messages is Send (communities:send), GET groups/actions/{action} is Read (communities:read). Both are part of the public group actions, which the setting API_GROUP_ACTIONS_ENABLED turns on; it is true in production (communities-api, confirmed by the user on 2026-11-04)."
 	},
 	"tags": [
 		{

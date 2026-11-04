@@ -168,7 +168,7 @@ so that the config maps them to the Groups resource without changes when the spe
 |---|---|
 | Repository | `communities` (Funnelchat20), read only |
 | Commit | tag `v2.35.5` @ `2be913d45b123466cc9aa26a73343e9d2b1c68b1`, the one running in production on 2026-11-04 (`v2.35.4` fixed `GET /groups/{group}/messages`, which the node already had) |
-| Access of API keys | `back/app/Modules/Shared/Catalog/ApiRouteCatalog.php`: `POST groups/{group}/messages` is `Send`, `GET groups/actions/{action}` is `Read`. Both are behind the kill switch `API_GROUP_ACTIONS_ENABLED` (`Shared/Support/ApiGroupActionsSwitch.php`, off by default): while it is off, every caller gets `403 route_not_available`. Whether it is on in production is an environment value the code does not show |
+| Access of API keys | `back/app/Modules/Shared/Catalog/ApiRouteCatalog.php`: `POST groups/{group}/messages` is `Send` (`communities:send`), `GET groups/actions/{action}` is `Read` (`communities:read`). They are part of the public group actions, which `API_GROUP_ACTIONS_ENABLED` turns on (`Shared/Support/ApiGroupActionsSwitch.php`): it is `true` in production (communities-api, confirmed by the user on 2026-11-04; the code does not show it) |
 | Routes | `back/app/Modules/GroupManagement/routes.php` (block "Public group actions") |
 | Bodies and responses | `GroupManagement/Requests/ApiGroupActions/SendGroupMessageRequest.php`, `Controllers/Api/V2/ApiGroupActionController.php`, `Resources/ApiGroupActionAcceptedResource.php`, `ApiGroupActionResource.php`, `Services/ApiGroupActions/ApiGroupActionTargetResolver.php` |
 | Edge routing | `api-edge` `main` @ `975d815`: `/api/v1/groups…` goes to communities |
