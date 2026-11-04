@@ -415,5 +415,73 @@
 	"apiGroupAction.show": {
 		"name": "Get a group action",
 		"purpose": "Gets the status (queued, running, completed or failed) and the result of a group action, such as a message sent to a group."
+	},
+	"contactCard.store": {
+		"name": "Send a contact card",
+		"purpose": "Sends a contact up to 5 contact cards of the account, one message per card."
+	},
+	"conversation.sendMessage": {
+		"name": "Send a message to a contact",
+		"purpose": "Use it to send a contact a text message or a file from one of your numbers, optionally replying to a previous message, with options or a link preview."
+	},
+	"forwardMessage.store": {
+		"name": "Forward a message",
+		"purpose": "Use it to forward a message of a conversation to up to 5 other contacts."
+	},
+	"message.sendMessage": {
+		"name": "Send a message",
+		"purpose": "Sends a message to a contact from one of your numbers, given the contact and the number in the body."
+	},
+	"messageTemplate.send": {
+		"name": "Send a template",
+		"purpose": "Use it to send an approved WhatsApp template to a contact, with its variables, also outside the 24-hour window."
+	},
+	"message.showMessage": {
+		"name": "Get a message",
+		"purpose": "Use it to check the status of a message by its ID (the one the send returned): queued, sent, delivered, read or failed, with the error and your client_reference."
+	},
+	"whatsappFormSend.store": {
+		"name": "Send a form to a contact",
+		"purpose": "Use it to send a published form to a contact. When they complete it, the whatsapp_form.completed event arrives with the answers."
+	},
+	"webhookSubscription.index": {
+		"name": "List webhook subscriptions",
+		"purpose": "Use it to see all the subscriptions of the account, also the ones other integrations or people created."
+	},
+	"webhookSubscription.store": {
+		"name": "Create a webhook subscription",
+		"purpose": "Use it to register an https URL and choose the events it receives. The response has the secret only once: keep it to verify the signature."
+	},
+	"webhookSubscription.show": {
+		"name": "Get a webhook subscription",
+		"purpose": "Use it to see the URL, events, filter and status of a subscription. It never includes the secret."
+	},
+	"webhookSubscription.update": {
+		"name": "Update a webhook subscription",
+		"purpose": "Use it to change the URL (for example, when your tunnel changes), the events or the filter, or to pause and resume a subscription. It replaces the whole subscription and the secret does not change."
+	},
+	"webhookSubscription.destroy": {
+		"name": "Delete a webhook subscription",
+		"purpose": "Use it to remove a subscription. Its events and delivery history are deleted with it. Do not delete the ones you do not recognize: they may belong to another integration of the account."
+	},
+	"webhookSubscriptionDelivery.index": {
+		"name": "List a subscription's deliveries",
+		"purpose": "Use it to review each delivery attempt of a subscription: HTTP status, error and duration, newest first."
+	},
+	"webhookSubscriptionTest.test": {
+		"name": "Send a test event",
+		"purpose": "Use it to test your receiver: sends a single webhook.test event signed like a real one, without retries, and keeps it in the history."
+	},
+	"message.markMessageRead": {
+		"name": "Mark a message as read",
+		"purpose": "Marks a message the contact sent you as read on WhatsApp (the contact sees the blue ticks), and updates the conversation's unread state as the panel does."
+	},
+	"message.typingIndicator": {
+		"name": "Show \"typing…\" to a contact",
+		"purpose": "Shows the contact that you are typing, on their latest message, for example while your system prepares the answer. Only WhatsApp Cloud numbers."
+	},
+	"message.templateMetrics": {
+		"name": "Get a template's metrics",
+		"purpose": "Gets what Meta reports for a template of an official number, day by day (UTC) and in total: sent, delivered and read, clicks per button and, when Meta reports it, the cost."
 	}
 }

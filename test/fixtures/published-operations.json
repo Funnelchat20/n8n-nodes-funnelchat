@@ -1,0 +1,549 @@
+{
+	"$comment": "Every operation the node has published, as resource and value (the n8n option saved workflows use): the 128 of 0.1.1 and the 8 that 0.2.0 added before regenerating from the full unified specification of 2026-11-04. test/generate.test.ts checks each one is still there, in the same resource. Add new operations here when they are released; never remove one.",
+	"operations": [
+		{
+			"resource": "contact",
+			"value": "contact.index"
+		},
+		{
+			"resource": "contact",
+			"value": "contact.store"
+		},
+		{
+			"resource": "contact",
+			"value": "contact.updateOrCreate"
+		},
+		{
+			"resource": "contact",
+			"value": "contact.attachCustomField"
+		},
+		{
+			"resource": "contact",
+			"value": "contact.detachCustomField"
+		},
+		{
+			"resource": "contact",
+			"value": "contact.show"
+		},
+		{
+			"resource": "contact",
+			"value": "contact.update"
+		},
+		{
+			"resource": "contact",
+			"value": "contact.tags"
+		},
+		{
+			"resource": "contact",
+			"value": "contact.customFields"
+		},
+		{
+			"resource": "contact",
+			"value": "contact.metaWindow"
+		},
+		{
+			"resource": "contact",
+			"value": "contact.contactsByDevice"
+		},
+		{
+			"resource": "contact",
+			"value": "contact.destroy"
+		},
+		{
+			"resource": "contact",
+			"value": "contactNote.index"
+		},
+		{
+			"resource": "contact",
+			"value": "contactNote.store"
+		},
+		{
+			"resource": "contact",
+			"value": "contactNote.destroy"
+		},
+		{
+			"resource": "conversation",
+			"value": "conversation.index"
+		},
+		{
+			"resource": "conversation",
+			"value": "conversation.countUnread"
+		},
+		{
+			"resource": "conversation",
+			"value": "conversation.countOpen"
+		},
+		{
+			"resource": "conversation",
+			"value": "conversation.countClosed"
+		},
+		{
+			"resource": "conversation",
+			"value": "conversation.countAll"
+		},
+		{
+			"resource": "conversation",
+			"value": "conversation.markAllAsRead"
+		},
+		{
+			"resource": "conversation",
+			"value": "conversation.markAllAsUnread"
+		},
+		{
+			"resource": "conversation",
+			"value": "conversation.update"
+		},
+		{
+			"resource": "conversation",
+			"value": "conversation.sendMessage"
+		},
+		{
+			"resource": "conversation",
+			"value": "conversation.getLatestMessages"
+		},
+		{
+			"resource": "conversation",
+			"value": "message.sendMessage"
+		},
+		{
+			"resource": "conversation",
+			"value": "showMessage"
+		},
+		{
+			"resource": "conversation",
+			"value": "messageReaction.update"
+		},
+		{
+			"resource": "conversation",
+			"value": "messageReaction.destroy"
+		},
+		{
+			"resource": "conversation",
+			"value": "forwardMessage.store"
+		},
+		{
+			"resource": "conversation",
+			"value": "interactiveMessage.storePoll"
+		},
+		{
+			"resource": "conversation",
+			"value": "interactiveMessage.storeEvent"
+		},
+		{
+			"resource": "conversation",
+			"value": "contactCard.store"
+		},
+		{
+			"resource": "template",
+			"value": "messageTemplate.templates"
+		},
+		{
+			"resource": "template",
+			"value": "messageTemplate.store"
+		},
+		{
+			"resource": "template",
+			"value": "messageTemplate.template"
+		},
+		{
+			"resource": "template",
+			"value": "messageTemplate.update"
+		},
+		{
+			"resource": "template",
+			"value": "messageTemplate.quickReplyButtons"
+		},
+		{
+			"resource": "template",
+			"value": "messageTemplate.send"
+		},
+		{
+			"resource": "template",
+			"value": "messageTemplate.delete"
+		},
+		{
+			"resource": "form",
+			"value": "whatsappForm.index"
+		},
+		{
+			"resource": "form",
+			"value": "whatsappForm.store"
+		},
+		{
+			"resource": "form",
+			"value": "whatsappForm.templates"
+		},
+		{
+			"resource": "form",
+			"value": "whatsappForm.show"
+		},
+		{
+			"resource": "form",
+			"value": "whatsappForm.update"
+		},
+		{
+			"resource": "form",
+			"value": "whatsappForm.destroy"
+		},
+		{
+			"resource": "form",
+			"value": "whatsappForm.numbersIndex"
+		},
+		{
+			"resource": "form",
+			"value": "whatsappForm.addNumber"
+		},
+		{
+			"resource": "form",
+			"value": "whatsappForm.removeNumber"
+		},
+		{
+			"resource": "form",
+			"value": "whatsappForm.retryNumbers"
+		},
+		{
+			"resource": "form",
+			"value": "whatsappForm.storeVersion"
+		},
+		{
+			"resource": "form",
+			"value": "whatsappForm.sync"
+		},
+		{
+			"resource": "form",
+			"value": "whatsappForm.publish"
+		},
+		{
+			"resource": "form",
+			"value": "whatsappForm.definition"
+		},
+		{
+			"resource": "form",
+			"value": "whatsappForm.versions"
+		},
+		{
+			"resource": "form",
+			"value": "whatsappForm.responses"
+		},
+		{
+			"resource": "form",
+			"value": "whatsappForm.response"
+		},
+		{
+			"resource": "form",
+			"value": "whatsappForm.metrics"
+		},
+		{
+			"resource": "form",
+			"value": "whatsappFormSend.store"
+		},
+		{
+			"resource": "tag",
+			"value": "tag.index"
+		},
+		{
+			"resource": "tag",
+			"value": "tag.store"
+		},
+		{
+			"resource": "tag",
+			"value": "tag.show"
+		},
+		{
+			"resource": "tag",
+			"value": "tag.update"
+		},
+		{
+			"resource": "tag",
+			"value": "tag.contacts"
+		},
+		{
+			"resource": "tag",
+			"value": "tag.destroy"
+		},
+		{
+			"resource": "customField",
+			"value": "customField.index"
+		},
+		{
+			"resource": "customField",
+			"value": "customField.store"
+		},
+		{
+			"resource": "customField",
+			"value": "customField.destroy"
+		},
+		{
+			"resource": "customField",
+			"value": "customField.show"
+		},
+		{
+			"resource": "customField",
+			"value": "customField.update"
+		},
+		{
+			"resource": "group",
+			"value": "group.index"
+		},
+		{
+			"resource": "group",
+			"value": "group.groups"
+		},
+		{
+			"resource": "group",
+			"value": "group.adGroups"
+		},
+		{
+			"resource": "group",
+			"value": "group.channels"
+		},
+		{
+			"resource": "group",
+			"value": "groupMetadata.show"
+		},
+		{
+			"resource": "group",
+			"value": "group.show"
+		},
+		{
+			"resource": "group",
+			"value": "group.actions"
+		},
+		{
+			"resource": "group",
+			"value": "group.messages"
+		},
+		{
+			"resource": "group",
+			"value": "group.scheduledMessages"
+		},
+		{
+			"resource": "group",
+			"value": "apiGroupAction.sendMessage"
+		},
+		{
+			"resource": "group",
+			"value": "apiGroupAction.show"
+		},
+		{
+			"resource": "group",
+			"value": "campaign.participants"
+		},
+		{
+			"resource": "group",
+			"value": "campaign.campaignParticipants"
+		},
+		{
+			"resource": "group",
+			"value": "campaign.participantEvents"
+		},
+		{
+			"resource": "group",
+			"value": "group.participants"
+		},
+		{
+			"resource": "group",
+			"value": "group.participantEvents"
+		},
+		{
+			"resource": "device",
+			"value": "device.index"
+		},
+		{
+			"resource": "device",
+			"value": "device.me"
+		},
+		{
+			"resource": "device",
+			"value": "device.checkPhone"
+		},
+		{
+			"resource": "device",
+			"value": "device.show"
+		},
+		{
+			"resource": "device",
+			"value": "device.update"
+		},
+		{
+			"resource": "device",
+			"value": "device.destroy"
+		},
+		{
+			"resource": "device",
+			"value": "device.reset"
+		},
+		{
+			"resource": "device",
+			"value": "device.updateWebhookReceived"
+		},
+		{
+			"resource": "device",
+			"value": "device.updateWebhookReceivedAndDelivery"
+		},
+		{
+			"resource": "device",
+			"value": "device.clean"
+		},
+		{
+			"resource": "device",
+			"value": "device.chats"
+		},
+		{
+			"resource": "device",
+			"value": "device.openConversations"
+		},
+		{
+			"resource": "device",
+			"value": "device.messageQueue"
+		},
+		{
+			"resource": "device",
+			"value": "device.deleteMessageQueue"
+		},
+		{
+			"resource": "device",
+			"value": "device.getQueueCount"
+		},
+		{
+			"resource": "device",
+			"value": "device.clearQueue"
+		},
+		{
+			"resource": "device",
+			"value": "device.status"
+		},
+		{
+			"resource": "device",
+			"value": "device.extensionToken"
+		},
+		{
+			"resource": "device",
+			"value": "deviceProvisioning.store"
+		},
+		{
+			"resource": "device",
+			"value": "deviceProvisioning.qr"
+		},
+		{
+			"resource": "device",
+			"value": "connectLink.index"
+		},
+		{
+			"resource": "device",
+			"value": "connectLink.store"
+		},
+		{
+			"resource": "device",
+			"value": "connectLink.show"
+		},
+		{
+			"resource": "device",
+			"value": "connectLink.destroy"
+		},
+		{
+			"resource": "device",
+			"value": "deviceHealth.show"
+		},
+		{
+			"resource": "device",
+			"value": "deviceHealth.refresh"
+		},
+		{
+			"resource": "device",
+			"value": "deviceConnectionEvent.index"
+		},
+		{
+			"resource": "device",
+			"value": "deviceLogs.index"
+		},
+		{
+			"resource": "device",
+			"value": "deviceLogs.health"
+		},
+		{
+			"resource": "device",
+			"value": "deviceFleetLogs.index"
+		},
+		{
+			"resource": "device",
+			"value": "deviceUsername.show"
+		},
+		{
+			"resource": "device",
+			"value": "deviceUsername.store"
+		},
+		{
+			"resource": "device",
+			"value": "deviceUsername.suggestions"
+		},
+		{
+			"resource": "device",
+			"value": "deviceDisconnectSurvey.show"
+		},
+		{
+			"resource": "device",
+			"value": "deviceDisconnectSurvey.store"
+		},
+		{
+			"resource": "webhook",
+			"value": "webhookSubscription.index"
+		},
+		{
+			"resource": "webhook",
+			"value": "webhookSubscription.store"
+		},
+		{
+			"resource": "webhook",
+			"value": "webhookSubscription.show"
+		},
+		{
+			"resource": "webhook",
+			"value": "webhookSubscription.update"
+		},
+		{
+			"resource": "webhook",
+			"value": "webhookSubscription.destroy"
+		},
+		{
+			"resource": "webhook",
+			"value": "webhookSubscriptionDelivery.index"
+		},
+		{
+			"resource": "webhook",
+			"value": "webhookSubscriptionTest.test"
+		},
+		{
+			"resource": "webhook",
+			"value": "webhookEventCatalog.index"
+		},
+		{
+			"resource": "webhook",
+			"value": "webhookEndpoint.index"
+		},
+		{
+			"resource": "webhook",
+			"value": "webhookEndpoint.store"
+		},
+		{
+			"resource": "webhook",
+			"value": "webhookEndpoint.show"
+		},
+		{
+			"resource": "webhook",
+			"value": "webhookEndpoint.update"
+		},
+		{
+			"resource": "webhook",
+			"value": "webhookEndpoint.destroy"
+		},
+		{
+			"resource": "webhook",
+			"value": "webhookEndpointEvent.update"
+		},
+		{
+			"resource": "webhook",
+			"value": "webhookDelivery.index"
+		}
+	]
+}

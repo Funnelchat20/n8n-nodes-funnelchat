@@ -220,6 +220,34 @@ describe('building requests (buildRequest)', () => {
 		);
 	});
 
+	it('Mark a message as read, show "typing…" and a template\'s metrics (new in the full specification)', () => {
+		expect(url('message.markMessageRead', { contact: '2001', message: '1001' })).toBe(
+			'POST /api/v1/contacts/2001/messages/1001/read',
+		);
+		expect(
+			buildRequest(op('message.typingIndicator'), { contact: '2001', device_id: '3' }),
+		).toEqual({
+			method: 'POST',
+			path: '/api/v1/contacts/2001/typing',
+			query: [],
+			body: { device_id: 3 },
+		});
+		expect(
+			url('message.templateMetrics', { template: '45', from: '2026-11-01', to: '2026-11-04' }),
+		).toBe('GET /api/v1/templates/45/metrics?from=2026-11-01&to=2026-11-04');
+	});
+
+	it("List a subscription's deliveries keeps its event filters, which the specification does not list", () => {
+		expect(
+			url('webhookSubscriptionDelivery.index', {
+				id: '0f486bfd-2f55-4ed6-8a12-b09e31a6ac08',
+				event_type: 'message.status_changed',
+			}),
+		).toBe(
+			'GET /api/v1/webhooks/0f486bfd-2f55-4ed6-8a12-b09e31a6ac08/deliveries?event_type=message.status_changed',
+		);
+	});
+
 	it('an ID that is not a number is rejected before calling the API', () => {
 		expect(() =>
 			buildRequest(op('conversation.sendMessage'), {

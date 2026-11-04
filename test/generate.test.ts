@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { Funnelchat } from '../nodes/Funnelchat/Funnelchat.node';
 import { OPERATIONS, RESOURCES, SPEC_SOURCE } from '../nodes/Funnelchat/generated/operations';
-import { generate, staleFiles } from '../scripts/generate.mjs';
+import { generate, looksSpanish, staleFiles } from '../scripts/generate.mjs';
+import published from './fixtures/published-operations.json';
 import translations from '../scripts/operations.en.json';
 import spec from '../spec/funnelchat.json';
 
@@ -32,51 +33,89 @@ describe('generation from the specification', () => {
 		for (const op of OPERATIONS.filter((o) => o.source === 'spec')) {
 			const fromSpec = paths[op.path]?.[op.method.toLowerCase()];
 			expect(fromSpec, `${op.method} ${op.path}`).toBeDefined();
-			expect(op.value).toBe(fromSpec?.operationId);
-			expect(op.name).toBe(english[op.value].name);
-			expect(op.description.startsWith(english[op.value].purpose), op.value).toBe(true);
+			const operationId = op.operationId ?? op.value;
+			expect(operationId).toBe(fromSpec?.operationId);
+			expect(op.name).toBe(english[operationId].name);
+			expect(op.description.startsWith(english[operationId].purpose), op.value).toBe(true);
 		}
+	});
+
+	it('every operation the node has published is still there, in its resource', () => {
+		const values = new Map(OPERATIONS.map((o) => [o.value, o.resource]));
+		for (const { resource, value } of published.operations)
+			expect(values.get(value), value).toBe(resource);
+		expect(OPERATIONS.length).toBeGreaterThanOrEqual(published.operations.length);
+	});
+
+	it('an operation the specification renamed keeps the value saved workflows use', () => {
+		const show = OPERATIONS.find((o) => o.value === 'showMessage')!;
+		expect(show.operationId).toBe('message.showMessage');
+		expect(OPERATIONS.find((o) => o.value === 'message.showMessage')).toBeUndefined();
+		// The rest are the specification's own.
+		expect(OPERATIONS.filter((o) => o.operationId).map((o) => o.value)).toEqual(['showMessage']);
 	});
 
 	it('the provenance records the copied specification (the generator refuses otherwise)', () => {
-		expect(SPEC_SOURCE.sha256).toMatch(/^[0-9a-f]{64}$/);
+		expect(SPEC_SOURCE.sha256).toBe(
+			'0f451feaba59418f3a556f58856f841f12570973fd6525103e8cc0128ab64374',
+		);
 		expect(() => generate()).not.toThrow();
+		expect(generate().warnings).toEqual([]);
+		expect(SPEC_SOURCE.supplements.map((s) => s.id)).toEqual([
+			'conversations-forms',
+			'conversations-kept-2026-10-15',
+			'communities-v2.35.5',
+		]);
+		for (const s of SPEC_SOURCE.supplements) expect(s.ignored, s.id).toBe(0);
 	});
 
-	it('the accounts subscriptions come from the supplement, with webhooks:* and the area rule', () => {
-		const fromSupplement = OPERATIONS.filter((o) => o.source === 'accounts-webhook-subscriptions');
-		expect(fromSupplement.map((o) => `${o.method} ${o.path}`)).toEqual([
-			'GET /api/v1/webhooks',
-			'POST /api/v1/webhooks',
-			'GET /api/v1/webhooks/{id}',
-			'PUT /api/v1/webhooks/{id}',
-			'DELETE /api/v1/webhooks/{id}',
-			'GET /api/v1/webhooks/{id}/deliveries',
-			'POST /api/v1/webhooks/{id}/test',
+	it('the webhook subscriptions come from the specification, with webhooks:* and the area rule', () => {
+		const subscriptions = OPERATIONS.filter(
+			(o) =>
+				o.path.startsWith('/api/v1/webhooks') &&
+				!o.path.includes('endpoints') &&
+				!o.path.endsWith('/events'),
+		);
+		expect(subscriptions.map((o) => `${o.method} ${o.path} ${o.source}`)).toEqual([
+			'GET /api/v1/webhooks spec',
+			'POST /api/v1/webhooks spec',
+			'GET /api/v1/webhooks/{id} spec',
+			'PUT /api/v1/webhooks/{id} spec',
+			'DELETE /api/v1/webhooks/{id} spec',
+			'GET /api/v1/webhooks/{id}/deliveries spec',
+			'POST /api/v1/webhooks/{id}/test spec',
 		]);
-		for (const o of fromSupplement) {
+		for (const o of subscriptions) {
+			expect(o.resource, o.value).toBe('webhook');
 			expect(o.permission).toBe(o.method === 'GET' ? 'webhooks:read' : 'webhooks:write');
 			expect(o.notice).toContain('read permission of the area');
 		}
+		// Typed with commas, as the node published them, although the specification now lists the types.
+		for (const value of ['webhookSubscription.store', 'webhookSubscription.update'])
+			expect(
+				OPERATIONS.find((o) => o.value === value)!.params.find((p) => p.apiName === 'events')!.kind,
+			).toBe('list');
+		// Filters the code reads and the specification does not list.
+		const deliveries = OPERATIONS.find((o) => o.value === 'webhookSubscriptionDelivery.index')!;
+		expect(deliveries.params.map((p) => p.apiName)).toEqual(['id', 'event_type', 'event_id']);
 	});
 
-	it('sends with an API key come from conversations v1.18.10: same operationId, new fields, without the v0 note', () => {
-		const replaced = [
+	it('sends with an API key: the same operationIds, client_reference and their notices', () => {
+		for (const value of [
 			'conversation.sendMessage',
 			'message.sendMessage',
 			'forwardMessage.store',
 			'contactCard.store',
 			'messageTemplate.send',
-		];
-		const paths = spec.paths as unknown as Record<string, Record<string, { operationId?: string }>>;
-		for (const value of replaced) {
+			'whatsappFormSend.store',
+		]) {
 			const o = OPERATIONS.find((x) => x.value === value)!;
-			expect(o.source, value).toBe('conversations-v1.18.10');
-			expect(paths[o.path][o.method.toLowerCase()].operationId).toBe(value);
+			expect(o.source, value).toBe('spec');
 			expect(
 				o.params.map((p) => p.apiName),
 				value,
 			).toContain('client_reference');
+			expect(o.notice ?? '', value).toContain('With an API key');
 			expect(o.notice ?? '', value).not.toContain('route_not_available');
 		}
 		for (const value of ['conversation.sendMessage', 'message.sendMessage']) {
@@ -87,13 +126,25 @@ describe('generation from the specification', () => {
 			(p) => p.apiName === 'file_type',
 		)!;
 		expect(fileType.options).toEqual(['image', 'video', 'audio', 'document', 'sticker']);
+		expect(fileType.description).toContain('a URL that does not show its extension');
 		// Nothing keeps the "on its way" note of the 13-10 snapshot.
 		for (const o of OPERATIONS) expect(o.notice ?? '', o.value).not.toContain('PR #2284');
-		for (const value of ['interactiveMessage.storePoll', 'interactiveMessage.storeEvent'])
-			expect(OPERATIONS.find((x) => x.value === value)!.notice).toContain('route_not_available');
-		expect(SPEC_SOURCE.supplements.find((x) => x.id === 'conversations-v1.18.10')).toMatchObject({
-			replaced: 5,
-		});
+		// Poll and event invitation, still closed to keys, kept so saved workflows do not lose them.
+		for (const value of ['interactiveMessage.storePoll', 'interactiveMessage.storeEvent']) {
+			const o = OPERATIONS.find((x) => x.value === value)!;
+			expect(o.source).toBe('conversations-kept-2026-10-15');
+			expect(o.notice).toContain('route_not_available');
+		}
+	});
+
+	it('no text the node shows is in Spanish', () => {
+		for (const o of OPERATIONS) {
+			expect(looksSpanish(o.name), o.value).toBe(false);
+			expect(looksSpanish(o.description), o.value).toBe(false);
+			expect(looksSpanish(o.notice ?? ''), o.value).toBe(false);
+			for (const p of o.params)
+				expect(looksSpanish(p.description ?? ''), `${o.value} ${p.apiName}`).toBe(false);
+		}
 	});
 
 	it('message by ID and WhatsApp forms, with their permission', () => {
@@ -110,10 +161,12 @@ describe('generation from the specification', () => {
 			'form_id',
 			'device_id',
 		]);
-		for (const o of forms.filter((x) => x !== send))
+		for (const o of forms.filter((x) => x !== send)) {
+			expect(o.source, o.value).toBe('conversations-forms');
 			expect(o.permission, o.value).toBe(
 				o.method === 'GET' ? 'conversations:read' : 'conversations:write',
 			);
+		}
 		expect(forms.find((o) => o.value === 'whatsappForm.index')!.list).toEqual({
 			pagination: 'page',
 			sizeParam: 'per_page',
@@ -121,18 +174,24 @@ describe('generation from the specification', () => {
 		});
 	});
 
-	it('connecting a number comes from accounts v1.5.97, with the operationIds of the portal', () => {
-		const fromSupplement = OPERATIONS.filter((o) => o.source === 'accounts-v1.5.97');
-		expect(fromSupplement.map((o) => `${o.method} ${o.path} ${o.value} ${o.permission}`)).toEqual([
-			'GET /api/v1/devices device.index accounts:read',
-			'POST /api/v1/devices deviceProvisioning.store accounts:operate',
-			'GET /api/v1/devices/{device}/qr deviceProvisioning.qr accounts:operate',
-			'GET /api/v1/connect-links connectLink.index accounts:read',
-			'POST /api/v1/connect-links connectLink.store accounts:operate',
-			'GET /api/v1/connect-links/{link} connectLink.show accounts:read',
-			'DELETE /api/v1/connect-links/{link} connectLink.destroy accounts:operate',
+	it('connecting a number comes from the specification, with the operationIds of the supplement it replaces', () => {
+		const numbers = OPERATIONS.filter(
+			(o) =>
+				['device.index', 'deviceProvisioning.store', 'deviceProvisioning.qr'].includes(o.value) ||
+				o.value.startsWith('connectLink.'),
+		);
+		expect(
+			numbers.map((o) => `${o.method} ${o.path} ${o.value} ${o.permission} ${o.source}`),
+		).toEqual([
+			'GET /api/v1/devices device.index accounts:read spec',
+			'POST /api/v1/devices deviceProvisioning.store accounts:operate spec',
+			'GET /api/v1/devices/{device}/qr deviceProvisioning.qr accounts:operate spec',
+			'GET /api/v1/connect-links connectLink.index accounts:read spec',
+			'POST /api/v1/connect-links connectLink.store accounts:operate spec',
+			'GET /api/v1/connect-links/{link} connectLink.show accounts:read spec',
+			'DELETE /api/v1/connect-links/{link} connectLink.destroy accounts:operate spec',
 		]);
-		for (const o of fromSupplement) {
+		for (const o of numbers) {
 			expect(o.resource, o.value).toBe('device');
 			// accounts:operate here gives control of a number; it is not an irreversible operation.
 			expect(o.notice ?? '', o.value).not.toContain('Irreversible');
@@ -147,11 +206,21 @@ describe('generation from the specification', () => {
 		]);
 		const link = OPERATIONS.find((o) => o.value === 'connectLink.store')!;
 		expect(link.params.filter((p) => p.required).map((p) => p.apiName)).toEqual(['type']);
+		// qr first: it is the default, the one the first use needs (meta answers 503 while it is off).
 		expect(link.params.find((p) => p.apiName === 'type')!.options).toEqual(['qr', 'meta']);
-		expect(SPEC_SOURCE.supplements.find((x) => x.id === 'accounts-v1.5.97')).toMatchObject({
-			used: 6,
-			replaced: 1,
-		});
+	});
+
+	it('new operations of the specification: mark as read, typing and template metrics', () => {
+		const added = [
+			'message.markMessageRead',
+			'message.typingIndicator',
+			'message.templateMetrics',
+		].map((value) => OPERATIONS.find((o) => o.value === value)!);
+		expect(added.map((o) => `${o.resource} ${o.method} ${o.path} ${o.permission}`)).toEqual([
+			'conversation POST /api/v1/contacts/{contact}/messages/{message}/read conversations:send',
+			'conversation POST /api/v1/contacts/{contact}/typing conversations:send',
+			'template GET /api/v1/templates/{template}/metrics conversations:read',
+		]);
 	});
 
 	it('a message to a group comes from communities v2.35.5, in the Groups resource', () => {

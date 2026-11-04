@@ -54,6 +54,11 @@ export interface OperationSpec {
 	resource: string;
 	/** The operation id in the specification (stable value of the n8n option). */
 	value: string;
+	/**
+	 * The operation id in the specification, only when it is not `value`: the specification renamed the operation and
+	 * the node keeps the value saved workflows use (`keepOperationValues` in scripts/generator.config.json).
+	 */
+	operationId?: string;
 	/** Short name in the portal (`summary`). */
 	name: string;
 	description: string;

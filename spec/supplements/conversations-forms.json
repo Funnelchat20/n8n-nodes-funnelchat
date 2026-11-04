@@ -1,0 +1,977 @@
+{
+	"x-fc-supplement": {
+		"id": "conversations-forms",
+		"title": "WhatsApp forms of conversations",
+		"source": "conversations tag v1.18.10 @ a580a3d0020c98d9777c4f05437454c52af7ee55, written on 2026-10-22; checked again on 2026-11-04 against tag v1.19.7 @ 4e35ddb835249d37576597cc9a965c3e16ccb6d2 (the one running in production): bodies and responses did not change, read only",
+		"files": [
+			"back/config/platform-gate.php",
+			"back/routes/api/whatsapp-forms.php",
+			"back/app/Modules/WhatsappForm/Http/Controllers/WhatsappFormController.php",
+			"back/app/Modules/WhatsappForm/Http/Controllers/WhatsappFormSendController.php",
+			"back/app/Modules/WhatsappForm/Http/Requests/*.php"
+		],
+		"edge": "api-edge main @ 975d815 (in production since 2026-10-25; forms routed since a144b49, 2026-10-22): /api/v1/forms goes to conversations",
+		"reason": "The 18 WhatsApp form routes, open to API keys in conversations v1.19.7 (allowed list of config/platform-gate.php). The portal's full unified specification of 2026-11-04 leaves them out (x-fc-excluded-routes, edge_domain null): its edge table, config/borde.json, is a copy of api-edge 4b3c1754a (13-10), before forms were routed. The operationIds follow the Scramble form (class.method) and are not checked against a generated specification. When the portal brings them, remove this supplement from the config."
+	},
+	"tags": [
+		{
+			"name": "WhatsappForm",
+			"x-displayName": "WhatsApp forms",
+			"description": "Native WhatsApp forms: built, published on one or more numbers, sent to a contact, and their answers arrive with the whatsapp_form.completed event."
+		}
+	],
+	"paths": {
+		"/api/v1/forms": {
+			"get": {
+				"operationId": "whatsappForm.index",
+				"summary": "List forms",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:read",
+				"x-fc-purpose": "Use it to see the WhatsApp forms of the account, one row per form with its current version, sends and responses.",
+				"parameters": [
+					{
+						"name": "q",
+						"in": "query",
+						"schema": {
+							"type": "string"
+						},
+						"description": "Searches by name."
+					},
+					{
+						"name": "status",
+						"in": "query",
+						"schema": {
+							"type": "string",
+							"enum": [
+								"draft",
+								"published",
+								"deprecated"
+							]
+						},
+						"description": "Status."
+					},
+					{
+						"name": "device_id",
+						"in": "query",
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Only the ones of this number."
+					},
+					{
+						"name": "per_page",
+						"in": "query",
+						"schema": {
+							"type": "integer"
+						}
+					},
+					{
+						"name": "page",
+						"in": "query",
+						"schema": {
+							"type": "integer"
+						}
+					}
+				],
+				"x-fc-listing": {
+					"per_page_default": 25,
+					"per_page_max": 100,
+					"size_params": [
+						"per_page"
+					]
+				},
+				"responses": {
+					"200": {
+						"description": "Forms, paginated.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"data": {
+											"type": "array",
+											"items": {
+												"type": "object"
+											}
+										},
+										"links": {
+											"type": "object"
+										},
+										"meta": {
+											"type": "object",
+											"properties": {
+												"current_page": {
+													"type": "integer"
+												},
+												"last_page": {
+													"type": "integer"
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"post": {
+				"operationId": "whatsappForm.store",
+				"summary": "Create a form",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:write",
+				"x-fc-purpose": "Use it to create a draft form from a template (blank starts it empty) for one or more numbers. Then it is edited, validated and published.",
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": [
+									"device_id",
+									"template_key"
+								],
+								"properties": {
+									"device_id": {
+										"type": "integer",
+										"description": "Main number of the form."
+									},
+									"device_ids": {
+										"type": "array",
+										"items": {
+											"type": "integer"
+										},
+										"description": "Other numbers (up to 50)."
+									},
+									"template_key": {
+										"type": "string",
+										"description": "Key of the form template (from List form templates); blank to start empty."
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"description": "The created form, its lint and its numbers.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/templates": {
+			"get": {
+				"operationId": "whatsappForm.templates",
+				"summary": "List form templates",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:read",
+				"x-fc-purpose": "Use it to see which templates a form can be created from.",
+				"responses": {
+					"200": {
+						"description": "Templates.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"data": {
+											"type": "array",
+											"items": {
+												"type": "object",
+												"properties": {
+													"key": {
+														"type": "string"
+													},
+													"title": {
+														"type": "string"
+													},
+													"description": {
+														"type": "string"
+													},
+													"category": {
+														"type": "string"
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/{id}": {
+			"get": {
+				"operationId": "whatsappForm.show",
+				"summary": "Get a form",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:read",
+				"x-fc-purpose": "Use it to see a version of a form with its definition, its lint, its versions and its numbers.",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "ID of a version of the form (id from List forms or from its versions)."
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "{data, lint, versions, numbers}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			},
+			"put": {
+				"operationId": "whatsappForm.update",
+				"summary": "Save a form",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:write",
+				"x-fc-purpose": "Use it to save the definition of a draft (screens and questions). A published form is not edited: create a new version.",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "ID of a version of the form (id from List forms or from its versions)."
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": [
+									"definition"
+								],
+								"properties": {
+									"name": {
+										"type": "string",
+										"description": "Name (up to 120 characters)."
+									},
+									"definition": {
+										"type": "object",
+										"description": "The full definition: {screens: [...]}, as Get a form returns it."
+									},
+									"expected_updated_at": {
+										"type": [
+											"string",
+											"null"
+										],
+										"description": "The updated_at you read; if it changed in between, 409 STALE."
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "{data, lint}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			},
+			"delete": {
+				"operationId": "whatsappForm.destroy",
+				"summary": "Delete a draft form",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:write",
+				"x-fc-purpose": "Use it to delete a draft version. A published one answers 409 PUBLISHED.",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "ID of a version of the form (id from List forms or from its versions)."
+					}
+				],
+				"responses": {
+					"204": {
+						"description": "Deleted."
+					}
+				}
+			}
+		},
+		"/api/v1/forms/{id}/numbers": {
+			"get": {
+				"operationId": "whatsappForm.numbersIndex",
+				"summary": "Get a form's numbers",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:read",
+				"x-fc-purpose": "Use it to see which numbers the form is on and the status of its publication on each one.",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "ID of a version of the form (id from List forms or from its versions)."
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "{numbers}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			},
+			"post": {
+				"operationId": "whatsappForm.addNumber",
+				"summary": "Add a number to a form",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:write",
+				"x-fc-purpose": "Use it to add a number to the form; if it is already published, it is published on that number too.",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "ID of a version of the form (id from List forms or from its versions)."
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": [
+									"device_id"
+								],
+								"properties": {
+									"device_id": {
+										"type": "integer",
+										"description": "Number to add."
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "{numbers}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/{id}/numbers/{deviceId}": {
+			"delete": {
+				"operationId": "whatsappForm.removeNumber",
+				"summary": "Remove a number from a form",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:write",
+				"x-fc-purpose": "Use it to take a number off the form. The main number cannot be removed (422 PRIMARY_NUMBER).",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "ID of a version of the form (id from List forms or from its versions)."
+					},
+					{
+						"name": "deviceId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Number to remove."
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "{numbers}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/{id}/numbers/retry": {
+			"post": {
+				"operationId": "whatsappForm.retryNumbers",
+				"summary": "Retry publishing on the numbers",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:write",
+				"x-fc-purpose": "Use it to retry the publication on the numbers where it failed.",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "ID of a version of the form (id from List forms or from its versions)."
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "{numbers}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/{id}/versions": {
+			"post": {
+				"operationId": "whatsappForm.storeVersion",
+				"summary": "Create a new version of a form",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:write",
+				"x-fc-purpose": "Use it to edit a published form: creates a new draft from it, or returns the draft that already existed (created: false).",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "ID of a version of the form (id from List forms or from its versions)."
+					}
+				],
+				"responses": {
+					"201": {
+						"description": "{data, created, lint, numbers}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/{id}/sync": {
+			"post": {
+				"operationId": "whatsappForm.sync",
+				"summary": "Validate a form with Meta",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:write",
+				"x-fc-purpose": "Use it to upload the draft to Meta and get its validation errors before publishing.",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "ID of a version of the form (id from List forms or from its versions)."
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "{data, lint, numbers}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/{id}/publish": {
+			"post": {
+				"operationId": "whatsappForm.publish",
+				"summary": "Publish a form",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:write",
+				"x-fc-purpose": "Use it to publish the draft on its numbers. With errors it answers 422 LINT; if Meta rejects it, 502 META.",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "ID of a version of the form (id from List forms or from its versions)."
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "{data, lint, numbers}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/families/{familyId}/definition": {
+			"get": {
+				"operationId": "whatsappForm.definition",
+				"summary": "Get a form's published definition",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:read",
+				"x-fc-purpose": "Use it to read the definition of the current version of a form.",
+				"parameters": [
+					{
+						"name": "familyId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "ID of the form (family_id), the same in all its versions."
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "{data}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/families/{familyId}/versions": {
+			"get": {
+				"operationId": "whatsappForm.versions",
+				"summary": "List a form's versions",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:read",
+				"x-fc-purpose": "Use it to see all the versions of a form with their status and responses.",
+				"parameters": [
+					{
+						"name": "familyId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "ID of the form (family_id), the same in all its versions."
+					},
+					{
+						"name": "perPage",
+						"in": "query",
+						"schema": {
+							"type": "integer"
+						}
+					},
+					{
+						"name": "page",
+						"in": "query",
+						"schema": {
+							"type": "integer"
+						}
+					}
+				],
+				"x-fc-listing": {
+					"per_page_default": 25,
+					"per_page_max": 100,
+					"size_params": [
+						"perPage"
+					]
+				},
+				"responses": {
+					"200": {
+						"description": "Versions.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"data": {
+											"type": "array",
+											"items": {
+												"type": "object"
+											}
+										},
+										"links": {
+											"type": "object"
+										},
+										"meta": {
+											"type": "object",
+											"properties": {
+												"current_page": {
+													"type": "integer"
+												},
+												"last_page": {
+													"type": "integer"
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/families/{familyId}/responses": {
+			"get": {
+				"operationId": "whatsappForm.responses",
+				"summary": "List a form's responses",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:read",
+				"x-fc-purpose": "Use it to get the responses of a form, across all its versions, with the contact and the value of each field.",
+				"parameters": [
+					{
+						"name": "familyId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "ID of the form (family_id), the same in all its versions."
+					},
+					{
+						"name": "from",
+						"in": "query",
+						"schema": {
+							"type": "string",
+							"format": "date"
+						},
+						"description": "From this date."
+					},
+					{
+						"name": "to",
+						"in": "query",
+						"schema": {
+							"type": "string",
+							"format": "date"
+						},
+						"description": "Up to this date."
+					},
+					{
+						"name": "version_id",
+						"in": "query",
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Only this version."
+					},
+					{
+						"name": "origin",
+						"in": "query",
+						"schema": {
+							"type": "string"
+						},
+						"description": "Origin of the send (for example api or automation)."
+					},
+					{
+						"name": "status",
+						"in": "query",
+						"schema": {
+							"type": "string",
+							"enum": [
+								"completed",
+								"pending",
+								"not_sent",
+								"unfinished"
+							]
+						},
+						"description": "Status of the response."
+					},
+					{
+						"name": "search",
+						"in": "query",
+						"schema": {
+							"type": "string"
+						},
+						"description": "Searches by contact."
+					},
+					{
+						"name": "per_page",
+						"in": "query",
+						"schema": {
+							"type": "integer"
+						}
+					},
+					{
+						"name": "page",
+						"in": "query",
+						"schema": {
+							"type": "integer"
+						}
+					}
+				],
+				"x-fc-listing": {
+					"per_page_default": 25,
+					"per_page_max": 100,
+					"size_params": [
+						"per_page"
+					]
+				},
+				"responses": {
+					"200": {
+						"description": "Responses, paginated.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"data": {
+											"type": "array",
+											"items": {
+												"type": "object"
+											}
+										},
+										"links": {
+											"type": "object"
+										},
+										"meta": {
+											"type": "object",
+											"properties": {
+												"current_page": {
+													"type": "integer"
+												},
+												"last_page": {
+													"type": "integer"
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/families/{familyId}/responses/{runId}": {
+			"get": {
+				"operationId": "whatsappForm.response",
+				"summary": "Get a form's response",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:read",
+				"x-fc-purpose": "Use it to see a full response: each answer of the contact, the times of the send and what the form did.",
+				"parameters": [
+					{
+						"name": "familyId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "ID of the form (family_id), the same in all its versions."
+					},
+					{
+						"name": "runId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Response ID."
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "{data}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/forms/families/{familyId}/metrics": {
+			"get": {
+				"operationId": "whatsappForm.metrics",
+				"summary": "Get a form's metrics",
+				"tags": [
+					"WhatsappForm"
+				],
+				"x-fc-domain": "conversations",
+				"x-fc-permission": "conversations:read",
+				"x-fc-purpose": "Use it to see how many forms were sent, delivered, read and completed, and the rates.",
+				"parameters": [
+					{
+						"name": "familyId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "ID of the form (family_id), the same in all its versions."
+					},
+					{
+						"name": "from",
+						"in": "query",
+						"schema": {
+							"type": "string",
+							"format": "date"
+						},
+						"description": "From this date."
+					},
+					{
+						"name": "to",
+						"in": "query",
+						"schema": {
+							"type": "string",
+							"format": "date"
+						},
+						"description": "Up to this date."
+					},
+					{
+						"name": "version_id",
+						"in": "query",
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Only this version."
+					},
+					{
+						"name": "origin",
+						"in": "query",
+						"schema": {
+							"type": "string"
+						},
+						"description": "Origin of the send (for example api or automation)."
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "{data}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
