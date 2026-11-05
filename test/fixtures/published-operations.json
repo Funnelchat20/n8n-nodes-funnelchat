@@ -1,5 +1,5 @@
 {
-	"$comment": "Every operation the node has published, as resource and value (the n8n option saved workflows use): the 128 of 0.1.1, the 11 that 0.2.0 added and the 14 group actions of 0.2.1. test/generate.test.ts checks each one is still there, in the same resource. Add new operations here when they are released; never remove one.",
+	"$comment": "Every operation the node has published, as resource and value (the n8n option saved workflows use): the 128 of 0.1.1, the 11 that 0.2.0 added, the 14 group actions of 0.2.1 and Follow a group of 0.2.2. test/generate.test.ts checks each one is still there, in the same resource. Add new operations here when they are released; never remove one.",
 	"operations": [
 		{
 			"resource": "contact",
@@ -612,6 +612,10 @@
 		{
 			"resource": "group",
 			"value": "apiGroupAction.rejectJoinRequests"
+		},
+		{
+			"resource": "group",
+			"value": "v2.apiGroupImport"
 		}
 	]
 }

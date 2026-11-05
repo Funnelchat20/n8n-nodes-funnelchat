@@ -57,7 +57,7 @@ describe('generation from the specification', () => {
 
 	it('the provenance records the copied specification (the generator refuses otherwise)', () => {
 		expect(SPEC_SOURCE.sha256).toBe(
-			'8228ea7369daed0655b779ca6af381355a6c1cc13dd702ed6e9c322779bafe94',
+			'0ffaad2b25733d28b2cc07dde8152400c3c68974b3515e71e116ce599312b0fa',
 		);
 		expect(() => generate()).not.toThrow();
 		expect(generate().warnings).toEqual([]);

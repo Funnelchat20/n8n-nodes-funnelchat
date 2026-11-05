@@ -158,7 +158,7 @@
 		"connectLink.store": "The url appears only in this response, and whoever has it can connect a number to your account while the link is pending: treat it as a secret. With type qr the page shows the QR, and your customer has 10 minutes from tapping its button to scan it. While the official sign-up by link is not enabled, type meta answers 503 meta_connect_disabled. The result comes in device.connected (with connect_link_id and external_reference), in the return_url or with \"Get a connect link\". Up to 20 pending links per account.",
 		"connectLink.show": "error_code says why it did not complete: link_expired, already_used, revoked, quota_exceeded, trial_number_blocked, facebook_auth_failed, meta_error, number_not_owned, qr_timeout or provider_error.",
 		"connectLink.destroy": "Only a pending link: otherwise it answers 409 link_not_pending.",
-		"apiGroupAction.sendMessage": "Asynchronous: it answers 202 with action_id and status queued. Read the outcome with \"Get a group action\" (result.message.uid is the message's ID in WhatsApp) or with the group_action.completed and group_action.failed events. With a QR number it goes out at the pace of low-speed scheduled messages; with an official number the 24-hour window and the number's quality are checked first.",
+		"apiGroupAction.sendMessage": "Asynchronous: it answers 202 with action_id and status queued. Read the outcome with \"Get a group action\" (result.message.uid is the message's ID in WhatsApp) or with the group_action.completed and group_action.failed events. With a QR number it goes out at the pace of low-speed scheduled messages; with an official number the 24-hour window and the number's quality are checked first. A group that is not in your account yet (one of the number's live list) is imported first, as Follow a group does: that also needs communities:operate (403 import_permission_required) and counts in its 5 per minute; if the number is not an admin of the group nothing is imported and it answers 422 device_not_group_admin.",
 		"apiGroupAction.show": "An action of another account or workspace answers 404 action_not_found, like one that does not exist.",
 		"conversation.sendMessage": "With an API key it answers 200 with the queued message (status queued) and its ID; the result comes later in the message.status_changed event. The WhatsApp guards apply: 24-hour window (422 window_closed), pace (429 rate_limited) and anti-blocking (422 antiblock_…). With an API key, Phone or WhatsApp ID is required and must be the contact's (otherwise 422 recipient_mismatch). If the account is in the 24-hour lockout for monthly active contacts, 429 mac_lockout_24h.",
 		"message.sendMessage": "Say who receives it with Phone (with the country code): if it is not a contact of your account yet, it is created in your key's workspace (as Create or update a contact does, so the key needs conversations:write; without it, 403) and the message's contact_id comes in the answer. To a contact you already have, conversations:send is enough. A phone of a contact of another workspace answers 404. With Contact ID too, both have to be the same contact (422 recipient_mismatch). On an official number, the first message to a new contact has to be a template: a free message only goes out within 24 hours of the contact's last message. With an API key it answers 200 with the queued message (status queued) and its ID; the result comes later in the message.status_changed event. The WhatsApp guards apply: 24-hour window (422 window_closed), pace (429 rate_limited) and anti-blocking (422 antiblock_…); a contact created by the send stays even if a guard stops it.",
@@ -186,7 +186,9 @@
 		"apiGroupAction.inviteLink": "Up to 30 requests per minute.",
 		"apiGroupAction.joinRequests": "Official numbers with the official API groups beta only: a QR number answers 422 provider_unsupported. Requests without a phone are left out. Up to 30 requests per minute.",
 		"apiGroupAction.approveJoinRequests": "Asynchronous: it answers 202 with an action_id; read the outcome with \"Get a group action\" or the group_action.completed and group_action.failed events. Official numbers with the official API groups beta and decisions enabled only; otherwise 422 provider_unsupported. The result is per person.",
-		"apiGroupAction.rejectJoinRequests": "Asynchronous: it answers 202 with an action_id; read the outcome with \"Get a group action\" or the group_action.completed and group_action.failed events. Official numbers with the official API groups beta and decisions enabled only; otherwise 422 provider_unsupported. The result is per person."
+		"apiGroupAction.rejectJoinRequests": "Asynchronous: it answers 202 with an action_id; read the outcome with \"Get a group action\" or the group_action.completed and group_action.failed events. Official numbers with the official API groups beta and decisions enabled only; otherwise 422 provider_unsupported. The result is per person.",
+		"v2.apiGroupImport": "QR numbers only (an official number answers 422 provider_unsupported). It answers 201 when it imports the group and 200 when it was already in the account, with is_admin, read from WhatsApp in the same call. Needs communities:operate (403 import_permission_required). Up to 5 per number per minute (429 import_rate_limited, with Retry-After); a group of another number answers 404 group_not_found, one in another workspace of the account cannot be imported here. From then on the group sends the group_participant.joined and group_participant.left events.",
+		"group.groups": "Read live from WhatsApp; with an API key the list is reused for one minute per number, so a group just created may take up to a minute to show. A group already in your account comes with its device_id; to follow one that is not, use Follow a group."
 	},
 	"labels": {
 		"active_conversation": "Active Conversation",
@@ -409,7 +411,7 @@
 	},
 	"fieldDescriptionsByName": {
 		"apiGroupAction.sendMessage": {
-			"group": "The group's uid, as List groups returns it (for example 120363012345678901@g.us).",
+			"group": "The group's uid: one of your groups (List groups) or of the number's live list (List the groups a number manages), which is imported first.",
 			"device_id": "The number that sends: connected, and an admin of the group (a QR number) or the group's own number (an official one).",
 			"text": "Only with type text, and required there.",
 			"media_url": "Only with image, video, audio or document, and required there: a public https URL that ends in an extension WhatsApp accepts for the type.",
@@ -488,6 +490,10 @@
 			"phone": "The recipient's phone with the country code, for example 5491122334455. No need to create the contact first: a new phone becomes a contact, which takes conversations:write. It goes always, with or without Contact ID.",
 			"whatsapp_id": "Instead of Phone, on an official number only: the BSUID Meta sends (for example US.13491208655302741918). With a QR number it answers 422.",
 			"contact_id": "Optional: a contact you already have. With Phone or WhatsApp ID too, they have to be of this same contact."
+		},
+		"v2.apiGroupImport": {
+			"group": "The group's ID on WhatsApp, as List the groups a number manages returns it.",
+			"device_id": "The QR number the group belongs to."
 		},
 		"webhookEndpoint.store": {
 			"url": "Must be https and resolve to a public internet address.",
