@@ -248,6 +248,18 @@ describe('building requests (buildRequest)', () => {
 		);
 	});
 
+	it('Follow a group (communities v2.35.7): imports a group of the number by its uid', () => {
+		expect(
+			buildRequest(op('v2.apiGroupImport'), { group: '120363012345678901@g.us', device_id: '4' }),
+		).toEqual({
+			method: 'POST',
+			path: '/api/v1/groups/120363012345678901%40g.us/import',
+			query: [],
+			body: { device_id: 4 },
+		});
+		expect(op('v2.apiGroupImport').resource).toBe('group');
+	});
+
 	it('an ID that is not a number is rejected before calling the API', () => {
 		expect(() =>
 			buildRequest(op('conversation.sendMessage'), {

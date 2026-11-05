@@ -539,5 +539,9 @@
 	"apiGroupAction.rejectJoinRequests": {
 		"name": "Reject join requests",
 		"purpose": "Rejects pending requests to join a group, for the given phones."
+	},
+	"v2.apiGroupImport": {
+		"name": "Follow a group",
+		"purpose": "Starts following a WhatsApp group of your number without writing to it: imports it into your account, and from then on you get who joins and who leaves. If it is already in your account, it is not imported again."
 	}
 }

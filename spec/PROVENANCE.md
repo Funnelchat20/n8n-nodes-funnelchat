@@ -12,19 +12,20 @@ fields from `scripts/generator.config.json`. The supplements are written in Engl
 
 | Item | Value |
 |---|---|
-| What it is | Full unified OpenAPI 3.1 specification of the public API (264 operations, 29 webhooks), behind `https://api.funnelchat.com`. Not the published one: `/specs/funnelchat.json` on the portal carries only the operations it shows. Never generate from that one |
+| What it is | Full unified OpenAPI 3.1 specification of the public API (265 operations), behind `https://api.funnelchat.com`. Not the published one: `/specs/funnelchat.json` on the portal carries only the operations it shows. Never generate from that one |
 | Repository | `developers-portal` (Funnelchat20) |
-| Commit | `main` @ `f5464516` (merge of PR #37, deployed as `v0.6.2` on 2026-11-05) |
+| Commit | `main` @ `99928866` (merge of PR #39, deployed as `v0.6.3` on 2026-11-05) |
 | File | `generated/specs/funnelchat-completa.json`, built by the portal's `npm run build`; handed over by the coordination session on 2026-11-05 (this repository did not fetch the portal) |
-| Domain snapshots | accounts `v1.5.97` (`558332bcf`), conversations `main` @ `f2937a71` (= `v1.19.21`, in production since 2026-11-05 16:45), communities `v2.35.5` (`2be913d4`, taken with the group actions on); see `x-fc-sources` in the file itself |
-| SHA-256 | `8228ea7369daed0655b779ca6af381355a6c1cc13dd702ed6e9c322779bafe94` |
+| Domain snapshots | accounts `v1.5.97` (`558332bcf`), conversations `main` @ `f2937a71` (= `v1.19.21`, in production since 2026-11-05 16:45), communities `feat/grupos-sin-panel` @ `54643bbd` (the application code of `v2.35.7`, in production since 2026-11-05, taken with the group actions on); see `x-fc-sources` in the file itself |
+| SHA-256 | `0ffaad2b25733d28b2cc07dde8152400c3c68974b3515e71e116ce599312b0fa` |
 | Copied | 2026-11-05 |
 
-It replaces the copy of 2026-11-04 (developers-portal `main` @ `c90565e4`, `v0.6.0`, 248 operations, SHA-256
-`0f451feaba59418f3a556f58856f841f12570973fd6525103e8cc0128ab64374`), which replaced the one of 2026-10-15
-(`feat/openapi-unificada` @ `0ef4abb`, 230 operations, SHA-256 `8bbbae56…`). What changed with this one: sending by
-phone without a contact (conversations `v1.19.21`, below), and the 16 public group actions of communities, now in the
-specification, so the `communities-v2.35.5` supplement was removed (see "Removed"). What it **still does not have** is
+It replaces the copy of 2026-11-05 (`main` @ `f5464516`, `v0.6.2`, 264 operations, SHA-256 `8228ea73…`). Before it:
+2026-11-04 (`main` @ `c90565e4`, `v0.6.0`, 248 operations, SHA-256 `0f451fea…`) and 2026-10-15
+(`feat/openapi-unificada` @ `0ef4abb`, 230 operations, SHA-256 `8bbbae56…`). With the copy of 2026-11-05 came sending
+by phone without a contact (conversations `v1.19.21`, below) and the 16 public group actions of communities, so the
+`communities-v2.35.5` supplement was removed (see "Removed"). With this one comes following a group (communities
+`v2.35.7`, below). What it **still does not have** is
 covered by the supplements below:
 
 - the 18 WhatsApp form routes (`/api/v1/forms…`): open to API keys in conversations `v1.19.21` and routed by api-edge in
@@ -47,6 +48,16 @@ with an official number (`422` with a QR number). A phone of a contact of anothe
 `contact_id` together have to be the same contact (`422 recipient_mismatch`). In the node, **Phone** is a field of its
 own and the first one after the number, and **Contact ID** stays a field of its own, no longer required
 (`topLevelFields` in the config), so a saved workflow that passes a contact keeps working.
+
+**Following a group (communities `v2.35.7`, in production since 2026-11-05).** New `POST /api/v1/groups/{group}/import`
+with `device_id` (`v2.apiGroupImport`, "Follow a group" in the node): imports one WhatsApp group of a QR number; the
+number's admin status is read from WhatsApp. `201` imported, `200` already in the account, with
+`{uid, name, imported, is_admin}`. It needs `communities:operate` (`403 import_permission_required`); 5 per number per
+minute (`429 import_rate_limited`, `Retry-After`); an official number answers `422 provider_unsupported`; two at once,
+`409 import_in_progress`. From then on the group sends `group_participant.joined` and `.left`. "Send a message to a
+group" to a group not in the account imports it first, with the same rules (operate besides send;
+`422 device_not_group_admin` if the number is not an admin, `422 device_not_connected` if disconnected). "List the
+groups a number manages" (`GET /devices/{device}/groups`, live from WhatsApp) is cached one minute for a key.
 
 **Production**, the versions every supplement and the catalog were checked against: accounts `v1.5.97` @ `558332bcf`,
 conversations `v1.19.7` @ `4e35ddb83` (`v1.19.21` @ `f2937a71` on 2026-11-05: the forms and the absence of poll and
