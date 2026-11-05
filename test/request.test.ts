@@ -442,6 +442,48 @@ describe('running the node with simulated responses', () => {
 		expect(out.map((i) => i.json)).toEqual([queued]);
 	});
 
+	it('Send a message by phone (conversations v1.19.21): Phone is a field, Contact ID optional and still read', async () => {
+		const send = op('message.sendMessage');
+		expect(
+			send.params
+				.filter((p) => p.location === 'body' && (p.required || p.topLevel))
+				.map((p) => p.apiName),
+		).toEqual(['device_id', 'phone', 'contact_id']);
+		expect(send.params.find((p) => p.apiName === 'contact_id')!.required).toBe(false);
+		const byPhone = executeContext({
+			params: {
+				resource: 'conversation',
+				operation: 'message.sendMessage',
+				device_id: '4',
+				phone: '5491100000000',
+				useJsonBody: false,
+				additionalFields: { text: 'Hello!' },
+			},
+			responses: [{ body: { message: { id: 1001, contact_id: 2001, status: 'queued' } } }],
+		});
+		const [out] = await node.execute.call(byPhone.ctx);
+		expect(byPhone.calls[0].options.body).toEqual({
+			device_id: 4,
+			phone: '5491100000000',
+			text: 'Hello!',
+		});
+		expect(out[0].json).toMatchObject({ contact_id: 2001, status: 'queued' });
+		// A workflow saved before 0.2.1 has Contact ID as a field of its own: it keeps going out.
+		const saved = executeContext({
+			params: {
+				resource: 'conversation',
+				operation: 'message.sendMessage',
+				device_id: '4',
+				contact_id: '2001',
+				useJsonBody: false,
+				additionalFields: { text: 'Hello!' },
+			},
+			responses: [{ body: { message: { id: 1002, contact_id: 2001, status: 'queued' } } }],
+		});
+		await node.execute.call(saved.ctx);
+		expect(saved.calls[0].options.body).toEqual({ device_id: 4, contact_id: 2001, text: 'Hello!' });
+	});
+
 	it('Create a connect link returns the link with its url; Send a message to a group, the queued action', async () => {
 		const link = {
 			id: 12,

@@ -57,14 +57,13 @@ describe('generation from the specification', () => {
 
 	it('the provenance records the copied specification (the generator refuses otherwise)', () => {
 		expect(SPEC_SOURCE.sha256).toBe(
-			'0f451feaba59418f3a556f58856f841f12570973fd6525103e8cc0128ab64374',
+			'8228ea7369daed0655b779ca6af381355a6c1cc13dd702ed6e9c322779bafe94',
 		);
 		expect(() => generate()).not.toThrow();
 		expect(generate().warnings).toEqual([]);
 		expect(SPEC_SOURCE.supplements.map((s) => s.id)).toEqual([
 			'conversations-forms',
 			'conversations-kept-2026-10-15',
-			'communities-v2.35.5',
 		]);
 		for (const s of SPEC_SOURCE.supplements) expect(s.ignored, s.id).toBe(0);
 	});

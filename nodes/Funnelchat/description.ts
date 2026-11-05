@@ -1,9 +1,12 @@
 import type { INodeProperties, INodePropertyOptions } from 'n8n-workflow';
 import type { OperationSpec, ParamSpec, ResourceSpec } from './operationTypes';
 
-/** Required parameters and path parameters are shown as fields; the rest go into the "Filters" and "Additional Fields" collections. */
+/**
+ * Required parameters, path parameters and the optional ones marked `topLevel` are shown as fields; the rest go into
+ * the "Filters" and "Additional Fields" collections.
+ */
 export function isTopLevel(param: ParamSpec): boolean {
-	return param.location === 'path' || param.required;
+	return param.location === 'path' || param.required || param.topLevel === true;
 }
 
 export function hasJsonBodyOption(op: OperationSpec): boolean {
@@ -180,7 +183,7 @@ export function buildProperties(
 			.filter((o) => o.resource === resource.value)
 			.sort((a, b) => a.name.localeCompare(b.name, 'es'));
 		if (ops.length === 0) continue;
-		const defaultOperation = (ops.find((o) => o.list) ?? ops[0]).value;
+		const defaultOperation = resource.defaultOperation ?? (ops.find((o) => o.list) ?? ops[0]).value;
 		props.push({
 			displayName: 'Operation',
 			name: 'operation',

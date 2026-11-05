@@ -4,8 +4,7 @@
 	"provenance": "spec/PROVENANCE.md",
 	"supplements": [
 		"spec/supplements/conversations-forms.json",
-		"spec/supplements/conversations-kept-2026-10-15.json",
-		"spec/supplements/communities-v2.35.5.json"
+		"spec/supplements/conversations-kept-2026-10-15.json"
 	],
 	"output": "nodes/Funnelchat/generated/operations.ts",
 	"eventCatalog": "spec/webhook-events.json",
@@ -16,12 +15,14 @@
 			"value": "contact",
 			"name": "Contacts",
 			"description": "Contacts of the account: create, update, find and delete them, with their tags, custom fields and notes.",
+			"defaultOperation": "contact.customFields",
 			"tags": ["Contact", "ContactNote"]
 		},
 		{
 			"value": "conversation",
 			"name": "Conversations and Messages",
 			"description": "Conversations with contacts and their messages: list, assign, close, send messages and files, read a message by ID, forward, react and send contact cards.",
+			"defaultOperation": "conversation.getLatestMessages",
 			"tags": [
 				"Conversation",
 				"Message",
@@ -38,36 +39,42 @@
 			"value": "template",
 			"name": "Templates",
 			"description": "WhatsApp message templates: list, create, update, delete and send them.",
+			"defaultOperation": "messageTemplate.quickReplyButtons",
 			"tags": ["MessageTemplate", "TemplateMetrics"]
 		},
 		{
 			"value": "form",
 			"name": "WhatsApp Forms",
 			"description": "WhatsApp native forms: build, publish on one or more numbers, send to a contact and read the answers.",
+			"defaultOperation": "whatsappForm.responses",
 			"tags": ["WhatsappForm", "WhatsappFormSend"]
 		},
 		{
 			"value": "tag",
 			"name": "Tags",
 			"description": "Tags to segment contacts.",
+			"defaultOperation": "tag.index",
 			"tags": ["Tag"]
 		},
 		{
 			"value": "customField",
 			"name": "Custom Fields",
 			"description": "Custom fields to store your own data on contacts.",
+			"defaultOperation": "customField.index",
 			"tags": ["CustomField"]
 		},
 		{
 			"value": "group",
 			"name": "Groups",
 			"description": "WhatsApp groups of the account and its campaigns: list them, send them a message, and see their participants, joins and leaves.",
+			"defaultOperation": "campaign.participantEvents",
 			"tags": ["Grupos", "Acciones de grupo", "Participantes"]
 		},
 		{
 			"value": "device",
 			"name": "Numbers",
 			"description": "The account's WhatsApp numbers: list them and their status, connect one by QR or with a connect link, and their health, queue, logs, username and profile.",
+			"defaultOperation": "deviceConnectionEvent.index",
 			"tags": [
 				"Device",
 				"DeviceProvisioning",
@@ -84,6 +91,7 @@
 			"value": "webhook",
 			"name": "Webhooks",
 			"description": "Webhook subscriptions and endpoints, the event catalog and the delivery history.",
+			"defaultOperation": "webhookSubscriptionDelivery.index",
 			"tags": [
 				"WebhookSubscription",
 				"WebhookEventCatalog",
@@ -98,6 +106,10 @@
 	"excludeOperations": [],
 	"keepOperationValues": {
 		"message.showMessage": "showMessage"
+	},
+	"topLevelFields": {
+		"message.sendMessage": ["phone", "contact_id"],
+		"messageTemplate.send": ["phone", "contact_id"]
 	},
 	"keepFieldKinds": {
 		"webhookSubscription.store": {
@@ -149,10 +161,10 @@
 		"apiGroupAction.sendMessage": "Asynchronous: it answers 202 with action_id and status queued. Read the outcome with \"Get a group action\" (result.message.uid is the message's ID in WhatsApp) or with the group_action.completed and group_action.failed events. With a QR number it goes out at the pace of low-speed scheduled messages; with an official number the 24-hour window and the number's quality are checked first.",
 		"apiGroupAction.show": "An action of another account or workspace answers 404 action_not_found, like one that does not exist.",
 		"conversation.sendMessage": "With an API key it answers 200 with the queued message (status queued) and its ID; the result comes later in the message.status_changed event. The WhatsApp guards apply: 24-hour window (422 window_closed), pace (429 rate_limited) and anti-blocking (422 antiblock_…). With an API key, Phone or WhatsApp ID is required and must be the contact's (otherwise 422 recipient_mismatch). If the account is in the 24-hour lockout for monthly active contacts, 429 mac_lockout_24h.",
-		"message.sendMessage": "With an API key it answers 200 with the queued message (status queued) and its ID; the result comes later in the message.status_changed event. The WhatsApp guards apply: 24-hour window (422 window_closed), pace (429 rate_limited) and anti-blocking (422 antiblock_…).",
+		"message.sendMessage": "Say who receives it with Phone (with the country code): if it is not a contact of your account yet, it is created in your key's workspace (as Create or update a contact does) and the message's contact_id comes in the answer. A phone of a contact of another workspace answers 404. With Contact ID too, both have to be the same contact (422 recipient_mismatch). On an official number, the first message to a new contact has to be a template: a free message only goes out within 24 hours of the contact's last message. With an API key it answers 200 with the queued message (status queued) and its ID; the result comes later in the message.status_changed event. The WhatsApp guards apply: 24-hour window (422 window_closed), pace (429 rate_limited) and anti-blocking (422 antiblock_…); a contact created by the send stays even if a guard stops it.",
 		"forwardMessage.store": "With an API key it answers 200 with one result per target: queued with its message, or blocked with the reason.",
 		"contactCard.store": "With an API key it answers 200 with one queued message per card (status queued); the result comes later in the message.status_changed event. The WhatsApp guards apply: 24-hour window (422 window_closed), pace (429 rate_limited) and anti-blocking (422 antiblock_…).",
-		"messageTemplate.send": "With an API key it answers 200 with the queued message (status queued) and its ID; the result comes in the message.status_changed event. A template does not need the 24-hour window.",
+		"messageTemplate.send": "Say who receives it with Phone (with the country code), always, with or without Contact ID: if it is not a contact of your account yet, it is created in your key's workspace and the message's contact_id comes in the answer. A phone of a contact of another workspace answers 404; Phone and Contact ID have to be the same contact (422 recipient_mismatch). With an API key it answers 200 with the queued message (status queued) and its ID; the result comes in the message.status_changed event. A template does not need the 24-hour window.",
 		"whatsappFormSend.store": "With an API key it answers 200 with the queued message (status queued) and its ID; the result comes later in the message.status_changed event. The WhatsApp guards apply: 24-hour window (422 window_closed), pace (429 rate_limited) and anti-blocking (422 antiblock_…). Its own errors: 404 form_not_found and 422 form_not_published, form_not_on_number, number_not_eligible.",
 		"webhookSubscription.index": "With an API key, besides the route's permission, it needs the read permission of the area of each event type of the subscription (accounts:read, conversations:read or communities:read).",
 		"webhookSubscription.store": "With an API key, besides the route's permission, it needs the read permission of the area of each event type of the subscription (accounts:read, conversations:read or communities:read).",
@@ -160,7 +172,21 @@
 		"webhookSubscription.update": "With an API key, besides the route's permission, it needs the read permission of the area of each event type of the subscription (accounts:read, conversations:read or communities:read).",
 		"webhookSubscription.destroy": "Irreversible operation. With an API key, besides the route's permission, it needs the read permission of the area of each event type of the subscription (accounts:read, conversations:read or communities:read).",
 		"webhookSubscriptionDelivery.index": "With an API key, besides the route's permission, it needs the read permission of the area of each event type of the subscription (accounts:read, conversations:read or communities:read).",
-		"webhookSubscriptionTest.test": "With an API key, besides the route's permission, it needs the read permission of the area of each event type of the subscription (accounts:read, conversations:read or communities:read)."
+		"webhookSubscriptionTest.test": "With an API key, besides the route's permission, it needs the read permission of the area of each event type of the subscription (accounts:read, conversations:read or communities:read).",
+		"apiGroupAction.create": "Asynchronous: it answers 202 with an action_id; read the outcome with \"Get a group action\" or the group_action.completed and group_action.failed events. The result brings the group and its invite link. join_approval_required only on an official number (a QR number answers 422 provider_unsupported), and it cannot be changed later.",
+		"apiGroupAction.addParticipants": "Asynchronous: it answers 202 with an action_id; read the outcome with \"Get a group action\" or the group_action.completed and group_action.failed events. With a QR number each phone is added one after the other, at the pace of campaigns. The result says added or failed for each person.",
+		"apiGroupAction.removeParticipants": "Asynchronous: it answers 202 with an action_id; read the outcome with \"Get a group action\" or the group_action.completed and group_action.failed events. The phone of the number that runs it cannot be removed.",
+		"apiGroupAction.promoteAdmins": "Asynchronous: it answers 202 with an action_id; read the outcome with \"Get a group action\" or the group_action.completed and group_action.failed events. It runs at the pace of the number's campaigns.",
+		"apiGroupAction.demoteAdmins": "Asynchronous: it answers 202 with an action_id; read the outcome with \"Get a group action\" or the group_action.completed and group_action.failed events. The phone of the number that runs it is not accepted. It runs at the pace of the number's campaigns.",
+		"apiGroupAction.updateName": "Asynchronous: it answers 202 with an action_id; read the outcome with \"Get a group action\" or the group_action.completed and group_action.failed events. It runs at the pace of the number's campaigns.",
+		"apiGroupAction.updateDescription": "Asynchronous: it answers 202 with an action_id; read the outcome with \"Get a group action\" or the group_action.completed and group_action.failed events. It runs at the pace of the number's campaigns.",
+		"apiGroupAction.updatePhoto": "Asynchronous: it answers 202 with an action_id; read the outcome with \"Get a group action\" or the group_action.completed and group_action.failed events. It runs at the pace of the number's campaigns.",
+		"apiGroupAction.updateSettings": "Asynchronous: it answers 202 with an action_id; read the outcome with \"Get a group action\" or the group_action.completed and group_action.failed events. It runs at the pace of the number's campaigns.",
+		"apiGroupAction.renewInviteLink": "Asynchronous: it answers 202 with an action_id; read the outcome with \"Get a group action\" or the group_action.completed and group_action.failed events. The result brings invite_link.",
+		"apiGroupAction.inviteLink": "Up to 30 requests per minute.",
+		"apiGroupAction.joinRequests": "Official numbers with the official API groups beta only: a QR number answers 422 provider_unsupported. Requests without a phone are left out. Up to 30 requests per minute.",
+		"apiGroupAction.approveJoinRequests": "Asynchronous: it answers 202 with an action_id; read the outcome with \"Get a group action\" or the group_action.completed and group_action.failed events. Official numbers with the official API groups beta and decisions enabled only; otherwise 422 provider_unsupported. The result is per person.",
+		"apiGroupAction.rejectJoinRequests": "Asynchronous: it answers 202 with an action_id; read the outcome with \"Get a group action\" or the group_action.completed and group_action.failed events. Official numbers with the official API groups beta and decisions enabled only; otherwise 422 provider_unsupported. The result is per person."
 	},
 	"labels": {
 		"active_conversation": "Active Conversation",
@@ -335,7 +361,12 @@
 		"return_url": "Return URL",
 		"expires_in_minutes": "Expires In (Minutes)",
 		"media_url": "Media URL",
-		"caption": "Caption"
+		"caption": "Caption",
+		"phones": "Phones",
+		"photo_url": "Photo URL",
+		"members_can_send_messages": "Members Can Send Messages",
+		"join_approval_required": "Approval Required to Join",
+		"participants": "Participants"
 	},
 	"labelsByOperationPrefix": {
 		"contactNote": {
@@ -377,6 +408,17 @@
 		"Prender y apagar el endpoint entero, sin perder sus suscripciones ni su secreto.": "Turns the whole endpoint on and off, without losing its subscriptions or its secret."
 	},
 	"fieldDescriptionsByName": {
+		"apiGroupAction.sendMessage": {
+			"group": "The group's uid, as List groups returns it (for example 120363012345678901@g.us).",
+			"device_id": "The number that sends: connected, and an admin of the group (a QR number) or the group's own number (an official one).",
+			"text": "Only with type text, and required there.",
+			"media_url": "Only with image, video, audio or document, and required there: a public https URL that ends in an extension WhatsApp accepts for the type.",
+			"caption": "Only with image or video.",
+			"file_name": "Only with document: the name it arrives with."
+		},
+		"apiGroupAction.show": {
+			"action": "The action_id the action answered."
+		},
 		"connectLink.destroy": {
 			"link": "The connect link ID."
 		},
@@ -432,14 +474,20 @@
 			"file": "http(s) URL of the file (also signed or without an extension, with File Type) or the name of an already uploaded file.",
 			"file_type": "What the file is, when File is a URL that does not show its extension (for example a signed URL). Without it, such a URL answers 422 on file_type.",
 			"file_name": "Name the document arrives with (without / \\ ? #). Needed for a document whose URL does not end in a known extension.",
-			"client_reference": "Your own identifier for this send (1 to 64 visible ASCII characters, no spaces). It comes back in the message and in the message.status_changed event, to match them with your system."
+			"client_reference": "Your own identifier for this send (1 to 64 visible ASCII characters, no spaces). It comes back in the message and in the message.status_changed event, to match them with your system.",
+			"phone": "The recipient's phone with the country code, for example 5491122334455. No need to create the contact first.",
+			"whatsapp_id": "Instead of Phone, on an official number only: the BSUID Meta sends (for example US.13491208655302741918). With a QR number it answers 422.",
+			"contact_id": "Optional: a contact you already have. With Phone or WhatsApp ID too, they have to be of this same contact."
 		},
 		"message.showMessage": {
 			"contact": "Contact of the message.",
 			"message": "Message ID."
 		},
 		"messageTemplate.send": {
-			"client_reference": "Your own identifier for this send (1 to 64 visible ASCII characters, no spaces). It comes back in the message and in the message.status_changed event, to match them with your system."
+			"client_reference": "Your own identifier for this send (1 to 64 visible ASCII characters, no spaces). It comes back in the message and in the message.status_changed event, to match them with your system.",
+			"phone": "The recipient's phone with the country code, for example 5491122334455. No need to create the contact first. It goes always, with or without Contact ID.",
+			"whatsapp_id": "Instead of Phone, on an official number only: the BSUID Meta sends (for example US.13491208655302741918). With a QR number it answers 422.",
+			"contact_id": "Optional: a contact you already have. With Phone or WhatsApp ID too, they have to be of this same contact."
 		},
 		"webhookEndpoint.store": {
 			"url": "Must be https and resolve to a public internet address.",
