@@ -2,11 +2,31 @@
 	"$comment": "English label and description of each event type of spec/eventos-webhooks.json (copied from the accounts catalog, in Spanish, and checked by its SHA-256). scripts/generate.mjs takes the trigger's built-in event list texts from here and refuses to generate if a subscribable type has no entry. The live catalog the trigger reads from the API is shown as the API returns it.",
 	"device.disconnected": {
 		"label": "Number disconnected",
-		"description": "One of the account's WhatsApp numbers disconnected and can no longer send or receive."
+		"description": "One of the account's WhatsApp numbers disconnected and can no longer send or receive. reason says why (qr_logged_out, meta_account_not_registered, shadow_ban_protection, disconnected_by_user, provider_error or unknown)."
 	},
 	"device.connected": {
 		"label": "Number connected",
-		"description": "One of the account's WhatsApp numbers got connected: when the QR code is scanned or a WhatsApp Cloud number finishes its setup."
+		"description": "One of the account's WhatsApp numbers got connected: the QR code was scanned or a WhatsApp Cloud number finished its setup. It brings device.connection, device.external_reference and connect_link_id."
+	},
+	"device.deleted": {
+		"label": "Number deleted",
+		"description": "One of the account's WhatsApp numbers was deleted and freed its place in the plan (from the panel, the API, or because a connect link expired without connecting it)."
+	},
+	"device.health_changed": {
+		"label": "Number health changed",
+		"description": "The sending state Meta gives one of the account's official numbers changed: available, limited, blocked or unknown (previous_state and state). Only when it changes."
+	},
+	"device.quality_changed": {
+		"label": "Number quality changed",
+		"description": "The quality Meta gives one of the account's official numbers changed (previous and current: GREEN, YELLOW or RED). If it drops, slow down that number's sends before Meta limits it."
+	},
+	"device.messaging_limit_changed": {
+		"label": "Messaging limit changed",
+		"description": "The messaging limit Meta gives one of the account's official numbers changed: how many people a day it can start conversations with (previous and current, such as TIER_1K or TIER_10K)."
+	},
+	"device.display_name_reviewed": {
+		"label": "Display name reviewed",
+		"description": "Meta approved or rejected the display name of one of the account's official numbers (decision: approved or rejected), with the current verified_name and, when rejected, the reason."
 	},
 	"billing.payment_failed": {
 		"label": "Payment failed",
@@ -54,11 +74,11 @@
 	},
 	"mac.usage_80": {
 		"label": "Monthly active contacts at 80%",
-		"description": "The account reached 80% of its monthly active contacts for the cycle."
+		"description": "The account (or a workspace with its own billing, in workspace_id) reached 80% of its monthly active contacts for the cycle."
 	},
 	"mac.usage_100": {
 		"label": "Monthly active contacts at 100%",
-		"description": "The account used up its monthly active contacts for the cycle; a 24-hour grace period starts, and its end comes in grace_expires_at."
+		"description": "The account (or a workspace with its own billing, in workspace_id) used up its monthly active contacts for the cycle; a 24-hour grace period starts, and its end comes in grace_expires_at."
 	},
 	"mac.expiring": {
 		"label": "Monthly active contacts expiring",

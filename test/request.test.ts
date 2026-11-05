@@ -137,6 +137,117 @@ describe('building requests (buildRequest)', () => {
 		).toBe('GET /api/v1/forms/families/8001/responses?from=2026-10-01&status=completed');
 	});
 
+	it('Send a message (the first use): number, contact and text, without a phone', () => {
+		const built = buildRequest(op('message.sendMessage'), {
+			device_id: '4',
+			contact_id: '2001',
+			text: 'Hello!',
+			client_reference: 'order-981',
+		});
+		expect(built).toEqual({
+			method: 'POST',
+			path: '/api/v1/message/send-message',
+			query: [],
+			body: { device_id: 4, contact_id: 2001, text: 'Hello!', client_reference: 'order-981' },
+		});
+	});
+
+	it('Create a number to connect by QR, and its QR code (accounts v1.5.97)', () => {
+		expect(
+			buildRequest(op('deviceProvisioning.store'), {
+				connection: 'qr',
+				alias: 'Sales',
+				external_reference: 'customer-42',
+				country: 'mx',
+			}),
+		).toEqual({
+			method: 'POST',
+			path: '/api/v1/devices',
+			query: [],
+			body: { connection: 'qr', alias: 'Sales', external_reference: 'customer-42', country: 'mx' },
+		});
+		expect(url('deviceProvisioning.qr', { device: '5' })).toBe('GET /api/v1/devices/5/qr');
+	});
+
+	it('Create a connect link: a QR link with a reference and a return URL; a Meta one with its connections', () => {
+		expect(
+			buildRequest(op('connectLink.store'), {
+				type: 'qr',
+				external_reference: 'customer-42',
+				return_url: 'https://crm.example.com/connected',
+				expires_in_minutes: 60,
+			}).body,
+		).toEqual({
+			type: 'qr',
+			external_reference: 'customer-42',
+			return_url: 'https://crm.example.com/connected',
+			expires_in_minutes: 60,
+		});
+		expect(
+			buildRequest(op('connectLink.store'), {
+				type: 'meta',
+				allowed_connection_types: ['coexistence', 'dedicated'],
+			}).body,
+		).toEqual({ type: 'meta', allowed_connection_types: ['coexistence', 'dedicated'] });
+		expect(url('connectLink.show', { link: '12' })).toBe('GET /api/v1/connect-links/12');
+		expect(url('connectLink.destroy', { link: '12' })).toBe('DELETE /api/v1/connect-links/12');
+		expect(url('connectLink.index', { status: 'pending', external_reference: 'customer-42' })).toBe(
+			'GET /api/v1/connect-links?status=pending&external_reference=customer-42',
+		);
+	});
+
+	it('List numbers by your reference (the number a connect link created)', () => {
+		expect(url('device.index', { external_reference: 'customer-42' })).toBe(
+			'GET /api/v1/devices?external_reference=customer-42',
+		);
+	});
+
+	it('Send a message to a group (communities v2.35.5): the group UID goes escaped in the route', () => {
+		const built = buildRequest(op('apiGroupAction.sendMessage'), {
+			group: '120363012345678901@g.us',
+			device_id: '4',
+			type: 'text',
+			text: 'Hello, group!',
+		});
+		expect(built).toEqual({
+			method: 'POST',
+			path: '/api/v1/groups/120363012345678901%40g.us/messages',
+			query: [],
+			body: { device_id: 4, type: 'text', text: 'Hello, group!' },
+		});
+		expect(url('apiGroupAction.show', { action: '9b1f6c1e-1c8e-4c2b-9a51-6a3d5f2e8b70' })).toBe(
+			'GET /api/v1/groups/actions/9b1f6c1e-1c8e-4c2b-9a51-6a3d5f2e8b70',
+		);
+	});
+
+	it('Mark a message as read, show "typing…" and a template\'s metrics (new in the full specification)', () => {
+		expect(url('message.markMessageRead', { contact: '2001', message: '1001' })).toBe(
+			'POST /api/v1/contacts/2001/messages/1001/read',
+		);
+		expect(
+			buildRequest(op('message.typingIndicator'), { contact: '2001', device_id: '3' }),
+		).toEqual({
+			method: 'POST',
+			path: '/api/v1/contacts/2001/typing',
+			query: [],
+			body: { device_id: 3 },
+		});
+		expect(
+			url('message.templateMetrics', { template: '45', from: '2026-11-01', to: '2026-11-04' }),
+		).toBe('GET /api/v1/templates/45/metrics?from=2026-11-01&to=2026-11-04');
+	});
+
+	it("List a subscription's deliveries keeps its event filters, which the specification does not list", () => {
+		expect(
+			url('webhookSubscriptionDelivery.index', {
+				id: '0f486bfd-2f55-4ed6-8a12-b09e31a6ac08',
+				event_type: 'message.status_changed',
+			}),
+		).toBe(
+			'GET /api/v1/webhooks/0f486bfd-2f55-4ed6-8a12-b09e31a6ac08/deliveries?event_type=message.status_changed',
+		);
+	});
+
 	it('an ID that is not a number is rejected before calling the API', () => {
 		expect(() =>
 			buildRequest(op('conversation.sendMessage'), {
@@ -329,6 +440,61 @@ describe('running the node with simulated responses', () => {
 		expect(requestLine(calls[0])).toBe('POST /api/v1/contacts/2001/message');
 		expect(calls[0].options.body).toMatchObject({ client_reference: 'order-981' });
 		expect(out.map((i) => i.json)).toEqual([queued]);
+	});
+
+	it('Create a connect link returns the link with its url; Send a message to a group, the queued action', async () => {
+		const link = {
+			id: 12,
+			type: 'qr',
+			status: 'pending',
+			url: 'https://api.funnelchat.com/connect/abc',
+			external_reference: 'customer-42',
+		};
+		const created = executeContext({
+			params: {
+				resource: 'device',
+				operation: 'connectLink.store',
+				type: 'qr',
+				useJsonBody: false,
+				additionalFields: { external_reference: 'customer-42' },
+			},
+			responses: [{ status: 201, body: { data: link } }],
+		});
+		const [links] = await node.execute.call(created.ctx);
+		expect(requestLine(created.calls[0])).toBe('POST /api/v1/connect-links');
+		expect(created.calls[0].options.body).toEqual({
+			type: 'qr',
+			external_reference: 'customer-42',
+		});
+		expect(links.map((i) => i.json)).toEqual([link]);
+
+		const sent = executeContext({
+			params: {
+				resource: 'group',
+				operation: 'apiGroupAction.sendMessage',
+				group: '120363012345678901@g.us',
+				device_id: '4',
+				type: 'text',
+				useJsonBody: false,
+				additionalFields: { text: 'Hello, group!' },
+			},
+			responses: [
+				{
+					status: 202,
+					body: { action_id: '9b1f6c1e-1c8e-4c2b-9a51-6a3d5f2e8b70', status: 'queued' },
+				},
+			],
+		});
+		const [actions] = await node.execute.call(sent.ctx);
+		expect(requestLine(sent.calls[0])).toBe('POST /api/v1/groups/120363012345678901@g.us/messages');
+		expect(sent.calls[0].options.body).toEqual({
+			device_id: 4,
+			type: 'text',
+			text: 'Hello, group!',
+		});
+		expect(actions.map((i) => i.json)).toEqual([
+			{ action_id: '9b1f6c1e-1c8e-4c2b-9a51-6a3d5f2e8b70', status: 'queued' },
+		]);
 	});
 
 	it('a contact card returns one item per message; a forward, one per target', async () => {

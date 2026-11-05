@@ -181,21 +181,64 @@ function labelFor(config, operationId, apiName) {
 	);
 }
 
+/** Words and letters that only a Spanish text has: two of them and the text is taken as Spanish. */
+const SPANISH_MARKS =
+	/\b(?:el|la|los|las|del|que|una|para|con|por|sin|cuando|puede|tu|tus|debe|también|número|cuenta|envío)\b|[áéíóúñ¿¡]/gi;
+
+export function looksSpanish(text) {
+	return (String(text ?? '').match(SPANISH_MARKS)?.length ?? 0) >= 2;
+}
+
 /**
- * The description of a field: its own (from `fieldDescriptions` in the config when the specification has it in
- * Spanish or written for the domain's developers; an empty value drops it), and the name of the field in the API.
+ * The description of a field and the name of the field in the API. Its own text comes, in this order, from
+ * `fieldDescriptionsByName` in the config (by operationId, or `*` for every operation; written in English), from
+ * `fieldDescriptions` (a replacement for a text of the specification; an empty value drops it), or from the
+ * specification itself. A text of the specification that is in Spanish is not shown, and the generator says so.
  */
-function describeField(config, schema, apiName, kind) {
+function describeField(ctx, operationId, schema, apiName, kind) {
+	const { config, warnings } = ctx;
 	const parts = [];
 	const original = cleanText(schema?.description);
-	const own =
-		original && Object.hasOwn(config.fieldDescriptions ?? {}, original)
-			? config.fieldDescriptions[original]
-			: original;
+	const byName = config.fieldDescriptionsByName ?? {};
+	const named = byName[operationId]?.[apiName] ?? byName['*']?.[apiName];
+	let own = original;
+	if (named !== undefined) own = cleanText(named);
+	else if (original && Object.hasOwn(config.fieldDescriptions ?? {}, original))
+		own = config.fieldDescriptions[original];
+	else if (looksSpanish(original)) {
+		warnings.push(
+			`${operationId}: the description of ${apiName} is in Spanish and is not shown; add it in English to fieldDescriptionsByName`,
+		);
+		own = '';
+	}
 	if (own) parts.push(own.endsWith('.') || own.endsWith(')') ? own : `${own}.`);
 	if (kind === 'list') parts.push('Separate the values with commas.');
 	parts.push(`In the API: ${apiName}.`);
 	return parts.join(' ');
+}
+
+/**
+ * A field as saved workflows know it. `keepFieldKinds` keeps the kind the node published when the specification
+ * changes it (for example, a list typed with commas that the specification now gives as options): the value a saved
+ * workflow has keeps fitting. `fieldDefaults` puts the value the node shows first (the default of an option field).
+ */
+function keptField(ctx, operationId, apiName, field) {
+	const { config, warnings } = ctx;
+	let result = field;
+	const kind = config.keepFieldKinds?.[operationId]?.[apiName];
+	if (kind && kind !== field.kind) {
+		result = { kind, valueType: field.valueType ?? 'string' };
+	}
+	const preferred = config.fieldDefaults?.[operationId]?.[apiName];
+	if (preferred !== undefined) {
+		if (result.options?.includes(preferred))
+			result = {
+				...result,
+				options: [preferred, ...result.options.filter((v) => v !== preferred)],
+			};
+		else warnings.push(`${operationId}: ${apiName} has no option ${preferred} for fieldDefaults`);
+	}
+	return result;
 }
 
 function sanitizeName(apiName) {
@@ -260,6 +303,16 @@ function buildOperation(ctx, doc, path, method, op, resource, source) {
 	const rawParams = [...(doc.paths[path].parameters ?? []), ...(op.parameters ?? [])].map((p) =>
 		deref(doc, p),
 	);
+	// Query fields the domain's code reads and its specification does not list (`extraParameters` in the config).
+	for (const extra of config.extraParameters?.[operationId] ?? []) {
+		if (rawParams.some((p) => p.name === extra.name && p.in === extra.in)) {
+			warnings.push(
+				`${operationId}: the specification already has ${extra.name}; remove it from extraParameters`,
+			);
+			continue;
+		}
+		rawParams.push(extra);
+	}
 	const queryNames = new Set(rawParams.filter((p) => p.in === 'query').map((p) => p.name));
 	const list = listInfo(doc, op, httpMethod, queryNames);
 	const pagerParams = new Set();
@@ -290,9 +343,10 @@ function buildOperation(ctx, doc, path, method, op, resource, source) {
 						kind: 'string',
 						valueType: typeOf(normalize(doc, schema)) === 'integer' ? 'integer' : 'string',
 					}
-				: fieldFor(doc, schema);
+				: keptField(ctx, operationId, p.name, fieldFor(doc, schema));
 		const description = describeField(
-			config,
+			ctx,
+			operationId,
 			{ description: p.description ?? normalize(doc, schema).description },
 			p.name,
 			field.kind,
@@ -333,7 +387,7 @@ function buildOperation(ctx, doc, path, method, op, resource, source) {
 			body = { required: Boolean(rb.required), root: 'object' };
 			const required = new Set(schema.required ?? []);
 			for (const [prop, propSchema] of Object.entries(schema.properties ?? {})) {
-				const field = fieldFor(doc, propSchema);
+				const field = keptField(ctx, operationId, prop, fieldFor(doc, propSchema));
 				const isRequired = required.has(prop);
 				params.push({
 					name: uniqueName(prop, 'body', isRequired),
@@ -342,7 +396,13 @@ function buildOperation(ctx, doc, path, method, op, resource, source) {
 					required: isRequired,
 					kind: field.kind,
 					displayName: labelFor(config, operationId, prop),
-					description: describeField(config, normalize(doc, propSchema), prop, field.kind),
+					description: describeField(
+						ctx,
+						operationId,
+						normalize(doc, propSchema),
+						prop,
+						field.kind,
+					),
 					...(field.valueType ? { valueType: field.valueType } : {}),
 					...(field.format ? { format: field.format } : {}),
 					...(field.options ? { options: field.options } : {}),
@@ -352,8 +412,11 @@ function buildOperation(ctx, doc, path, method, op, resource, source) {
 	}
 
 	const notices = [];
+	// `:operate` routes are irreversible unless the source says otherwise: accounts also puts there the ones that give
+	// control of a number (create one, its QR, connect links), with `x-fc-destructive: false`.
 	const destructive =
-		op['x-fc-destructive'] === true || String(op['x-fc-permission'] ?? '').endsWith(':operate');
+		op['x-fc-destructive'] === true ||
+		(op['x-fc-destructive'] !== false && String(op['x-fc-permission'] ?? '').endsWith(':operate'));
 	if (destructive) {
 		notices.push(
 			String(op['x-fc-permission'] ?? '').endsWith(':operate')
@@ -403,9 +466,14 @@ function buildOperation(ctx, doc, path, method, op, resource, source) {
 					: 4;
 	params.sort((a, b) => order(a) - order(b));
 
+	// The value saved workflows use is the operationId the node published first: when the specification renames an
+	// operation, `keepOperationValues` maps its new operationId to the old value, so those workflows keep working.
+	const kept = config.keepOperationValues?.[operationId];
+
 	return {
 		resource,
-		value: operationId,
+		value: kept ?? operationId,
+		...(kept ? { operationId } : {}),
 		name,
 		description,
 		method: httpMethod,

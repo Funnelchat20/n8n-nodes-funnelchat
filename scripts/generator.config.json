@@ -1,10 +1,11 @@
 {
-	"$comment": "Configuration of scripts/generate.mjs: which tags of the specification go into each resource of the node, in which order, the English labels of the fields, the descriptions of the specification's fields that are replaced, and notes of what a domain's code requires and its specification does not say. Operations, their names and fields come from the specification (names and purposes in English from scripts/operations.en.json); here they are only grouped and labelled.",
+	"$comment": "Configuration of scripts/generate.mjs: which tags of the specification go into each resource of the node, in which order, the English labels of the fields, the descriptions of the specification's fields that are replaced, and notes of what a domain's code requires and its specification does not say. Operations, their names and fields come from the specification (names and purposes in English from scripts/operations.en.json); here they are only grouped and labelled. When a new specification renames an operation or changes the kind of a field the node already published, keepOperationValues and keepFieldKinds keep what saved workflows use; fieldDefaults sets which option an option field shows first; extraParameters adds query fields a domain's code reads and its specification does not list; fieldDescriptionsByName gives fields their English description (a description of the specification in Spanish is not shown).",
 	"spec": "spec/funnelchat.json",
 	"provenance": "spec/PROVENANCE.md",
 	"supplements": [
-		"spec/supplements/accounts-webhook-subscriptions.json",
-		"spec/supplements/conversations-v1.18.10.json"
+		"spec/supplements/conversations-forms.json",
+		"spec/supplements/conversations-kept-2026-10-15.json",
+		"spec/supplements/communities-v2.35.5.json"
 	],
 	"output": "nodes/Funnelchat/generated/operations.ts",
 	"eventCatalog": "spec/webhook-events.json",
@@ -27,20 +28,23 @@
 				"MessageReaction",
 				"ForwardMessage",
 				"InteractiveMessage",
-				"ContactCard"
+				"ContactCard",
+				"ShowMessage",
+				"MarkMessageRead",
+				"TypingIndicator"
 			]
 		},
 		{
 			"value": "template",
 			"name": "Templates",
 			"description": "WhatsApp message templates: list, create, update, delete and send them.",
-			"tags": ["MessageTemplate"]
+			"tags": ["MessageTemplate", "TemplateMetrics"]
 		},
 		{
 			"value": "form",
 			"name": "WhatsApp Forms",
 			"description": "WhatsApp native forms: build, publish on one or more numbers, send to a contact and read the answers.",
-			"tags": ["WhatsappForm"]
+			"tags": ["WhatsappForm", "WhatsappFormSend"]
 		},
 		{
 			"value": "tag",
@@ -57,15 +61,17 @@
 		{
 			"value": "group",
 			"name": "Groups",
-			"description": "WhatsApp groups of the account and its campaigns, with their participants, joins and leaves.",
-			"tags": ["Grupos", "Participantes"]
+			"description": "WhatsApp groups of the account and its campaigns: list them, send them a message, and see their participants, joins and leaves.",
+			"tags": ["Grupos", "Acciones de grupo", "Participantes"]
 		},
 		{
 			"value": "device",
 			"name": "Numbers",
-			"description": "The account's WhatsApp numbers: status, health, queue, logs, username and profile.",
+			"description": "The account's WhatsApp numbers: list them and their status, connect one by QR or with a connect link, and their health, queue, logs, username and profile.",
 			"tags": [
 				"Device",
+				"DeviceProvisioning",
+				"ConnectLink",
 				"DeviceHealth",
 				"DeviceConnectionEvent",
 				"DeviceLogs",
@@ -83,16 +89,78 @@
 				"WebhookEventCatalog",
 				"WebhookEndpoint",
 				"WebhookEndpointEvent",
-				"WebhookDelivery"
+				"WebhookDelivery",
+				"WebhookSubscriptionDelivery",
+				"WebhookSubscriptionTest"
 			]
 		}
 	],
 	"excludeOperations": [],
+	"keepOperationValues": {
+		"message.showMessage": "showMessage"
+	},
+	"keepFieldKinds": {
+		"webhookSubscription.store": {
+			"events": "list"
+		},
+		"webhookSubscription.update": {
+			"events": "list"
+		},
+		"group.scheduledMessages": {
+			"orderBy": "string",
+			"orderByMethod": "string"
+		}
+	},
+	"fieldDefaults": {
+		"connectLink.store": {
+			"type": "qr"
+		}
+	},
+	"extraParameters": {
+		"webhookSubscriptionDelivery.index": [
+			{
+				"name": "event_type",
+				"in": "query",
+				"description": "Only the attempts of this event type.",
+				"schema": {
+					"type": "string"
+				}
+			},
+			{
+				"name": "event_id",
+				"in": "query",
+				"description": "Only the attempts of this event (evt_…).",
+				"schema": {
+					"type": "string"
+				}
+			}
+		]
+	},
 	"operationNotes": {
-		"interactiveMessage.storePoll": "Not open to API keys in conversations v1.18.10 (outside the allowed list of config/platform-gate.php): a key gets 403 route_not_available.",
-		"interactiveMessage.storeEvent": "Not open to API keys in conversations v1.18.10 (outside the allowed list of config/platform-gate.php): a key gets 403 route_not_available.",
+		"interactiveMessage.storePoll": "Not open to API keys in conversations v1.19.7 (outside the allowed list of config/platform-gate.php): a key gets 403 route_not_available.",
+		"interactiveMessage.storeEvent": "Not open to API keys in conversations v1.19.7 (outside the allowed list of config/platform-gate.php): a key gets 403 route_not_available.",
 		"messageReaction.update": "With an API key it answers 202 without a body: a reaction is not a message with an ID. If the provider does not support it, 422 with reason provider_unsupported.",
-		"messageReaction.destroy": "With an API key it answers 202 without a body: a reaction is not a message with an ID. If the provider does not support it, 422 with reason provider_unsupported."
+		"messageReaction.destroy": "With an API key it answers 202 without a body: a reaction is not a message with an ID. If the provider does not support it, 422 with reason provider_unsupported.",
+		"deviceProvisioning.store": "Needs a key of the account owner (403 connect_not_allowed) and a place in the plan (403 numbers_not_included or number_limit_reached). While a QR number has never been connected, it answers 409 pending_number_exists with its device_id: connect it or delete it. A QR number is not official: WhatsApp may restrict it if it sends messages people do not expect.",
+		"deviceProvisioning.qr": "WhatsApp changes the code every few seconds until it is scanned: ask again every expires_in seconds (5) and show only the last one. qr_code is a PNG as a data URI, or null while the session starts. An official number answers 422 provider_unsupported. In n8n a connect link is simpler: its page shows the QR and renews it on its own.",
+		"connectLink.store": "The url appears only in this response, and whoever has it can connect a number to your account while the link is pending: treat it as a secret. With type qr the page shows the QR, and your customer has 10 minutes from tapping its button to scan it. While the official sign-up by link is not enabled, type meta answers 503 meta_connect_disabled. The result comes in device.connected (with connect_link_id and external_reference), in the return_url or with \"Get a connect link\". Up to 20 pending links per account.",
+		"connectLink.show": "error_code says why it did not complete: link_expired, already_used, revoked, quota_exceeded, trial_number_blocked, facebook_auth_failed, meta_error, number_not_owned, qr_timeout or provider_error.",
+		"connectLink.destroy": "Only a pending link: otherwise it answers 409 link_not_pending.",
+		"apiGroupAction.sendMessage": "Asynchronous: it answers 202 with action_id and status queued. Read the outcome with \"Get a group action\" (result.message.uid is the message's ID in WhatsApp) or with the group_action.completed and group_action.failed events. With a QR number it goes out at the pace of low-speed scheduled messages; with an official number the 24-hour window and the number's quality are checked first.",
+		"apiGroupAction.show": "An action of another account or workspace answers 404 action_not_found, like one that does not exist.",
+		"conversation.sendMessage": "With an API key it answers 200 with the queued message (status queued) and its ID; the result comes later in the message.status_changed event. The WhatsApp guards apply: 24-hour window (422 window_closed), pace (429 rate_limited) and anti-blocking (422 antiblock_…). With an API key, Phone or WhatsApp ID is required and must be the contact's (otherwise 422 recipient_mismatch). If the account is in the 24-hour lockout for monthly active contacts, 429 mac_lockout_24h.",
+		"message.sendMessage": "With an API key it answers 200 with the queued message (status queued) and its ID; the result comes later in the message.status_changed event. The WhatsApp guards apply: 24-hour window (422 window_closed), pace (429 rate_limited) and anti-blocking (422 antiblock_…).",
+		"forwardMessage.store": "With an API key it answers 200 with one result per target: queued with its message, or blocked with the reason.",
+		"contactCard.store": "With an API key it answers 200 with one queued message per card (status queued); the result comes later in the message.status_changed event. The WhatsApp guards apply: 24-hour window (422 window_closed), pace (429 rate_limited) and anti-blocking (422 antiblock_…).",
+		"messageTemplate.send": "With an API key it answers 200 with the queued message (status queued) and its ID; the result comes in the message.status_changed event. A template does not need the 24-hour window.",
+		"whatsappFormSend.store": "With an API key it answers 200 with the queued message (status queued) and its ID; the result comes later in the message.status_changed event. The WhatsApp guards apply: 24-hour window (422 window_closed), pace (429 rate_limited) and anti-blocking (422 antiblock_…). Its own errors: 404 form_not_found and 422 form_not_published, form_not_on_number, number_not_eligible.",
+		"webhookSubscription.index": "With an API key, besides the route's permission, it needs the read permission of the area of each event type of the subscription (accounts:read, conversations:read or communities:read).",
+		"webhookSubscription.store": "With an API key, besides the route's permission, it needs the read permission of the area of each event type of the subscription (accounts:read, conversations:read or communities:read).",
+		"webhookSubscription.show": "With an API key, besides the route's permission, it needs the read permission of the area of each event type of the subscription (accounts:read, conversations:read or communities:read).",
+		"webhookSubscription.update": "With an API key, besides the route's permission, it needs the read permission of the area of each event type of the subscription (accounts:read, conversations:read or communities:read).",
+		"webhookSubscription.destroy": "Irreversible operation. With an API key, besides the route's permission, it needs the read permission of the area of each event type of the subscription (accounts:read, conversations:read or communities:read).",
+		"webhookSubscriptionDelivery.index": "With an API key, besides the route's permission, it needs the read permission of the area of each event type of the subscription (accounts:read, conversations:read or communities:read).",
+		"webhookSubscriptionTest.test": "With an API key, besides the route's permission, it needs the read permission of the area of each event type of the subscription (accounts:read, conversations:read or communities:read)."
 	},
 	"labels": {
 		"active_conversation": "Active Conversation",
@@ -257,7 +325,17 @@
 		"version_id": "Version ID",
 		"origin": "Origin",
 		"familyId": "Form ID",
-		"runId": "Response ID"
+		"runId": "Response ID",
+		"connection": "Connection",
+		"external_reference": "External Reference",
+		"same_number_as": "Same Number As (Number ID)",
+		"country": "Country",
+		"allowed_connection_types": "Allowed Connection Types",
+		"provision_us_number": "Offer a US Number",
+		"return_url": "Return URL",
+		"expires_in_minutes": "Expires In (Minutes)",
+		"media_url": "Media URL",
+		"caption": "Caption"
 	},
 	"labelsByOperationPrefix": {
 		"contactNote": {
@@ -285,16 +363,121 @@
 		"whatsappForm": {
 			"id": "Form Version ID"
 		},
-		"showMessage": {
-			"message": "Message ID"
+		"connectLink": {
+			"link": "Connect Link ID",
+			"device_id": "Number ID to Reconnect"
+		},
+		"apiGroupAction": {
+			"group": "Group UID",
+			"action": "Action ID",
+			"device_id": "Number ID"
 		}
 	},
 	"fieldDescriptions": {
-		"Plain string segment — not a model binding.": "",
-		"The group uid.": "The group UID.",
-		"Meta Conversions API (CAPI) opt-in consent — capi-meta-connection Inc 3 (design.md D3). Optional: only meaningful on the Meta branch, and even there it is a no-op unless the `capi` feature flag is enabled for the account (defense in depth, see updateMetaDevice below).": "Consent to Meta's Conversions API (CAPI). Optional; it only applies to WhatsApp Cloud numbers of accounts with Conversions API enabled.",
-		"`https` obligatorio. La comprobación de a DÓNDE resuelve la hace `SsrfGuard` en el controlador: acá sólo se valida la forma.": "Must be https. Internal addresses are rejected.",
-		"Suscripciones iniciales, opcionales: un endpoint puede nacer sin ninguna y suscribirse después. Lo que NO puede es nacer suscripto a todo por omisión — eso sería lo contrario de \"por demanda\".": "Initial subscriptions, optional: an endpoint can start without any and subscribe later.",
 		"Prender y apagar el endpoint entero, sin perder sus suscripciones ni su secreto.": "Turns the whole endpoint on and off, without losing its subscriptions or its secret."
+	},
+	"fieldDescriptionsByName": {
+		"connectLink.destroy": {
+			"link": "The connect link ID."
+		},
+		"connectLink.index": {
+			"external_reference": "Only the links with exactly this reference."
+		},
+		"connectLink.show": {
+			"link": "The connect link ID."
+		},
+		"connectLink.store": {
+			"type": "qr: a number connected by scanning a QR code. meta: an official number, with Meta's Embedded Signup.",
+			"allowed_connection_types": "Only with type meta, and required there: coexistence keeps the number in the WhatsApp Business app; dedicated is a number only for the API.",
+			"provision_us_number": "Only with type meta: also offer a US number of Funnelchat's pool (always dedicated).",
+			"device_id": "Reconnect this number of the account instead of adding one (it takes no new place).",
+			"same_number_as": "Only with type qr: add QR to this number of the account in coexistence.",
+			"country": "Only with type qr and without Number ID: country the WhatsApp session is opened from, two letters (the country of your customer's phone).",
+			"external_reference": "Your own reference: it is copied to the number the link creates and comes in device.connected.",
+			"return_url": "https address the page sends your customer to at the end, with the result in the query string (connect_link_id, status, and device_id or error_code).",
+			"expires_in_minutes": "How long the link lives: 30 to 10080 minutes (7 days); 1440 (24 hours) by default."
+		},
+		"contactCard.store": {
+			"client_reference": "Your own identifier for this send (1 to 64 visible ASCII characters, no spaces). It comes back in the message and in the message.status_changed event, to match them with your system."
+		},
+		"conversation.sendMessage": {
+			"file": "http(s) URL of the file (also signed or without an extension, with File Type) or the name of an already uploaded file.",
+			"file_type": "What the file is, when File is a URL that does not show its extension (for example a signed URL). Without it, such a URL answers 422 on file_type.",
+			"file_name": "Name the document arrives with (without / \\ ? #). Needed for a document whose URL does not end in a known extension.",
+			"client_reference": "Your own identifier for this send (1 to 64 visible ASCII characters, no spaces). It comes back in the message and in the message.status_changed event, to match them with your system."
+		},
+		"device.index": {
+			"external_reference": "Only the numbers with exactly this reference: yours, given when creating the number or the connect link."
+		},
+		"device.update": {
+			"capi_consent": "Consent to Meta's Conversions API (CAPI). Optional; it only applies to WhatsApp Cloud numbers of accounts with Conversions API enabled.",
+			"external_reference": "Your own reference for this number (for example, your customer's ID); null clears it. Not unique."
+		},
+		"deviceProvisioning.qr": {
+			"device": "The number ID."
+		},
+		"deviceProvisioning.store": {
+			"connection": "How the number connects. Only qr: an official number is connected with a connect link of type meta.",
+			"external_reference": "Your own reference for this number (for example, your customer's ID). Not unique. It comes back in the number and in the device.* events.",
+			"same_number_as": "ID of a number of the account connected to the official API in coexistence: the QR connection is added to that same number and takes no new place in the plan.",
+			"country": "Country the WhatsApp session is opened from, two letters (for example mx): the country of the phone that will scan the QR. Without it, co (Colombia)."
+		},
+		"forwardMessage.store": {
+			"client_reference": "Your own identifier for this send (1 to 64 visible ASCII characters, no spaces). It comes back in the message and in the message.status_changed event, to match them with your system."
+		},
+		"groupMetadata.show": {
+			"groupUid": "The ID of the group or the channel on WhatsApp."
+		},
+		"message.sendMessage": {
+			"file": "http(s) URL of the file (also signed or without an extension, with File Type) or the name of an already uploaded file.",
+			"file_type": "What the file is, when File is a URL that does not show its extension (for example a signed URL). Without it, such a URL answers 422 on file_type.",
+			"file_name": "Name the document arrives with (without / \\ ? #). Needed for a document whose URL does not end in a known extension.",
+			"client_reference": "Your own identifier for this send (1 to 64 visible ASCII characters, no spaces). It comes back in the message and in the message.status_changed event, to match them with your system."
+		},
+		"message.showMessage": {
+			"contact": "Contact of the message.",
+			"message": "Message ID."
+		},
+		"messageTemplate.send": {
+			"client_reference": "Your own identifier for this send (1 to 64 visible ASCII characters, no spaces). It comes back in the message and in the message.status_changed event, to match them with your system."
+		},
+		"webhookEndpoint.store": {
+			"url": "Must be https and resolve to a public internet address.",
+			"events": "Initial subscriptions, optional: without events the endpoint is registered without receiving anything, and subscribes later."
+		},
+		"webhookSubscription.destroy": {
+			"id": "The `id` (UUID) of the subscription."
+		},
+		"webhookSubscription.show": {
+			"id": "The `id` (UUID) of the subscription."
+		},
+		"webhookSubscription.store": {
+			"url": "Public `https` URL that receives the deliveries. Without user or password; an internal address is rejected.",
+			"events": "Event types of the catalog (`GET /api/v1/webhooks/events`) that can be subscribed to. With an API key, each type needs the read permission of its area.",
+			"description": "Text to recognize the subscription in the list.",
+			"filters": "Optional filter by campaigns (`campaign_ids`): with a filter, an event without a campaign is not delivered."
+		},
+		"webhookSubscription.update": {
+			"id": "The `id` (UUID) of the subscription.",
+			"url": "Public `https` URL that receives the deliveries.",
+			"events": "The full list of event types: it replaces the previous one.",
+			"description": "Text to recognize the subscription in the list.",
+			"filters": "Optional filter by campaigns (`campaign_ids`).",
+			"status": "Pause or resume the subscription. It cannot be set to `disabled`."
+		},
+		"webhookSubscriptionDelivery.index": {
+			"id": "The `id` (UUID) of the subscription."
+		},
+		"webhookSubscriptionTest.test": {
+			"id": "The `id` (UUID) of the subscription."
+		},
+		"whatsappFormSend.store": {
+			"contact": "Contact.",
+			"form_id": "ID of the form (family_id), not of a version: the published version is sent.",
+			"device_id": "Number that sends it; the form has to be published on it.",
+			"text": "Text of the message (up to 1024 characters). By default, the name of the form.",
+			"button_text": "Text of the button (up to 30 characters, no emojis). By default \"Abrir\" or \"Open\", by the language of the key's user.",
+			"client_reference": "Your own identifier for this send (1 to 64 visible ASCII characters, no spaces). It comes back in the message and in the message.status_changed event, to match them with your system."
+		}
 	}
 }

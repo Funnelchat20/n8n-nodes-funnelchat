@@ -16,9 +16,10 @@ import { EVENT_CATALOG } from './generated/events';
 
 /*
  * The trigger subscribes through the unified webhook subscriptions of accounts (`/api/v1/webhooks`). Those routes
- * are not in the portal's unified specification yet: they are taken from accounts v1.4.24 @ 300cc8435
- * (routes/api/webhooks.php and Modules/Webhook/Http/Controllers/WebhookSubscription*Controller.php, read only) and from
- * the portal's content/webhooks.md (feat/armar-funnelchat-portal @ dd7cd42). See spec/PROCEDENCIA.md.
+ * are not in the portal's unified specification yet: they are taken from accounts v1.4.24 @ 300cc8435, checked again
+ * against v1.5.97 @ 558332bcf (routes/api/webhooks.php and Modules/Webhook/Http/Controllers/
+ * WebhookSubscription*Controller.php, read only) and from the portal's content/webhooks.md
+ * (feat/armar-funnelchat-portal @ dd7cd42). See spec/PROVENANCE.md.
  *
  *   POST   /api/v1/webhooks       {url, events, description?, filters?: {campaign_ids}} → 201 {id, …, secret}
  *   GET    /api/v1/webhooks/{id}  → {id, url, events, filters, status, …} (never the secret) | 404
@@ -32,6 +33,11 @@ import { EVENT_CATALOG } from './generated/events';
  *
  * The secret is returned only once, on creation, so it is kept in the node's static data next to the subscription
  * id, by webhook URL: the test URL and the production URL have their own subscription and never touch each other.
+ *
+ * Events are subscribed to by name, always. accounts takes only names of its catalog (`*` answers 422), and the
+ * subscriptions of conversations, where `*` exists, never cover `message.status_changed` with it: a wildcard is refused
+ * before calling the API. Since accounts v1.5.97 a subscription belongs to the workspace of the key that created it,
+ * receives only that workspace's events, and every event carries it in `data.workspace_id`.
  *
  * The node never filters the webhook URL n8n gives it: the API decides. The real API only accepts public https URLs;
  * the sandbox (credential with a custom base URL) also accepts http and local ones, such as http://localhost:5678.
@@ -82,9 +88,33 @@ function splitList(value: unknown): string[] {
 		.filter((s) => s !== '');
 }
 
+/**
+ * The event types to subscribe to, by name: a list, or text separated by commas from an expression; without blanks or
+ * repeats (accounts rejects both). A wildcard is refused here, before calling the API (see the comment at the top).
+ */
+export function chosenEvents(this: IHookFunctions): string[] {
+	const raw: unknown = this.getNodeParameter('events', []);
+	const list = Array.isArray(raw) ? raw.map((e) => String(e).trim()) : splitList(raw);
+	const events = [...new Set(list.filter((e) => e !== ''))];
+	if (events.some((e) => e.includes('*'))) {
+		throw new NodeOperationError(
+			this.getNode(),
+			'Choose the events by name: Funnelchat does not take "*"',
+			{
+				description:
+					'A subscription lists each event type it wants. "message.status_changed" (sent, delivered, read or failed) is never included by a wildcard: choose it by name.',
+			},
+		);
+	}
+	if (events.length === 0) {
+		throw new NodeOperationError(this.getNode(), 'Choose at least one event');
+	}
+	return events;
+}
+
 /** The body for `POST`/`PUT /api/v1/webhooks` from the node's parameters. */
 export function subscriptionBody(this: IHookFunctions, url: string): IDataObject {
-	const events = this.getNodeParameter('events', []) as string[];
+	const events = chosenEvents.call(this);
 	const options = this.getNodeParameter('options', {}) as IDataObject;
 	const campaignIds = splitList(options.campaignIds);
 	const workflowName = this.getWorkflow().name;
@@ -189,7 +219,7 @@ export class FunnelchatTrigger implements INodeType {
 		properties: [
 			{
 				displayName:
-					'Activating the workflow creates a subscription in Funnelchat (POST /api/v1/webhooks) and deactivating it deletes it. With Production or Staging, the n8n URL has to be https and public; with a custom base URL (for example the local sandbox) a local URL works too, such as http://localhost:5678. Deliveries without a valid signature are rejected with 400. The event list comes from the Funnelchat catalog (GET /api/v1/webhooks/events), or from the list built into the node if the key cannot read it; with an API key, each event type needs the read permission of its area.',
+					'Activating the workflow creates a subscription in Funnelchat (POST /api/v1/webhooks) for the chosen events, and deactivating it deletes it. Choose each event by name: "Message status changed" (sent, delivered, read, failed) only arrives if you choose it. Every event carries data.workspace_id, the workspace of your API key. With Production or Staging, the n8n URL has to be https and public; with a custom base URL (for example the local sandbox) a local URL works too, such as http://localhost:5678. Deliveries without a valid signature are rejected with 400. The event list comes from the Funnelchat catalog, or from the list built into the node if the key cannot read it (it needs accounts:read); with an API key, each event type needs the read permission of its area.',
 				name: 'notice',
 				type: 'notice',
 				default: '',

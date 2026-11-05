@@ -6,7 +6,7 @@
 			"status": "active",
 			"is_critical": true,
 			"label": "Número desconectado",
-			"description": "Uno de los números de WhatsApp de la cuenta se desconectó y dejó de poder enviar o recibir.",
+			"description": "Uno de los números de WhatsApp de la cuenta se desconectó y dejó de poder enviar o recibir. `reason` dice por qué: `qr_logged_out` (se cerró la sesión de un número por QR), `meta_account_not_registered` (un número oficial dejó de estar registrado en Meta y no se pudo volver a registrar solo), `shadow_ban_protection` (Funnelchat lo desconectó para protegerlo de un posible bloqueo), `disconnected_by_user` (alguien de la cuenta desconectó o borró los datos de un número oficial), `provider_error` o `unknown`. Trae `device.connection`, `device.external_reference` y `connect_link_id` (el link de alta que conectó el número por última vez, o null).",
 			"subscribable": true
 		},
 		{
@@ -15,7 +15,52 @@
 			"status": "active",
 			"is_critical": false,
 			"label": "Número conectado",
-			"description": "Uno de los números de WhatsApp de la cuenta quedó conectado: al escanear el código QR o al terminar el alta de un número de WhatsApp Cloud.",
+			"description": "Uno de los números de WhatsApp de la cuenta quedó conectado: al escanear el código QR o al terminar el alta de un número de WhatsApp Cloud. Trae `device.connection` (`qr`, `coexistence` o `dedicated`), `device.external_reference` y `connect_link_id` (el link de alta que lo conectó, o null).",
+			"subscribable": true
+		},
+		{
+			"type": "device.deleted",
+			"area": "accounts",
+			"status": "active",
+			"is_critical": false,
+			"label": "Número borrado",
+			"description": "Uno de los números de WhatsApp de la cuenta se borró y liberó su lugar en el plan (desde el panel, la API o porque un link de alta venció sin conectarlo). Un número oficial deja de recibir mensajes en Funnelchat, pero sigue registrado en Meta; a uno por QR se le cierra la sesión. Trae `connect_link_id` (el link de alta que conectó el número por última vez, o null).",
+			"subscribable": true
+		},
+		{
+			"type": "device.health_changed",
+			"area": "accounts",
+			"status": "active",
+			"is_critical": true,
+			"label": "Cambió la salud del número",
+			"description": "Cambió el estado de envío de uno de los números oficiales de la cuenta, según Meta: `available`, `limited`, `blocked` o `unknown` (`previous_state` y `state`). Sale solo cuando el estado cambia, no con cada aviso de Meta. El motivo se consulta en `GET api/v1/devices/{device}/health`. Trae `connect_link_id` (el link de alta que conectó el número por última vez, o null).",
+			"subscribable": true
+		},
+		{
+			"type": "device.quality_changed",
+			"area": "accounts",
+			"status": "active",
+			"is_critical": true,
+			"label": "Cambió la calidad del número",
+			"description": "Cambió la calidad que Meta le da a uno de los números oficiales de la cuenta (`previous` y `current`, tal cual los manda Meta: `GREEN`, `YELLOW` o `RED`). Si la calidad baja, conviene frenar los envíos de ese número antes de que Meta lo limite. Sale una vez por cambio, no con cada aviso de Meta, y no sale cuando Meta no tiene datos de calidad (`NA` o `UNKNOWN`). Trae `connect_link_id` (el link de alta que conectó el número por última vez, o null).",
+			"subscribable": true
+		},
+		{
+			"type": "device.messaging_limit_changed",
+			"area": "accounts",
+			"status": "active",
+			"is_critical": true,
+			"label": "Cambio del límite de mensajes",
+			"description": "Cambió el límite de mensajes que Meta le da a uno de los números oficiales de la cuenta: cuántas personas distintas se pueden contactar por día con mensajes que inicia la empresa (`previous` y `current`, tal cual los manda Meta: `TIER_250`, `TIER_1K`, `TIER_2K`, `TIER_10K`, `TIER_100K` o `TIER_UNLIMITED`). Meta fija el límite para todos los números de una misma empresa: llega un aviso por cada número de la cuenta que cambió. Sale una vez por cambio y no sale cuando el número todavía no tiene límite asignado (`TIER_NOT_SET`). Trae `connect_link_id` (el link de alta que conectó el número por última vez, o null).",
+			"subscribable": true
+		},
+		{
+			"type": "device.display_name_reviewed",
+			"area": "accounts",
+			"status": "active",
+			"is_critical": false,
+			"label": "Nombre visible revisado",
+			"description": "Meta aprobó (`decision`: `approved`) o rechazó (`rejected`) el nombre visible de uno de los números oficiales de la cuenta. Trae el estado anterior y el nuevo, tal cual los manda Meta (`previous_status`; `status`: `APPROVED` o `DECLINED`), el nombre visible actual (`verified_name`) y, en un rechazo, el motivo que da Meta en su aviso (`rejection_reason`), o null si Meta no lo informa. Sale una vez por revisión. Trae `connect_link_id` (el link de alta que conectó el número por última vez, o null).",
 			"subscribable": true
 		},
 		{
@@ -123,7 +168,7 @@
 			"status": "active",
 			"is_critical": false,
 			"label": "Contactos activos al 80%",
-			"description": "La cuenta alcanzó el 80% de sus contactos activos mensuales del ciclo.",
+			"description": "La cuenta alcanzó el 80% de sus contactos activos mensuales del ciclo. `workspace_id` es el workspace al que se rutea el aviso, como en todos los eventos: el workspace con facturación propia cuyo pool alcanzó el umbral, o el workspace por defecto cuando el pool es el de la cuenta.",
 			"subscribable": true
 		},
 		{
@@ -132,7 +177,7 @@
 			"status": "active",
 			"is_critical": true,
 			"label": "Contactos activos al 100%",
-			"description": "La cuenta agotó sus contactos activos mensuales del ciclo; se abre una gracia de 24 horas cuyo vencimiento viaja en `grace_expires_at`.",
+			"description": "La cuenta agotó sus contactos activos mensuales del ciclo; se abre una gracia de 24 horas cuyo vencimiento viaja en `grace_expires_at`. `workspace_id` es el workspace al que se rutea el aviso, como en todos los eventos: el workspace con facturación propia cuyo pool se agotó, o el workspace por defecto cuando el pool es el de la cuenta.",
 			"subscribable": true
 		},
 		{
@@ -488,7 +533,7 @@
 		}
 	],
 	"meta": {
-		"total": 54,
-		"active": 49
+		"total": 59,
+		"active": 54
 	}
 }

@@ -1,31 +1,120 @@
 # @funnelchat-hq/n8n-nodes-funnelchat
 
-[n8n](https://n8n.io) community node for the Funnelchat public API. With it you build workflows that work with your
-account without writing code: sync contacts from a form or a CRM, reply to messages, check the status of your numbers
-or react to what happens in your account.
+[n8n](https://n8n.io) community node for the Funnelchat public API: connect your WhatsApp numbers, send messages and
+know when they are read, receive messages and work with your groups, from your workflows and without code.
 
-It has three parts:
+## First use
 
-- **"Funnelchat API" credential**: your API key and the environment (production, staging or a URL of your own, such
-  as the sandbox).
-- **"Funnelchat" node**: the API operations grouped as in the portal: contacts, conversations and messages,
-  templates, WhatsApp forms, tags, custom fields, groups, numbers and webhooks. They are generated from the unified
-  specification and from what the domains opened later.
-- **"Funnelchat Trigger" node**: starts a workflow with each event Funnelchat sends by webhook, with its signature
-  verified.
+1. **Install the node.** In n8n, **Settings → Community nodes → Install** and type
+   `@funnelchat-hq/n8n-nodes-funnelchat` (other ways in [Installation](#installation)).
+2. **Create your key.** In the Funnelchat panel, **Developers → Create key**. It is shown **only once**: copy it then.
+   If you also use it from code, keep it in the `FUNNELCHAT_API_KEY` environment variable, never in the code.
+3. **Add the credential.** In n8n, create a **Funnelchat API** credential: paste the key in **API Key** and leave
+   **Environment** on **Production**. n8n keeps it encrypted.
+4. **Connect a number.** Skip it if you already have one: **Funnelchat → Numbers → List numbers** gives its `id`.
+   Otherwise, a **Funnelchat** node with **Numbers → Create a connect link**, **Type** `qr`. Run it and open the `url`
+   of the result: the page shows a QR code. Scan it with WhatsApp on your phone (**Linked devices**). The number's `id`
+   is then in **List numbers**, and in **Get a connect link** (`device_id`).
+5. **Send a message and know when it was read**: a workflow with two nodes.
+   - **Funnelchat**: **Conversations and Messages → Send a message**. **Number ID**: your number's `id`. **Contact
+     ID**: the contact (no contact yet? **Contacts → Create a contact** with their phone, and use its `id`).
+     **Additional Fields**: **Text** `Hello!` and **Client Reference** `order-981`.
+   - **Funnelchat Trigger**: **Event Names or IDs**: Message status changed (`message.status_changed`).
 
-> [!IMPORTANT]
-> **Status: published on npm** as `@funnelchat-hq/n8n-nodes-funnelchat` (with provenance) and installable from n8n's
-> panel as a community node (see [Installation](#installation)). It is up to date with the API running in production
-> on 2026-10-22 (accounts `v1.4.24`, conversations `v1.18.10`). The public API is v0 and may change: see
-> [Sources and what is left to verify](#sources-and-what-is-left-to-verify).
+   Activate the workflow (that subscribes the trigger) and click **Execute step** on the **Funnelchat** node. The send
+   answers at once with the message in `status: "queued"`. Then the trigger starts once per status, `sent`,
+   `delivered` and `read` (or `failed`, with its `error`), with your `client_reference` and your workspace:
 
-API documentation: [Funnelchat developer portal](https://developers-portal.funnelchat.app/docs/).
+   ```json
+   {
+   	"id": "evt_000000000000000000000002",
+   	"type": "message.status_changed",
+   	"version": 1,
+   	"occurred_at": "2026-11-04T12:00:05Z",
+   	"data": {
+   		"message_id": 1001,
+   		"contact_id": 2001,
+   		"device_id": 4,
+   		"status": "read",
+   		"previous_status": "delivered",
+   		"error": null,
+   		"occurred_at": "2026-11-04T12:00:05Z",
+   		"client_reference": "order-981",
+   		"workspace_id": 37
+   	}
+   }
+   ```
 
-## Contents
+   The trigger needs n8n reachable from the internet over `https` (in self-hosted n8n, `WEBHOOK_URL`): see
+   [What you need](#what-you-need).
+
+<details><summary>The same two nodes, to paste on the canvas (then choose your credential in both)</summary>
+
+```json
+{
+	"nodes": [
+		{
+			"name": "Send a message",
+			"type": "@funnelchat-hq/n8n-nodes-funnelchat.funnelchat",
+			"typeVersion": 1,
+			"position": [0, 0],
+			"parameters": {
+				"resource": "conversation",
+				"operation": "message.sendMessage",
+				"device_id": "4",
+				"contact_id": "2001",
+				"additionalFields": { "text": "Hello!", "client_reference": "order-981" }
+			}
+		},
+		{
+			"name": "When its status changes",
+			"type": "@funnelchat-hq/n8n-nodes-funnelchat.funnelchatTrigger",
+			"typeVersion": 1,
+			"position": [0, 240],
+			"parameters": { "events": ["message.status_changed"] }
+		}
+	],
+	"connections": {}
+}
+```
+
+</details>
+
+**What the key needs** for all of this: `accounts:read` (list numbers, and the credential test), `accounts:operate`
+(connect a number), `conversations:write` (create a contact), `conversations:send` (send),
+`conversations:read`, `webhooks:read` and `webhooks:write` (the trigger on message events). A key with full access
+has them all.
+
+### Receive messages
+
+**Funnelchat Trigger** with **Message received** (`message.received`). Each message brings `data.message` (`id`,
+`type`, `text`, `media`), `data.contact` (`id`, `name`, `phone`), `data.device_id` and `data.workspace_id`. To answer
+it, see [Receive a message and reply](#receive-a-message-and-reply). Your numbers tell you when they connect or
+disconnect with **Number connected** (`device.connected`) and **Number disconnected** (`device.disconnected`, with its
+`reason`).
+
+### Groups
+
+- **Groups → List groups**: your groups, with the `uid` the other operations use.
+- **Groups → Send a message to a group**: **Group UID**, **Number ID** (connected, and an admin of the group if it is a
+  QR number), **Type** `text` and **Additional Fields → Text**. It answers at once with an `action_id`; **Groups → Get
+  a group action** says how it went, and so do the `group_action.completed` and `group_action.failed` events. The key
+  needs `communities:send` (and `communities:read` to list).
+- **Funnelchat Trigger** with **Participant joined** (`group_participant.joined`) and **Participant left**
+  (`group_participant.left`), with `communities:read`.
+
+### Workspaces
+
+Each API key sees and operates only the workspace where it was created: numbers, contacts, groups and webhook
+subscriptions of other workspaces do not show up, as if they did not exist. The trigger's subscription belongs to the
+key's workspace and receives only its events, and every event says which one in `data.workspace_id`. One integration
+per workspace: one key, and one credential, for each.
+
+---
+
+## Reference
 
 - [Installation](#installation)
-- [Minimal example](#minimal-example)
 - [Credential](#credential)
 - [The Funnelchat node](#the-funnelchat-node)
 - [The Funnelchat Trigger](#the-funnelchat-trigger)
@@ -34,6 +123,13 @@ API documentation: [Funnelchat developer portal](https://developers-portal.funne
 - [Regenerating](#regenerating)
 - [Development](#development)
 - [Sources and what is left to verify](#sources-and-what-is-left-to-verify)
+
+API documentation: [Funnelchat developer portal](https://developers-portal.funnelchat.app/docs/).
+
+The package has three parts: the **Funnelchat API** credential (your key and the environment: production, staging or
+a URL of your own, such as the sandbox); the **Funnelchat** node, with the API operations grouped as in the portal,
+generated from its unified specification and from what the domains opened later; and the **Funnelchat Trigger**, which
+starts a workflow with each event Funnelchat sends by webhook, with its signature verified.
 
 ## Installation
 
@@ -63,39 +159,10 @@ git clone https://github.com/Funnelchat20/n8n-nodes-funnelchat.git
 cd n8n-nodes-funnelchat
 npm ci
 npm run build
-npm pack            # creates funnelchat-hq-n8n-nodes-funnelchat-0.1.1.tgz
+npm pack            # creates funnelchat-hq-n8n-nodes-funnelchat-0.2.0.tgz
 ```
 
-Then, in n8n's nodes folder, `npm install /path/to/funnelchat-hq-n8n-nodes-funnelchat-0.1.1.tgz`.
-
-## Minimal example
-
-A workflow that sends a message to a contact and keeps the message ID:
-
-1. Create the **Funnelchat API** credential with your key (see [Credential](#credential)).
-2. Add the **Funnelchat** node — resource "Conversations and Messages", operation "Send a message to a contact":
-   - Contact ID (in the route and in the body): `2001`
-   - Number ID: the ID of the number that sends, from "Numbers → List numbers".
-   - Additional Fields → Phone: the contact's, `5491100000000`; Text: `Hello`; Client Reference: `order-981`.
-3. Run it. You get one item with the queued message:
-
-```json
-{
-	"id": 1001,
-	"contact_id": 2001,
-	"device_id": 7,
-	"direction": "outbound",
-	"type": "text",
-	"status": "queued",
-	"error": null,
-	"client_reference": "order-981",
-	"created_at": "2026-10-22T13:05:00Z",
-	"updated_at": "2026-10-22T13:05:00Z"
-}
-```
-
-The result (`sent`, `delivered`, `read` or `failed`) comes later: with the **Funnelchat Trigger** and the
-`message.status_changed` event, which carries your `client_reference`, or by reading the message with "Get a message".
+Then, in n8n's nodes folder, `npm install /path/to/funnelchat-hq-n8n-nodes-funnelchat-0.2.0.tgz`.
 
 ## Credential
 
@@ -157,7 +224,7 @@ The node can also be used as a tool of an n8n AI agent.
 
 <!-- operations:start (generated by npm run generate) -->
 
-128 operations generated from the specification (sha256 `8bbbae569b4c`) and its supplements. The ones marked ⚠ show a notice in the node (what the code requires and the specification does not say, a route closed to keys, or an irreversible operation).
+139 operations generated from the specification (sha256 `0f451feaba59`) and its supplements. The ones marked ⚠ show a notice in the node (what the code requires and the specification does not say, a route closed to keys, or an irreversible operation).
 
 <details><summary><strong>Contacts</strong> (15)</summary>
 
@@ -181,7 +248,7 @@ The node can also be used as a tool of an n8n AI agent.
 
 </details>
 
-<details><summary><strong>Conversations and Messages</strong> (18)</summary>
+<details><summary><strong>Conversations and Messages</strong> (20)</summary>
 
 | Operation | Route | Permission |
 |---|---|---|
@@ -196,17 +263,19 @@ The node can also be used as a tool of an n8n AI agent.
 | Send a message to a contact ⚠ | `POST /api/v1/contacts/{contact}/message` | `conversations:send` |
 | List a contact's messages "return all" | `GET /api/v1/contacts/{contactId}/messages` | `conversations:read` |
 | Send a message ⚠ | `POST /api/v1/message/send-message` | `conversations:send` |
-| Get a message | `GET /api/v1/contacts/{contact}/messages/{message}` | `conversations:read` |
 | React to a message ⚠ | `PUT /api/v1/contacts/{contact}/messages/{message}/reaction` | `conversations:send` |
 | Remove a reaction ⚠ | `DELETE /api/v1/contacts/{contact}/messages/{message}/reaction` | `conversations:send` |
 | Forward a message ⚠ | `POST /api/v1/contacts/{contact}/messages/{message}/forward` | `conversations:send` |
 | Send a poll ⚠ | `POST /api/v1/contacts/{contact}/message/poll` | `conversations:send` |
 | Send an event invitation ⚠ | `POST /api/v1/contacts/{contact}/message/event` | `conversations:send` |
 | Send a contact card ⚠ | `POST /api/v1/contacts/{contact}/message/contact-card` | `conversations:send` |
+| Get a message | `GET /api/v1/contacts/{contact}/messages/{message}` | `conversations:read` |
+| Mark a message as read | `POST /api/v1/contacts/{contact}/messages/{message}/read` | `conversations:send` |
+| Show "typing…" to a contact | `POST /api/v1/contacts/{contact}/typing` | `conversations:send` |
 
 </details>
 
-<details><summary><strong>Templates</strong> (7)</summary>
+<details><summary><strong>Templates</strong> (8)</summary>
 
 | Operation | Route | Permission |
 |---|---|---|
@@ -217,6 +286,7 @@ The node can also be used as a tool of an n8n AI agent.
 | Get a template's quick reply buttons | `GET /api/v1/templates/{template}/quick-reply-buttons` | `conversations:read` |
 | Send a template ⚠ | `POST /api/v1/devices/{device}/templates/{template}/send-template` | `conversations:send` |
 | Delete a template from a number | `DELETE /api/v1/devices/{device}/templates/{template}` | `conversations:write` |
+| Get a template's metrics | `GET /api/v1/templates/{template}/metrics` | `conversations:read` |
 
 </details>
 
@@ -271,7 +341,7 @@ The node can also be used as a tool of an n8n AI agent.
 
 </details>
 
-<details><summary><strong>Groups</strong> (14)</summary>
+<details><summary><strong>Groups</strong> (16)</summary>
 
 | Operation | Route | Permission |
 |---|---|---|
@@ -284,6 +354,8 @@ The node can also be used as a tool of an n8n AI agent.
 | List the session actions on a group "return all" | `GET /api/v1/groups/{group}/actions` | `communities:read` |
 | List the messages sent to a group "return all" | `GET /api/v1/groups/{group}/messages` | `communities:read` |
 | List the scheduled sends that include a group "return all" | `GET /api/v1/groups/{group}/scheduled-messages` | `communities:read` |
+| Send a message to a group ⚠ | `POST /api/v1/groups/{group}/messages` | `communities:send` |
+| Get a group action ⚠ | `GET /api/v1/groups/actions/{action}` | `communities:read` |
 | List a campaign's participants "return all" | `GET /api/v1/campaigns/{campaign}/participants` | `communities:read` |
 | List participants with their current group "return all" | `GET /api/v1/campaigns/{campaign}/campaign-participants` | `communities:read` |
 | List a campaign's joins and leaves "return all" | `GET /api/v1/campaigns/{campaign}/participant-events` | `communities:read` |
@@ -292,7 +364,7 @@ The node can also be used as a tool of an n8n AI agent.
 
 </details>
 
-<details><summary><strong>Numbers</strong> (29)</summary>
+<details><summary><strong>Numbers</strong> (35)</summary>
 
 | Operation | Route | Permission |
 |---|---|---|
@@ -314,6 +386,12 @@ The node can also be used as a tool of an n8n AI agent.
 | Empty the message queue ⚠ | `DELETE /api/v1/devices/{device}/message-queue/all` | `accounts:operate` |
 | Get the connection status | `GET /api/v1/devices/{device}/status` | `accounts:read` |
 | Get a token for the WhatsApp Web extension | `POST /api/v1/devices/{device}/extension-token` | `accounts:write` |
+| Create a number to connect by QR ⚠ | `POST /api/v1/devices` | `accounts:operate` |
+| Get a number's QR code ⚠ | `GET /api/v1/devices/{device}/qr` | `accounts:operate` |
+| List connect links "return all" | `GET /api/v1/connect-links` | `accounts:read` |
+| Create a connect link ⚠ | `POST /api/v1/connect-links` | `accounts:operate` |
+| Get a connect link ⚠ | `GET /api/v1/connect-links/{link}` | `accounts:read` |
+| Revoke a connect link ⚠ | `DELETE /api/v1/connect-links/{link}` | `accounts:operate` |
 | Get a number's health | `GET /api/v1/devices/{device}/health` | `accounts:read` |
 | Refresh a number's health | `POST /api/v1/devices/{device}/health/refresh` | `accounts:write` |
 | Get the connection history "return all" | `GET /api/v1/devices/{device}/connection-history` | `accounts:read` |
@@ -332,13 +410,11 @@ The node can also be used as a tool of an n8n AI agent.
 
 | Operation | Route | Permission |
 |---|---|---|
-| List webhook subscriptions ⚠ | `GET /api/v1/webhooks` | `webhooks:read` |
+| List webhook subscriptions ⚠ "return all" | `GET /api/v1/webhooks` | `webhooks:read` |
 | Create a webhook subscription ⚠ | `POST /api/v1/webhooks` | `webhooks:write` |
 | Get a webhook subscription ⚠ | `GET /api/v1/webhooks/{id}` | `webhooks:read` |
 | Update a webhook subscription ⚠ | `PUT /api/v1/webhooks/{id}` | `webhooks:write` |
 | Delete a webhook subscription ⚠ | `DELETE /api/v1/webhooks/{id}` | `webhooks:write` |
-| List a subscription's deliveries ⚠ "return all" | `GET /api/v1/webhooks/{id}/deliveries` | `webhooks:read` |
-| Send a test event ⚠ | `POST /api/v1/webhooks/{id}/test` | `webhooks:write` |
 | List event types | `GET /api/v1/webhooks/events` | `accounts:read` |
 | List webhooks "return all" | `GET /api/v1/webhooks/endpoints` | `accounts:read` |
 | Create a webhook | `POST /api/v1/webhooks/endpoints` | `accounts:write` |
@@ -347,6 +423,8 @@ The node can also be used as a tool of an n8n AI agent.
 | Delete a webhook | `DELETE /api/v1/webhooks/endpoints/{id}` | `accounts:write` |
 | Choose a webhook's events | `PUT /api/v1/webhooks/endpoints/{id}/events` | `accounts:write` |
 | List a webhook's deliveries "return all" | `GET /api/v1/webhooks/endpoints/{id}/deliveries` | `accounts:read` |
+| List a subscription's deliveries ⚠ "return all" | `GET /api/v1/webhooks/{id}/deliveries` | `webhooks:read` |
+| Send a test event ⚠ | `POST /api/v1/webhooks/{id}/test` | `webhooks:write` |
 
 </details>
 
@@ -359,9 +437,15 @@ The node can also be used as a tool of an n8n AI agent.
 1. You choose the **Events** from the list. The list comes from Funnelchat's catalog (`GET /api/v1/webhooks/events`):
    it shows the types that can be subscribed to, the read permission each one needs, and marks the ones that are not
    emitted yet (`planned`). If the key cannot read the catalog (it needs `accounts:read`), it shows the list built into
-   the node, copied from the catalog of accounts `v1.4.24`: 53 types, among them `message.received`,
-   `message.status_changed`, `whatsapp_form.completed`, `group.message_received`, `group_action.completed` and
-   `group.reaction_added`.
+   the node, copied from the catalog of accounts `v1.5.97`: 58 types, among them the six of the first use
+   (`message.status_changed`, `message.received`, `device.connected`, `device.disconnected`,
+   `group_participant.joined` and `group_participant.left`), `whatsapp_form.completed`, `group.message_received` and
+   `group_action.completed`.
+
+   Events go **by name**, always: Funnelchat does not take `*`, and `message.status_changed` (the busiest one) is
+   never included by a wildcard. A list with `*`, or an empty one, stops the activation with an error before calling
+   the API. From an expression, the events may come as a list or as text separated by commas.
+
 2. When the workflow is **activated**, the node creates a subscription in Funnelchat (`POST /api/v1/webhooks`) with
    n8n's URL, those events and the description `n8n · <workflow name>`, and keeps the `id` and the secret Funnelchat
    returns only once.
@@ -387,7 +471,8 @@ events of those campaigns (`filters.campaign_ids`; with a filter, an event witho
 - **A key of the account owner**, with `webhooks:read` and `webhooks:write` and the read permission of the area of each
   event you choose (for example, `conversations:read` for `message.received`, `communities:read` for the group events).
   Without the one of an area, creating the subscription answers `422` on `events`.
-- **Room in the account:** there is a cap of 50 subscriptions per account.
+- **Room in the workspace:** there is a cap of 50 subscriptions per workspace. The subscription belongs to the
+  workspace of the key and receives only that workspace's events.
 
 ### What reaches the workflow
 
@@ -408,12 +493,14 @@ One item per delivery, with the event envelope as Funnelchat sends it:
 		},
 		"contact": { "id": 2001, "name": "Sample contact", "phone": "+5491100000000" },
 		"receiver": { "phone": "+5491100000001" },
-		"device_id": 4521
+		"device_id": 4521,
+		"workspace_id": 37
 	}
 }
 ```
 
-Delivery is "at least once": the same event may arrive twice with the same `id`. If your workflow does not tolerate
+Every event carries `data.workspace_id`: the workspace it belongs to, which is the one of your key (accounts
+`v1.5.97`). Delivery is "at least once": the same event may arrive twice with the same `id`. If your workflow does not tolerate
 duplicates, keep the processed `id`s and drop the ones you have already seen. The format of each type is in the
 portal's event catalog.
 
@@ -484,10 +571,12 @@ its README. By default it listens on `http://localhost:4010`.
 
    The credential test calls the sandbox's `GET /api/v1/me`.
 
-3. **Actions.** Any operation of the node works against the sandbox. Contacts, conversations and messages, tags, custom
-   fields, templates, WhatsApp forms, numbers and webhook subscriptions keep what you do; the rest answers an example
-   built from the specification. Sending with an API key is open in the sandbox, with the API's 24-hour window and
-   anti-spam guards, and every response carries `X-Request-Id`.
+3. **Actions.** Contacts, conversations and messages, tags, custom fields, templates, WhatsApp forms, numbers
+   (connecting them by QR and with connect links too) and webhook subscriptions keep what you do; most of the rest
+   answers an example built from the specification. Sending with an API key is open in the sandbox, with the API's
+   24-hour window and anti-spam guards, and every response carries `X-Request-Id`. The sandbox `0.2.0` does not have
+   **Send a message to a group** and **Get a group action** yet (`405` and `404`), nor `data.workspace_id` in its
+   events.
 4. **Trigger.** The sandbox accepts `http` and local URLs, so an n8n on `http://localhost:5678` receives the events.
    Activate the workflow with the **Funnelchat Trigger** and simulate an incoming message:
 
@@ -502,22 +591,29 @@ its README. By default it listens on `http://localhost:4010`.
    `http://localhost:5678/` publishing that port, or `http://host.docker.internal:5678/` if the sandbox runs in Docker
    too).
 
+   Nothing scans a QR in the sandbox: after **Create a number to connect by QR**, `POST /_sandbox/devices/{id}/connect`
+   connects it and sends `device.connected`. `POST /_sandbox/groups/participant-joined` (and `…/participant-left`), with
+   `{"group": {"uid": "…@g.us", "name": "…"}, "participant": {"phone": "…"}}`, sends the group events.
+
 5. **What the sandbox does not show you:** with the real API, n8n's URL has to be `https` and public (try it with
    `npx @funnelchat-hq/sandbox --require-https`).
 
-The end-to-end tests (`npm run test:e2e`, see [Development](#development)) passed on 2026-10-22 against the sandbox on
-`feat/inicial` @ `7e244b8`: send and read a message, file by URL, `X-Request-Id` in errors, the signed
-`message.status_changed` with the `client_reference`, and a WhatsApp form created, published, sent and completed
-through the trigger. By hand, on 2026-10-16 with n8n 2.25.7 and the sandbox @ `7a1b3d8`: the credential test, a
-workflow with "Create or update a contact" and "List tags", and the full trigger cycle.
+The end-to-end tests (`npm run test:e2e`, see [Development](#development)) passed on 2026-11-04 against the sandbox
+`0.2.0` (`main` @ `b3b4513`): the first use of this README (**Send a message** and the trigger up to `read`, with the
+`client_reference`), a number created by QR, its QR and `device.connected` through the trigger, a connect link
+created, read, listed by reference and revoked, the group participant events, sending and reading a message, file by
+URL, `X-Request-Id` in errors, and a WhatsApp form created, published, sent and completed through the trigger. By
+hand, on 2026-10-16 with n8n 2.25.7 and the sandbox @ `7a1b3d8`: the credential test, a workflow with "Create or update
+a contact" and "List tags", and the full trigger cycle.
 
 ## Regenerating
 
 The node's operations are not written by hand: they come from `spec/funnelchat.json` with `npm run generate`. When
 the portal publishes a new specification:
 
-1. Copy the portal's unified specification (`out/specs/funnelchat.json`, built by its build) to
-   `spec/funnelchat.json`.
+1. Copy the portal's **full** unified specification (`generated/specs/funnelchat-completa.json`, built by its
+   `npm run build`) to `spec/funnelchat.json`. Not the published `/specs/funnelchat.json`: that one only carries the
+   operations the portal shows, and generating from it would drop the rest from the node.
 2. Write down in `spec/PROVENANCE.md` where it came from: branch, commit, date and SHA-256
    (`shasum -a 256 spec/funnelchat.json`). The generator refuses to run if the SHA-256 is not there.
 3. Run `npm run generate`. It updates `nodes/Funnelchat/generated/operations.ts` and this README's operations table,
@@ -529,22 +625,30 @@ What changes on its own, without touching code: new operations, permissions, fie
 
 - **English texts.** The portal's specification is in Spanish. The name and purpose of each of its operations are in
   `scripts/operations.en.json`: a new operation without an entry makes the generator stop and ask for one.
-- **`scripts/generator.config.json`.** Which tags of the specification go into each resource, the English labels of
-  the fields (the ones not listed show their API name), `fieldDescriptions` to replace field descriptions of the
-  specification that are in Spanish or written for the domain's developers, and, in `operationNotes`, notices of what
-  a domain's code requires and its specification does not say. When regenerating, check whether those notices are
-  still needed.
-- **Supplements.** `spec/supplements/` has what the specification does not have yet: the webhook subscriptions of
-  accounts and, from conversations `v1.18.10`, sending with an API key, reading a message and the forms. They are
-  written in English. If a new specification includes a route of a regular supplement, the generator uses the
-  specification's and says the supplement is no longer needed. A supplement with `"replaces": true` (the conversations
-  one) wins over the specification, with the same `operationId`, and the generator says so on every run: when the
-  specification brings it up to date, remove it from the config.
+- **`scripts/generator.config.json`.** Which tags of the specification go into each resource; the English labels of
+  the fields (the ones not listed show their API name) and their English descriptions (`fieldDescriptionsByName`; a
+  description of the specification in Spanish is not shown, and the generator warns); in `operationNotes`, notices
+  of what a domain's code requires and its specification does not say (check on each regeneration whether they are
+  still needed); and what keeps saved workflows working when the specification changes what the node published:
+  `keepOperationValues` (a renamed operation keeps its old value), `keepFieldKinds` (a field keeps its kind),
+  `fieldDefaults` (the option shown first) and `extraParameters` (query fields the code reads and the specification
+  does not list).
+- **Supplements.** `spec/supplements/` has what the specification does not have yet: from conversations, the WhatsApp
+  forms and the poll and event invitation, which the node keeps; from communities `v2.35.5`, a message to a group.
+  They are written in English. If a new specification includes a route of a supplement, the generator uses the
+  specification's and says the supplement is no longer needed: remove it from the config then. A supplement with
+  `"replaces": true` wins over the specification instead, with the same `operationId`; none has it today.
 - **Event catalog.** `spec/webhook-events.json` is a copy of `GET /api/v1/webhooks/events` (the trigger's fallback
   list). Replace it with a new copy (for example `snapshots/accounts/events.json` of the portal), write it down in
   `spec/PROVENANCE.md`, add the English label of any new type to `scripts/events.en.json` and regenerate.
 - **Watch out for `operationId` changes.** The value of each operation in n8n is its `operationId`. If the
-  specification changes it, saved workflows with the old operation stop finding it.
+  specification changes one the node published, add it to `keepOperationValues` (it happened with "Get a message":
+  `message.showMessage` in the specification, `showMessage` in the node). Two tests guard this: every operation the
+  node has published (`test/fixtures/published-operations.json`) is still there in its resource, and the default
+  operation of each resource does not change.
+- **Compare before and after.** For the operations the node already had, look in the diff of
+  `generated/operations.ts` for a field that disappears, changes its `name` or kind, or becomes required: a saved
+  workflow could lose its value.
 
 ## Development
 
@@ -567,19 +671,20 @@ npm run dev                   # starts n8n on http://localhost:5678 with the nod
 - `nodes/shared/`: the transport (key, base URL, errors, `429`) and the signature check.
 - `test/`: the signature with the portal's vectors, building requests and pagination, the trigger's create, check and
   delete cycle, and the custom base URL.
-- `test/e2e/`: the node with real HTTP against the sandbox: send and read a message, file by URL, `X-Request-Id` in
-  errors, the trigger cycle with a really signed event, and a WhatsApp form end to end. Without
-  `FUNNELCHAT_SANDBOX_URL` it is skipped.
+- `test/e2e/`: the node with real HTTP against the sandbox: the first use, connecting a number by QR and with a
+  connect link, the group participant events, send and read a message, file by URL, `X-Request-Id` in errors, the
+  trigger cycle with a really signed event, and a WhatsApp form end to end. Without `FUNNELCHAT_SANDBOX_URL` it is
+  skipped.
 
 ## Sources and what is left to verify
 
-| What                                                    | Where it comes from                                                              | Status on 2026-10-22                                                                       |
-| ------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| The unified specification (most operations)             | developers-portal, the same one the portal publishes (domain snapshots of 13-10) | Published; the portal regenerates it from the production tags                              |
-| Sending with an API key, message by ID and forms        | conversations tag `v1.18.10` (production), read from the code                    | Open to API keys. The new `operationId`s are not checked against a generated specification |
-| Webhook subscriptions (trigger and Webhooks resource)   | accounts tag `v1.4.24` (production), read from the code                          | Open to API keys with `webhooks:read` / `webhooks:write`                                   |
-| The trigger's fallback event catalog                    | accounts tag `v1.4.24`, extracted from the code                                  | 54 types, 49 being emitted                                                                 |
-| The signature algorithm and vectors, the event envelope | developers-portal (`snippets/verificar-firma.js`, `tests/test_firmas.py`)        | Published                                                                                  |
-| The local sandbox of "Testing with the sandbox"         | funnelchat-sandbox `feat/inicial` @ `7e244b8`                                    | funnelchat-sandbox PR #1, not merged                                                       |
+| What                                                    | Where it comes from                                                                                                                           | Status on 2026-11-04                                                                                                                                                                                                      |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The full unified specification (most operations)        | developers-portal `main` @ `c90565e4` (`v0.6.0`), with the snapshots of accounts `v1.5.97`, conversations `v1.19.7` and communities `v2.35.5` | The versions in production on 2026-11-04                                                                                                                                                                                  |
+| WhatsApp forms, poll and event invitation               | conversations tag `v1.18.10`, read from the code and checked again against `v1.19.7` (production); the 15-10 copy of the specification        | Forms open to API keys, routed by api-edge; the portal leaves them out (its edge table is from 13-10). Poll and event are still closed to keys. `operationId`s of the forms not checked against a generated specification |
+| A message to a group, and the group action              | communities tag `v2.35.5` (production), read from the code                                                                                    | Open to API keys in production (`communities:send` to send); not in the specification because communities' snapshot was taken with group actions off. `operationId`s not checked against a generated specification        |
+| The trigger's fallback event catalog                    | accounts tag `v1.5.97`, extracted from the code                                                                                               | 59 types, 54 being emitted; every event carries `data.workspace_id`                                                                                                                                                       |
+| The signature algorithm and vectors, the event envelope | developers-portal (`snippets/verificar-firma.js`, `tests/test_firmas.py`)                                                                     | Published                                                                                                                                                                                                                 |
+| The local sandbox of "Testing with the sandbox"         | funnelchat-sandbox `0.2.0` (`main` @ `b3b4513`)                                                                                               | No group messages nor `workspace_id` yet                                                                                                                                                                                  |
 
 The details of each source are in [`spec/PROVENANCE.md`](spec/PROVENANCE.md).

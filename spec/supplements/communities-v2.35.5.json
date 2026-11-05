@@ -1,0 +1,263 @@
+{
+	"x-fc-supplement": {
+		"id": "communities-v2.35.5",
+		"title": "Sending a message to a group, and reading the group action, in communities",
+		"source": "communities tag v2.35.5 @ 2be913d45b123466cc9aa26a73343e9d2b1c68b1 (the one running in production on 2026-11-04), read only with git show",
+		"files": [
+			"back/app/Modules/GroupManagement/routes.php",
+			"back/app/Modules/GroupManagement/Controllers/Api/V2/ApiGroupActionController.php",
+			"back/app/Modules/GroupManagement/Requests/ApiGroupActions/SendGroupMessageRequest.php",
+			"back/app/Modules/GroupManagement/Resources/ApiGroupActionAcceptedResource.php",
+			"back/app/Modules/GroupManagement/Resources/ApiGroupActionResource.php",
+			"back/app/Modules/GroupManagement/Services/ApiGroupActions/ApiGroupActionTargetResolver.php",
+			"back/app/Modules/Shared/Catalog/ApiRouteCatalog.php",
+			"back/app/Modules/Shared/Support/ApiGroupActionsSwitch.php",
+			"back/app/Modules/Shared/Enums/ApiDocsGroup.php"
+		],
+		"reason": "The portal's unified specification (13-10 snapshot) does not have the public group actions. These two are the ones the first use needs: send a message to a group and read how it went. The operationIds follow the Scramble form (class.method) and are not checked against a generated specification; the tag is the one communities documents them under (ApiDocsGroup::GroupActions). When the portal publishes a unified specification that has them, remove this supplement from the config.",
+		"key_access": "ApiRouteCatalog: POST groups/{group}/messages is Send (communities:send), GET groups/actions/{action} is Read (communities:read). Both are part of the public group actions, which the setting API_GROUP_ACTIONS_ENABLED turns on; it is true in production (communities-api, confirmed by the user on 2026-11-04)."
+	},
+	"tags": [
+		{
+			"name": "Acciones de grupo",
+			"x-displayName": "Group actions",
+			"description": "Asynchronous actions on a WhatsApp group, such as sending it a message: they answer 202 with an action_id, and their outcome is read with Get a group action or arrives in group_action.completed and group_action.failed."
+		}
+	],
+	"paths": {
+		"/api/v1/groups/{group}/messages": {
+			"post": {
+				"operationId": "apiGroupAction.sendMessage",
+				"summary": "Send a message to a group",
+				"tags": [
+					"Acciones de grupo"
+				],
+				"parameters": [
+					{
+						"name": "group",
+						"in": "path",
+						"required": true,
+						"description": "The group's uid, as List groups returns it (for example 120363012345678901@g.us).",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"device_id": {
+										"type": "integer",
+										"description": "The number that sends: connected, and an admin of the group (a QR number) or the group's own number (an official one)."
+									},
+									"type": {
+										"type": "string",
+										"enum": [
+											"text",
+											"image",
+											"video",
+											"audio",
+											"document"
+										]
+									},
+									"text": {
+										"type": "string",
+										"minLength": 1,
+										"maxLength": 4096,
+										"description": "Only with type text, and required there."
+									},
+									"media_url": {
+										"type": "string",
+										"maxLength": 255,
+										"description": "Only with image, video, audio or document, and required there: a public https URL that ends in an extension WhatsApp accepts for the type."
+									},
+									"caption": {
+										"type": [
+											"string",
+											"null"
+										],
+										"maxLength": 1024,
+										"description": "Only with image or video."
+									},
+									"file_name": {
+										"type": [
+											"string",
+											"null"
+										],
+										"maxLength": 255,
+										"description": "Only with document: the name it arrives with."
+									}
+								},
+								"required": [
+									"device_id",
+									"type"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"202": {
+						"description": "Accepted: exactly {action_id, status: queued}.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"action_id": {
+											"type": "string",
+											"format": "uuid"
+										},
+										"status": {
+											"type": "string",
+											"enum": [
+												"queued"
+											]
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				"x-fc-permission": "communities:send",
+				"x-fc-domain": "communities",
+				"x-fc-purpose": "Sends a text or one media file to a WhatsApp group now, from one of your numbers. It answers at once with an action_id; the message goes out right after."
+			}
+		},
+		"/api/v1/groups/actions/{action}": {
+			"get": {
+				"operationId": "apiGroupAction.show",
+				"summary": "Get a group action",
+				"tags": [
+					"Acciones de grupo"
+				],
+				"parameters": [
+					{
+						"name": "action",
+						"in": "path",
+						"required": true,
+						"description": "The action_id the action answered.",
+						"schema": {
+							"type": "string",
+							"format": "uuid"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "The action.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"data": {
+											"$ref": "#/components/schemas/SupGroupAction"
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				"x-fc-permission": "communities:read",
+				"x-fc-domain": "communities",
+				"x-fc-purpose": "Gets the status (queued, running, completed or failed) and the result of a group action, such as a message sent to a group."
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"SupGroupAction": {
+				"type": "object",
+				"description": "A public group action (ApiGroupActionResource).",
+				"properties": {
+					"action_id": {
+						"type": "string",
+						"format": "uuid"
+					},
+					"type": {
+						"type": "string",
+						"description": "send_message for a message to a group."
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"queued",
+							"running",
+							"completed",
+							"failed"
+						]
+					},
+					"device_id": {
+						"type": [
+							"integer",
+							"null"
+						]
+					},
+					"group": {
+						"type": [
+							"object",
+							"null"
+						],
+						"properties": {
+							"uid": {
+								"type": "string"
+							},
+							"name": {
+								"type": [
+									"string",
+									"null"
+								]
+							}
+						}
+					},
+					"result": {
+						"type": "object",
+						"description": "For a message, result.message.uid is its ID in WhatsApp."
+					},
+					"reason": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "Why it failed."
+					},
+					"created_at": {
+						"type": [
+							"string",
+							"null"
+						],
+						"format": "date-time"
+					},
+					"started_at": {
+						"type": [
+							"string",
+							"null"
+						],
+						"format": "date-time"
+					},
+					"completed_at": {
+						"type": [
+							"string",
+							"null"
+						],
+						"format": "date-time"
+					},
+					"failed_at": {
+						"type": [
+							"string",
+							"null"
+						],
+						"format": "date-time"
+					}
+				}
+			}
+		}
+	}
+}
