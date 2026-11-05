@@ -40,8 +40,9 @@ workflows keep finding it. Every other operation the node had keeps its `operati
 
 **Sending by phone (conversations `v1.19.21`, in production since 2026-11-05).** In "Send a message"
 (`POST /api/v1/message/send-message`) and "Send a template", `contact_id` is optional when `phone` comes: a phone that
-is not a contact yet is created in the key's workspace, as `POST /contacts/update-or-create` does and with the send
-permission, and the answer carries `message.contact_id`. `whatsapp_id` (Meta's BSUID) works instead of `phone` only
+is not a contact yet is created in the key's workspace, as `POST /contacts/update-or-create` does and with what it
+needs (`conversations:write`, which includes send; without it, `403`), and the answer carries `message.contact_id`.
+Sending to a contact that already exists in the key's workspace only needs `conversations:send`. `whatsapp_id` (Meta's BSUID) works instead of `phone` only
 with an official number (`422` with a QR number). A phone of a contact of another workspace answers `404`; `phone` and
 `contact_id` together have to be the same contact (`422 recipient_mismatch`). In the node, **Phone** is a field of its
 own and the first one after the number, and **Contact ID** stays a field of its own, no longer required

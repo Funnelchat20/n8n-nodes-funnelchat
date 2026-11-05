@@ -2120,7 +2120,7 @@ export const OPERATIONS: OperationSpec[] = [
 		"method": "POST",
 		"path": "/api/v1/message/send-message",
 		"permission": "conversations:send",
-		"notice": "Say who receives it with Phone (with the country code): if it is not a contact of your account yet, it is created in your key's workspace (as Create or update a contact does) and the message's contact_id comes in the answer. A phone of a contact of another workspace answers 404. With Contact ID too, both have to be the same contact (422 recipient_mismatch). On an official number, the first message to a new contact has to be a template: a free message only goes out within 24 hours of the contact's last message. With an API key it answers 200 with the queued message (status queued) and its ID; the result comes later in the message.status_changed event. The WhatsApp guards apply: 24-hour window (422 window_closed), pace (429 rate_limited) and anti-blocking (422 antiblock_…); a contact created by the send stays even if a guard stops it.",
+		"notice": "Say who receives it with Phone (with the country code): if it is not a contact of your account yet, it is created in your key's workspace (as Create or update a contact does, so the key needs conversations:write; without it, 403) and the message's contact_id comes in the answer. To a contact you already have, conversations:send is enough. A phone of a contact of another workspace answers 404. With Contact ID too, both have to be the same contact (422 recipient_mismatch). On an official number, the first message to a new contact has to be a template: a free message only goes out within 24 hours of the contact's last message. With an API key it answers 200 with the queued message (status queued) and its ID; the result comes later in the message.status_changed event. The WhatsApp guards apply: 24-hour window (422 window_closed), pace (429 rate_limited) and anti-blocking (422 antiblock_…); a contact created by the send stays even if a guard stops it.",
 		"source": "spec",
 		"body": {
 			"required": true,
@@ -2144,7 +2144,7 @@ export const OPERATIONS: OperationSpec[] = [
 				"required": false,
 				"kind": "string",
 				"displayName": "Phone",
-				"description": "The recipient's phone with the country code, for example 5491122334455. No need to create the contact first. In the API: phone.",
+				"description": "The recipient's phone with the country code, for example 5491122334455. No need to create the contact first: a new phone becomes a contact, which takes conversations:write. In the API: phone.",
 				"valueType": "string",
 				"topLevel": true
 			},
@@ -3304,7 +3304,7 @@ export const OPERATIONS: OperationSpec[] = [
 		"method": "POST",
 		"path": "/api/v1/devices/{device}/templates/{template}/send-template",
 		"permission": "conversations:send",
-		"notice": "Say who receives it with Phone (with the country code), always, with or without Contact ID: if it is not a contact of your account yet, it is created in your key's workspace and the message's contact_id comes in the answer. A phone of a contact of another workspace answers 404; Phone and Contact ID have to be the same contact (422 recipient_mismatch). With an API key it answers 200 with the queued message (status queued) and its ID; the result comes in the message.status_changed event. A template does not need the 24-hour window.",
+		"notice": "Say who receives it with Phone (with the country code), always, with or without Contact ID: if it is not a contact of your account yet, it is created in your key's workspace (the key needs conversations:write for that; without it, 403) and the message's contact_id comes in the answer. To a contact you already have, conversations:send is enough. A phone of a contact of another workspace answers 404; Phone and Contact ID have to be the same contact (422 recipient_mismatch). With an API key it answers 200 with the queued message (status queued) and its ID; the result comes in the message.status_changed event. A template does not need the 24-hour window.",
 		"source": "spec",
 		"body": {
 			"required": false,
@@ -3338,7 +3338,7 @@ export const OPERATIONS: OperationSpec[] = [
 				"required": false,
 				"kind": "string",
 				"displayName": "Phone",
-				"description": "The recipient's phone with the country code, for example 5491122334455. No need to create the contact first. It goes always, with or without Contact ID. In the API: phone.",
+				"description": "The recipient's phone with the country code, for example 5491122334455. No need to create the contact first: a new phone becomes a contact, which takes conversations:write. It goes always, with or without Contact ID. In the API: phone.",
 				"valueType": "string",
 				"topLevel": true
 			},

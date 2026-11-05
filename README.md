@@ -18,8 +18,8 @@ know when they are read, receive messages and work with your groups, from your w
 5. **Send a message and know when it was read**: a workflow with two nodes.
    - **Funnelchat**: **Conversations and Messages → Send a message**. **Number ID**: your number's `id`. **Phone**:
      the recipient's, with the country code (`5491100000000`). No need to create the contact first: if the phone is
-     new, Funnelchat creates it in your key's workspace. **Additional Fields**: **Text** `Hello!` and **Client
-     Reference** `order-981`.
+     new, Funnelchat creates it in your key's workspace (that takes `conversations:write`). **Additional Fields**:
+     **Text** `Hello!` and **Client Reference** `order-981`.
    - **Funnelchat Trigger**: **Event Names or IDs**: Message status changed (`message.status_changed`).
 
    Activate the workflow (that subscribes the trigger) and click **Execute step** on the **Funnelchat** node. The send
@@ -85,8 +85,11 @@ know when they are read, receive messages and work with your groups, from your w
 </details>
 
 **What the key needs** for all of this: `accounts:read` (list numbers, and the credential test), `accounts:operate`
-(connect a number), `conversations:send` (send; it also creates the contact of a new phone), `conversations:read`,
-`webhooks:read` and `webhooks:write` (the trigger on message events). A key with full access has them all.
+(connect a number), `conversations:write` (sending to a phone that is not a contact yet creates the contact, as
+**Create or update a contact** does; it includes `conversations:send`, and without it that send answers `403`),
+`conversations:read`, `webhooks:read` and `webhooks:write` (the trigger on message events). Sending to a phone or a
+contact you already have, in your key's workspace, only needs `conversations:send`. A key with full access has them
+all.
 
 ### Receive messages
 
