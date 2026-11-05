@@ -414,9 +414,11 @@ function buildOperation(ctx, doc, path, method, op, resource, source) {
 	const notices = [];
 	// `:operate` routes are irreversible unless the source says otherwise: accounts also puts there the ones that give
 	// control of a number (create one, its QR, connect links), with `x-fc-destructive: false`.
+	// Without the flag, only accounts:operate means irreversible (its gate says so); communities:operate is any action
+	// on a group in WhatsApp, such as creating one.
 	const destructive =
 		op['x-fc-destructive'] === true ||
-		(op['x-fc-destructive'] !== false && String(op['x-fc-permission'] ?? '').endsWith(':operate'));
+		(op['x-fc-destructive'] === undefined && op['x-fc-permission'] === 'accounts:operate');
 	if (destructive) {
 		notices.push(
 			String(op['x-fc-permission'] ?? '').endsWith(':operate')
@@ -454,17 +456,28 @@ function buildOperation(ctx, doc, path, method, op, resource, source) {
 	const description = permission ? `${purpose} Permission: ${permission}.` : purpose;
 
 	// Sorting keeps the generated parameters stable and in the order the node shows them.
+	// `topLevelFields` in the config: optional fields shown as fields of their own, after the required ones and in the
+	// config's order, instead of inside "Filters" or "Additional Fields". A field that was required and stops being so
+	// stays where saved workflows have its value; a new way of doing something can be the first thing the node shows.
+	const topLevel = config.topLevelFields?.[operationId] ?? [];
+	for (const name of topLevel) {
+		const param = params.find((p) => p.apiName === name && p.location !== 'path');
+		if (!param)
+			warnings.push(`${operationId}: topLevelFields names ${name}, which it does not have`);
+		else if (!param.required) param.topLevel = true;
+	}
 	const order = (p) =>
 		p.location === 'path'
 			? 0
-			: p.required
+			: p.required || p.topLevel
 				? p.location === 'query'
 					? 1
 					: 2
 				: p.location === 'query'
 					? 3
 					: 4;
-	params.sort((a, b) => order(a) - order(b));
+	const within = (p) => (p.topLevel ? 1 + topLevel.indexOf(p.apiName) : 0);
+	params.sort((a, b) => order(a) - order(b) || within(a) - within(b));
 
 	// The value saved workflows use is the operationId the node published first: when the specification renames an
 	// operation, `keepOperationValues` maps its new operationId to the old value, so those workflows keep working.
@@ -625,7 +638,17 @@ export function generate(root = ROOT) {
 		value: r.value,
 		name: r.name,
 		description: r.description ?? '',
+		// Pinned in the config: a saved workflow that never changed the operation runs the default one.
+		...(r.defaultOperation ? { defaultOperation: r.defaultOperation } : {}),
 	}));
+	for (const r of resources)
+		if (
+			r.defaultOperation &&
+			!ordered.some((o) => o.resource === r.value && o.value === r.defaultOperation)
+		)
+			throw new Error(
+				`Resource ${r.value}: its defaultOperation ${r.defaultOperation} is not one of its operations`,
+			);
 
 	const source = {
 		title: `${spec.info?.title ?? 'Funnelchat API'} ${spec.info?.version ?? ''}`.trim(),

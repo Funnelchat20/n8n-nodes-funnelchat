@@ -12,25 +12,24 @@ fields from `scripts/generator.config.json`. The supplements are written in Engl
 
 | Item | Value |
 |---|---|
-| What it is | Full unified OpenAPI 3.1 specification of the public API (203 routes, 248 operations, 29 webhooks), behind `https://api.funnelchat.com`. Not the published one: `/specs/funnelchat.json` on the portal carries only the 23 operations it shows. Never generate from that one |
+| What it is | Full unified OpenAPI 3.1 specification of the public API (264 operations, 29 webhooks), behind `https://api.funnelchat.com`. Not the published one: `/specs/funnelchat.json` on the portal carries only the operations it shows. Never generate from that one |
 | Repository | `developers-portal` (Funnelchat20) |
-| Commit | `main` @ `c90565e4f1aaaa8fe8ee6fb7fc24c4e8e274103d` (merge of PR #33, deployed as `v0.6.0` on 2026-11-04) |
-| File | `generated/specs/funnelchat-completa.json`, built by the portal's `npm run build`; handed over by the coordination session on 2026-11-04 (this repository did not fetch the portal) |
-| Domain snapshots | accounts `v1.5.97` (`558332bcf`), conversations `v1.19.7` (`4e35ddb83`), communities `v2.35.5` (`2be913d4`), the versions in production; see `x-fc-sources` in the file itself |
-| SHA-256 | `0f451feaba59418f3a556f58856f841f12570973fd6525103e8cc0128ab64374` |
-| Copied | 2026-11-04 |
+| Commit | `main` @ `f5464516` (merge of PR #37, deployed as `v0.6.2` on 2026-11-05) |
+| File | `generated/specs/funnelchat-completa.json`, built by the portal's `npm run build`; handed over by the coordination session on 2026-11-05 (this repository did not fetch the portal) |
+| Domain snapshots | accounts `v1.5.97` (`558332bcf`), conversations `main` @ `f2937a71` (= `v1.19.21`, in production since 2026-11-05 16:45), communities `v2.35.5` (`2be913d4`, taken with the group actions on); see `x-fc-sources` in the file itself |
+| SHA-256 | `8228ea7369daed0655b779ca6af381355a6c1cc13dd702ed6e9c322779bafe94` |
+| Copied | 2026-11-05 |
 
-It replaces the copy of 2026-10-15 (developers-portal `feat/openapi-unificada` @ `0ef4abb`, 230 operations, SHA-256
-`8bbbae569b4cab520884db98f28204156c1bd6c629578bee609343c193e0dadb`), whose gaps the supplements of
-`accounts-webhook-subscriptions`, `conversations-v1.18.10` and `accounts-v1.5.97` covered. This one has all of their
-routes except the WhatsApp forms, so those three supplements were removed (see "Removed on 2026-11-04"). What it
-**still does not have** is covered by the supplements below:
+It replaces the copy of 2026-11-04 (developers-portal `main` @ `c90565e4`, `v0.6.0`, 248 operations, SHA-256
+`0f451feaba59418f3a556f58856f841f12570973fd6525103e8cc0128ab64374`), which replaced the one of 2026-10-15
+(`feat/openapi-unificada` @ `0ef4abb`, 230 operations, SHA-256 `8bbbae56…`). What changed with this one: sending by
+phone without a contact (conversations `v1.19.21`, below), and the 16 public group actions of communities, now in the
+specification, so the `communities-v2.35.5` supplement was removed (see "Removed"). What it **still does not have** is
+covered by the supplements below:
 
-- the 18 WhatsApp form routes (`/api/v1/forms…`): open to API keys in conversations `v1.19.7` and routed by api-edge in
+- the 18 WhatsApp form routes (`/api/v1/forms…`): open to API keys in conversations `v1.19.21` and routed by api-edge in
   production, but the portal leaves them out (`x-fc-excluded-routes`, `edge_domain: null`) because its edge table
   (`config/borde.json`) is a copy of api-edge `4b3c1754a` (13-10), from before forms were routed;
-- sending a message to a group and reading the group action (communities `v2.35.5`): communities' snapshot was taken
-  with the group actions off locally, so the two routes are not in it; in production they are on;
 - the poll and the event invitation (`interactiveMessage.storePoll`, `.storeEvent`): still not open to API keys, so
   the specification leaves them out; the node had them and keeps them.
 
@@ -39,8 +38,19 @@ routes except the WhatsApp forms, so those three supplements were removed (see "
 supplement). `keepOperationValues` in `scripts/generator.config.json` keeps `showMessage` as its value in n8n, so saved
 workflows keep finding it. Every other operation the node had keeps its `operationId` and route.
 
-**Production on 2026-11-04**, the versions every supplement and the catalog were checked against: accounts `v1.5.97`
-@ `558332bcf`, conversations `v1.19.7` @ `4e35ddb83`, communities `v2.35.5` @ `2be913d45`, platform-gate `v0.9.1` @
+**Sending by phone (conversations `v1.19.21`, in production since 2026-11-05).** In "Send a message"
+(`POST /api/v1/message/send-message`) and "Send a template", `contact_id` is optional when `phone` comes: a phone that
+is not a contact yet is created in the key's workspace, as `POST /contacts/update-or-create` does and with what it
+needs (`conversations:write`, which includes send; without it, `403`), and the answer carries `message.contact_id`.
+Sending to a contact that already exists in the key's workspace only needs `conversations:send`. `whatsapp_id` (Meta's BSUID) works instead of `phone` only
+with an official number (`422` with a QR number). A phone of a contact of another workspace answers `404`; `phone` and
+`contact_id` together have to be the same contact (`422 recipient_mismatch`). In the node, **Phone** is a field of its
+own and the first one after the number, and **Contact ID** stays a field of its own, no longer required
+(`topLevelFields` in the config), so a saved workflow that passes a contact keeps working.
+
+**Production**, the versions every supplement and the catalog were checked against: accounts `v1.5.97` @ `558332bcf`,
+conversations `v1.19.7` @ `4e35ddb83` (`v1.19.21` @ `f2937a71` on 2026-11-05: the forms and the absence of poll and
+event did not change), communities `v2.35.5` @ `2be913d45`, platform-gate `v0.9.1` @
 `cc2cee4b2` and api-edge `main` @ `975d815` (deployed to production on 2026-10-25; its latest tag, `v0.3.0` @
 `a1c5b35`, is older and does not route `/api/v1/connect-links`). All of them read with `git show <commit>:<file>`,
 never from a working tree.
@@ -56,6 +66,11 @@ workspace of every subscription that receives it (`back/app/Modules/Webhook/Serv
 checked against the production tags above.
 
 - **`keepOperationValues`:** `message.showMessage` → `showMessage` (see above).
+- **`topLevelFields`:** optional fields shown as fields of their own: **Phone** and **Contact ID** of "Send a message"
+  and "Send a template" (see "Sending by phone").
+- **`defaultOperation`** of each resource: the operation a saved workflow runs if it never changed it. Pinned because
+  new operations of the specification could otherwise become the default (for example "Get a group action" in
+  Groups).
 - **`keepFieldKinds`:** the node published `events` of "Create" and "Update a webhook subscription" as text separated
   by commas. The specification now gives them as a list of the catalog's types, which in n8n would be another kind of
   field. They stay as text, so the value a saved workflow has still fits. The same goes for `orderBy` and
@@ -78,7 +93,7 @@ written from the code on 2026-10-22. Sending a form (`whatsappFormSend.store`) n
 | Item | Value |
 |---|---|
 | Repository | `conversations` (Funnelchat20), read only |
-| Commit | tag `v1.18.10` @ `a580a3d0020c98d9777c4f05437454c52af7ee55`; checked again against tag `v1.19.7` @ `4e35ddb835249d37576597cc9a965c3e16ccb6d2` (production on 2026-11-04). Bodies and responses did not change. A number of another workspace now answers `404` |
+| Commit | tag `v1.18.10` @ `a580a3d0020c98d9777c4f05437454c52af7ee55`; checked again against tag `v1.19.7` @ `4e35ddb835249d37576597cc9a965c3e16ccb6d2` (production on 2026-11-04). Bodies and responses did not change. A number of another workspace now answers `404`. On 2026-11-05, against `v1.19.21` @ `f2937a71`: the same 18 routes in `allowed`, and no change in the forms' code |
 | Access of API keys | `back/config/platform-gate.php`: the 18 routes are in `allowed` (`conversations:read` the `GET`s, `conversations:write` the rest) |
 | Edge routing | `api-edge` `main` @ `975d815` (production): `/api/v1/forms…` goes to conversations, since `a144b49` (2026-10-22) |
 | Why it is still a supplement | The portal leaves the routes out (`x-fc-excluded-routes`, `edge_domain: null`): its `config/borde.json` copies api-edge `4b3c1754a` (2026-10-13), from before forms were routed |
@@ -95,36 +110,21 @@ keys in conversations `v1.19.7`: they are not in `back/config/platform-gate.php`
 `403 route_not_available`, and the notice says so. The full specification leaves them out for that reason. The node
 had them, and saved workflows may use them, so they stay.
 
-## `supplements/communities-v2.35.5.json` — a message to a group
-
-The group step of the first use: send a message to a group, and read how it went.
-
-- `POST /api/v1/groups/{group}/messages` (`apiGroupAction.sendMessage`, `communities:send`): a text or one media file,
-  sent now from one of the account's numbers. It answers `202 {action_id, status: "queued"}`.
-- `GET /api/v1/groups/actions/{action}` (`apiGroupAction.show`, `communities:read`): the status and result of a group
-  action; for a message, `result.message.uid` is its ID in WhatsApp. The outcome also arrives in the
-  `group_action.completed` and `group_action.failed` events.
-
-They are not in the full specification: communities' snapshot was taken with the group actions off locally. Those
-`operationId`s follow the Scramble form (`class.method`, the controller is `ApiGroupActionController`) and are **not
-checked** against a generated specification. The tag, `Acciones de grupo`, is the one communities documents them under
-(`ApiDocsGroup::GroupActions`), so the config maps them to the Groups resource without changes when the specification
-brings them.
-
-| Item | Value |
-|---|---|
-| Repository | `communities` (Funnelchat20), read only |
-| Commit | tag `v2.35.5` @ `2be913d45b123466cc9aa26a73343e9d2b1c68b1`, the one running in production on 2026-11-04 (`v2.35.4` fixed `GET /groups/{group}/messages`, which the node already had) |
-| Access of API keys | `back/app/Modules/Shared/Catalog/ApiRouteCatalog.php`: `POST groups/{group}/messages` is `Send` (`communities:send`), `GET groups/actions/{action}` is `Read` (`communities:read`). They are part of the public group actions, which `API_GROUP_ACTIONS_ENABLED` turns on (`Shared/Support/ApiGroupActionsSwitch.php`): it is `true` in production (communities-api, confirmed by the user on 2026-11-04; the code does not show it) |
-| Routes | `back/app/Modules/GroupManagement/routes.php` (block "Public group actions") |
-| Bodies and responses | `GroupManagement/Requests/ApiGroupActions/SendGroupMessageRequest.php`, `Controllers/Api/V2/ApiGroupActionController.php`, `Resources/ApiGroupActionAcceptedResource.php`, `ApiGroupActionResource.php`, `Services/ApiGroupActions/ApiGroupActionTargetResolver.php` |
-| Edge routing | `api-edge` `main` @ `975d815`: `/api/v1/groups…` goes to communities |
-| Written | 2026-11-04 |
-
-## Removed on 2026-11-04
+## Removed
 
 The full specification has every route of these supplements, so they were removed from the config and from
-`spec/supplements/`. They stay in the git history:
+`spec/supplements/`. They stay in the git history.
+
+On 2026-11-05:
+
+- `communities-v2.35.5.json`: sending a message to a group (`apiGroupAction.sendMessage`) and reading the group action
+  (`apiGroupAction.show`), written from communities `v2.35.5`. The specification has them with the same
+  `operationId`s, together with the other 14 public group actions (create a group, participants, admins, name,
+  description, photo, settings, invite link, join requests), which come into the Groups resource with it. Group
+  actions are on in production (`API_GROUP_ACTIONS_ENABLED=true`, confirmed by the user on 2026-11-04). Their notices
+  and field texts are now in the config.
+
+On 2026-11-04:
 
 - `accounts-webhook-subscriptions.json`: the unified webhook subscriptions (`/api/v1/webhooks`), from accounts
   `v1.4.24`. They were checked again against `v1.5.97`, and the bodies and responses had not changed. A subscription

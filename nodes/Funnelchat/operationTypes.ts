@@ -40,6 +40,8 @@ export interface ParamSpec {
 	/** `date` values are sent as `YYYY-MM-DD`; `date-time` as given. */
 	format?: 'date' | 'date-time';
 	options?: Array<string | number>;
+	/** An optional field shown as a field of its own instead of inside a collection (`topLevelFields`). */
+	topLevel?: boolean;
 }
 
 export interface ListSpec {
@@ -79,6 +81,8 @@ export interface ResourceSpec {
 	value: string;
 	name: string;
 	description: string;
+	/** The operation selected by default, pinned in the config: saved workflows that never changed it run this one. */
+	defaultOperation?: string;
 }
 
 export interface SpecSource {

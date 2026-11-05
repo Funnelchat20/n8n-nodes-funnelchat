@@ -483,5 +483,61 @@
 	"message.templateMetrics": {
 		"name": "Get a template's metrics",
 		"purpose": "Gets what Meta reports for a template of an official number, day by day (UTC) and in total: sent, delivered and read, clicks per button and, when Meta reports it, the cost."
+	},
+	"apiGroupAction.create": {
+		"name": "Create a group",
+		"purpose": "Creates a WhatsApp group from one of your numbers, with up to 20 initial participants, a description and, on an official number, approval to join."
+	},
+	"apiGroupAction.addParticipants": {
+		"name": "Add participants to a group",
+		"purpose": "Adds up to 20 phones to a group, from a number that administers it."
+	},
+	"apiGroupAction.removeParticipants": {
+		"name": "Remove participants from a group",
+		"purpose": "Removes up to 20 phones from a group in one WhatsApp operation."
+	},
+	"apiGroupAction.promoteAdmins": {
+		"name": "Make participants admins",
+		"purpose": "Makes up to 20 phones admins of a group; a phone that is not in the group is added first. QR numbers only."
+	},
+	"apiGroupAction.demoteAdmins": {
+		"name": "Remove the admin role",
+		"purpose": "Takes the admin role away from up to 20 phones of a group. QR numbers only."
+	},
+	"apiGroupAction.updateName": {
+		"name": "Rename a group",
+		"purpose": "Changes the name of a group in WhatsApp, as you send it (up to 100 characters, without campaign numbering)."
+	},
+	"apiGroupAction.updateDescription": {
+		"name": "Change a group's description",
+		"purpose": "Changes the description of a group in WhatsApp (up to 2048 characters); an empty one removes it."
+	},
+	"apiGroupAction.updatePhoto": {
+		"name": "Change a group's photo",
+		"purpose": "Changes the photo of a group from an https URL of a jpg, jpeg or png image. QR numbers only."
+	},
+	"apiGroupAction.updateSettings": {
+		"name": "Change who can write in a group",
+		"purpose": "Sets whether the members can send messages; blocking it also leaves only the admins editing the group's information. QR numbers only."
+	},
+	"apiGroupAction.renewInviteLink": {
+		"name": "Renew a group's invite link",
+		"purpose": "Renews the invite link of a group: an official number revokes it and WhatsApp makes a new one; a QR number reads the current one again without revoking it."
+	},
+	"apiGroupAction.inviteLink": {
+		"name": "Get a group's live invite link",
+		"purpose": "Gets the current invite link of a group, read live from WhatsApp with the number given in Number ID."
+	},
+	"apiGroupAction.joinRequests": {
+		"name": "List a group's join requests",
+		"purpose": "Lists the pending requests to join a group (up to 100, in WhatsApp's order), read live with the number given in Number ID."
+	},
+	"apiGroupAction.approveJoinRequests": {
+		"name": "Approve join requests",
+		"purpose": "Approves pending requests to join a group, for the given phones, if they fit in the free places of the group (capacity_full otherwise)."
+	},
+	"apiGroupAction.rejectJoinRequests": {
+		"name": "Reject join requests",
+		"purpose": "Rejects pending requests to join a group, for the given phones."
 	}
 }

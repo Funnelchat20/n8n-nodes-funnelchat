@@ -1,5 +1,5 @@
 {
-	"$comment": "Every operation the node has published, as resource and value (the n8n option saved workflows use): the 128 of 0.1.1 and the 8 that 0.2.0 added before regenerating from the full unified specification of 2026-11-04. test/generate.test.ts checks each one is still there, in the same resource. Add new operations here when they are released; never remove one.",
+	"$comment": "Every operation the node has published, as resource and value (the n8n option saved workflows use): the 128 of 0.1.1, the 11 that 0.2.0 added and the 14 group actions of 0.2.1. test/generate.test.ts checks each one is still there, in the same resource. Add new operations here when they are released; never remove one.",
 	"operations": [
 		{
 			"resource": "contact",
@@ -544,6 +544,74 @@
 		{
 			"resource": "webhook",
 			"value": "webhookDelivery.index"
+		},
+		{
+			"resource": "conversation",
+			"value": "message.markMessageRead"
+		},
+		{
+			"resource": "conversation",
+			"value": "message.typingIndicator"
+		},
+		{
+			"resource": "template",
+			"value": "message.templateMetrics"
+		},
+		{
+			"resource": "group",
+			"value": "apiGroupAction.create"
+		},
+		{
+			"resource": "group",
+			"value": "apiGroupAction.addParticipants"
+		},
+		{
+			"resource": "group",
+			"value": "apiGroupAction.removeParticipants"
+		},
+		{
+			"resource": "group",
+			"value": "apiGroupAction.promoteAdmins"
+		},
+		{
+			"resource": "group",
+			"value": "apiGroupAction.demoteAdmins"
+		},
+		{
+			"resource": "group",
+			"value": "apiGroupAction.updateName"
+		},
+		{
+			"resource": "group",
+			"value": "apiGroupAction.updateDescription"
+		},
+		{
+			"resource": "group",
+			"value": "apiGroupAction.updatePhoto"
+		},
+		{
+			"resource": "group",
+			"value": "apiGroupAction.updateSettings"
+		},
+		{
+			"resource": "group",
+			"value": "apiGroupAction.renewInviteLink"
+		},
+		{
+			"resource": "group",
+			"value": "apiGroupAction.inviteLink"
+		},
+		{
+			"resource": "group",
+			"value": "apiGroupAction.joinRequests"
+		},
+		{
+			"resource": "group",
+			"value": "apiGroupAction.approveJoinRequests"
+		},
+		{
+			"resource": "group",
+			"value": "apiGroupAction.rejectJoinRequests"
 		}
 	]
 }
