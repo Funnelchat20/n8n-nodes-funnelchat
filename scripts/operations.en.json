@@ -543,5 +543,9 @@
 	"v2.apiGroupImport": {
 		"name": "Follow a group",
 		"purpose": "Starts following a WhatsApp group of your number without writing to it: imports it into your account, and from then on you get who joins and who leaves. If it is already in your account, it is not imported again."
+	},
+	"messageTemplate.sync": {
+		"name": "Bring templates from Meta",
+		"purpose": "Use it when you created or changed a template directly in Meta and it does not show in your list yet (they arrive on their own once a day): it brings them now. Official WhatsApp numbers only."
 	}
 }
