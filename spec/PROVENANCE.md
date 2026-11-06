@@ -12,20 +12,23 @@ fields from `scripts/generator.config.json`. The supplements are written in Engl
 
 | Item | Value |
 |---|---|
-| What it is | Full unified OpenAPI 3.1 specification of the public API (265 operations), behind `https://api.funnelchat.com`. Not the published one: `/specs/funnelchat.json` on the portal carries only the operations it shows. Never generate from that one |
+| What it is | Full unified OpenAPI 3.1 specification of the public API (266 operations), behind `https://api.funnelchat.com`. Not the published one: `/specs/funnelchat.json` on the portal carries only the operations it shows. Never generate from that one |
 | Repository | `developers-portal` (Funnelchat20) |
-| Commit | `main` @ `99928866` (merge of PR #39, deployed as `v0.6.3` on 2026-11-05) |
-| File | `generated/specs/funnelchat-completa.json`, built by the portal's `npm run build`; handed over by the coordination session on 2026-11-05 (this repository did not fetch the portal) |
-| Domain snapshots | accounts `v1.5.97` (`558332bcf`), conversations `main` @ `f2937a71` (= `v1.19.21`, in production since 2026-11-05 16:45), communities `feat/grupos-sin-panel` @ `54643bbd` (the application code of `v2.35.7`, in production since 2026-11-05, taken with the group actions on); see `x-fc-sources` in the file itself |
-| SHA-256 | `0ffaad2b25733d28b2cc07dde8152400c3c68974b3515e71e116ce599312b0fa` |
-| Copied | 2026-11-05 |
+| Commit | `feat/plantillas-de-meta` @ `51c0aeb` (`v0.6.7`, not published on 2026-11-06) |
+| File | `generated/specs/funnelchat-completa.json`, built by the portal's `npm run build`; handed over by the coordination session on 2026-11-06 (this repository did not fetch the portal) |
+| Domain snapshots | accounts `v1.5.97` (`558332bcf`), conversations with `v1.19.37` (in production since 2026-11-06: bringing a number's templates from Meta, PR #2936), communities `feat/grupos-sin-panel` @ `54643bbd` (the application code of `v2.35.7`, in production since 2026-11-05, taken with the group actions on); see `x-fc-sources` in the file itself |
+| SHA-256 | `38ae497ab7e6089b31b589e1f93c2289524348d581796eba109568885642813c` |
+| Copied | 2026-11-06 |
 
-It replaces the copy of 2026-11-05 (`main` @ `f5464516`, `v0.6.2`, 264 operations, SHA-256 `8228ea73…`). Before it:
+It replaces the copy of 2026-11-05 (`main` @ `99928866`, `v0.6.3`, 265 operations, SHA-256 `0ffaad2b…`), and that one
+the copy of 2026-11-05 (`main` @ `f5464516`, `v0.6.2`, 264 operations, SHA-256 `8228ea73…`). Before them:
 2026-11-04 (`main` @ `c90565e4`, `v0.6.0`, 248 operations, SHA-256 `0f451fea…`) and 2026-10-15
 (`feat/openapi-unificada` @ `0ef4abb`, 230 operations, SHA-256 `8bbbae56…`). With the copy of 2026-11-05 came sending
 by phone without a contact (conversations `v1.19.21`, below) and the 16 public group actions of communities, so the
-`communities-v2.35.5` supplement was removed (see "Removed"). With this one comes following a group (communities
-`v2.35.7`, below). What it **still does not have** is
+`communities-v2.35.5` supplement was removed (see "Removed"). With the copy of `99928866` came following a group
+(communities `v2.35.7`, below). With this one comes bringing a number's templates from Meta
+(`POST /api/v1/devices/{device}/templates`, `messageTemplate.sync`, conversations `v1.19.37`): "Bring templates from Meta"
+in the node. What it **still does not have** is
 covered by the supplements below:
 
 - the 18 WhatsApp form routes (`/api/v1/forms…`): open to API keys in conversations `v1.19.21` and routed by api-edge in

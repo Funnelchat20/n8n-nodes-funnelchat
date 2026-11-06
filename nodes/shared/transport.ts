@@ -127,6 +127,9 @@ export function apiError(
 
 	const details: string[] = [];
 	if (code) details.push(`error: ${code}`);
+	// Meta's own error code, when the API passes it on (for example `meta_rejected` of Bring templates from Meta).
+	if (data.meta_code !== undefined && data.meta_code !== null)
+		details.push(`meta_code: ${String(data.meta_code)}`);
 	if (data.errors && typeof data.errors === 'object') {
 		for (const [field, messages] of Object.entries(data.errors as IDataObject)) {
 			const list = Array.isArray(messages) ? messages.map(String) : [String(messages)];

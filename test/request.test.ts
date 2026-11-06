@@ -551,6 +551,35 @@ describe('running the node with simulated responses', () => {
 		]);
 	});
 
+	it('Bring templates from Meta: POST without a body, the status as an item, and meta_rejected with its meta_code', async () => {
+		const done = executeContext({
+			params: { resource: 'template', operation: 'messageTemplate.sync', device: '3' },
+			responses: [{ status: 202, body: { status: 'completed' } }],
+		});
+		const [out] = await node.execute.call(done.ctx);
+		expect(requestLine(done.calls[0])).toBe('POST /api/v1/devices/3/templates');
+		expect(done.calls[0].options.body).toBeUndefined();
+		expect(out.map((i) => i.json)).toEqual([{ status: 'completed' }]);
+
+		const refused = executeContext({
+			params: { resource: 'template', operation: 'messageTemplate.sync', device: '3' },
+			responses: [
+				{
+					status: 422,
+					body: {
+						error: 'meta_rejected',
+						message: 'Meta rechazó la lectura de las plantillas.',
+						meta_code: 190,
+					},
+				},
+			],
+		});
+		const error = (await node.execute.call(refused.ctx).catch((e: unknown) => e)) as NodeApiError;
+		expect(error).toBeInstanceOf(NodeApiError);
+		expect(error.description).toContain('error: meta_rejected');
+		expect(error.description).toContain('meta_code: 190');
+	});
+
 	it('a contact card returns one item per message; a forward, one per target', async () => {
 		const card = executeContext({
 			params: {

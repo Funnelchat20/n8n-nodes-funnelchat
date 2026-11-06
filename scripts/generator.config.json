@@ -188,7 +188,8 @@
 		"apiGroupAction.approveJoinRequests": "Asynchronous: it answers 202 with an action_id; read the outcome with \"Get a group action\" or the group_action.completed and group_action.failed events. Official numbers with the official API groups beta and decisions enabled only; otherwise 422 provider_unsupported. The result is per person.",
 		"apiGroupAction.rejectJoinRequests": "Asynchronous: it answers 202 with an action_id; read the outcome with \"Get a group action\" or the group_action.completed and group_action.failed events. Official numbers with the official API groups beta and decisions enabled only; otherwise 422 provider_unsupported. The result is per person.",
 		"v2.apiGroupImport": "QR numbers only (an official number answers 422 provider_unsupported). It answers 201 when it imports the group and 200 when it was already in the account, with is_admin, read from WhatsApp in the same call. Needs communities:operate (403 import_permission_required). Up to 5 per number per minute (429 import_rate_limited, with Retry-After); a group of another number answers 404 group_not_found, one in another workspace of the account cannot be imported here. From then on the group sends the group_participant.joined and group_participant.left events.",
-		"group.groups": "Read live from WhatsApp; with an API key the list is reused for one minute per number, so a group just created may take up to a minute to show. A group already in your account comes with its device_id; to follow one that is not, use Follow a group."
+		"group.groups": "Read live from WhatsApp; with an API key the list is reused for one minute per number, so a group just created may take up to a minute to show. A group already in your account comes with its device_id; to follow one that is not, use Follow a group.",
+		"messageTemplate.sync": "It answers 202 with status: completed when it is done, and in_progress when the first page (up to 100 templates) is in and the rest keeps coming in the background; then list again (List templates) in a few seconds. It also removes the templates of a WhatsApp Business account the number no longer uses. One at a time per number: 409 template_sync_in_progress while one is running. 422 number_not_connected_to_meta if the number is connected by QR or has no WhatsApp Business account or credentials in Meta; 422 meta_rejected (with Meta's meta_code) if Meta refused and nothing was brought; 502 meta_unavailable if Meta did not answer."
 	},
 	"labels": {
 		"active_conversation": "Active Conversation",
@@ -490,6 +491,9 @@
 			"phone": "The recipient's phone with the country code, for example 5491122334455. No need to create the contact first: a new phone becomes a contact, which takes conversations:write. It goes always, with or without Contact ID.",
 			"whatsapp_id": "Instead of Phone, on an official number only: the BSUID Meta sends (for example US.13491208655302741918). With a QR number it answers 422.",
 			"contact_id": "Optional: a contact you already have. With Phone or WhatsApp ID too, they have to be of this same contact."
+		},
+		"messageTemplate.sync": {
+			"device": "The ID of the official number whose templates are brought."
 		},
 		"v2.apiGroupImport": {
 			"group": "The group's ID on WhatsApp, as List the groups a number manages returns it.",
