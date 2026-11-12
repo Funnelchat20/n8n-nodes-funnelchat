@@ -310,10 +310,17 @@ describe('building requests (buildRequest)', () => {
 		});
 	});
 
-	it("List a number's logs: date-time values as given, methods with []", () => {
+	it("List a stage's contacts: date-time values as given, tag IDs with []", () => {
 		expect(
-			url('deviceLogs.index', { device: 9, from: '2026-10-15T00:00:00Z', methods: 'GET,POST' }),
-		).toBe('GET /api/v1/devices/9/logs?from=2026-10-15T00:00:00Z&methods[]=GET&methods[]=POST');
+			url('kanbanStage.contacts', {
+				kanbanSetting: 3,
+				stage: 7,
+				dateFrom: '2026-10-15T00:00:00Z',
+				tagIds: '1,2',
+			}),
+		).toBe(
+			'GET /api/v1/kanban-settings/3/stages/7/contacts?dateFrom=2026-10-15T00:00:00Z&tagIds[]=1&tagIds[]=2',
+		);
 	});
 
 	it('List contacts: date values are sent as YYYY-MM-DD', () => {
@@ -634,7 +641,7 @@ describe('running the node with simulated responses', () => {
 		expect(forwarded[0].json).toMatchObject({ contact_id: 2002, status: 'queued' });
 	});
 
-	it('List forms with "Return All" goes through the pages with per_page', async () => {
+	it('List forms with "Return All" goes through the pages, with the page size the specification gives', async () => {
 		const { ctx, calls } = executeContext({
 			params: { resource: 'form', operation: 'whatsappForm.index', returnAll: true, filters: {} },
 			responses: [
@@ -643,9 +650,10 @@ describe('running the node with simulated responses', () => {
 			],
 		});
 		const [out] = await node.execute.call(ctx);
+		const size = op('whatsappForm.index').list!.sizeParam;
 		expect(calls.map(requestLine)).toEqual([
-			'GET /api/v1/forms?per_page=100&page=1',
-			'GET /api/v1/forms?per_page=100&page=2',
+			`GET /api/v1/forms?${size}=100&page=1`,
+			`GET /api/v1/forms?${size}=100&page=2`,
 		]);
 		expect(out.map((i) => i.json.id)).toEqual([1, 2]);
 	});

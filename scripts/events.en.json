@@ -1,5 +1,5 @@
 {
-	"$comment": "English label and description of each event type of spec/eventos-webhooks.json (copied from the accounts catalog, in Spanish, and checked by its SHA-256). scripts/generate.mjs takes the trigger's built-in event list texts from here and refuses to generate if a subscribable type has no entry. The live catalog the trigger reads from the API is shown as the API returns it.",
+	"$comment": "English label and description of each event type of the webhooks of spec/funnelchat.json (the portal's published specification, in Spanish, checked by its SHA-256). scripts/generate.mjs takes the texts of the trigger's built-in event list from here; a type without an entry goes with empty texts (the trigger then shows the live catalog's own texts, or the type) and the generator lists it to be translated here. The live catalog the trigger reads from the API is shown as the API returns it, except for the types this list knows.",
 	"device.disconnected": {
 		"label": "Number disconnected",
 		"description": "One of the account's WhatsApp numbers disconnected and can no longer send or receive. reason says why (qr_logged_out, meta_account_not_registered, shadow_ban_protection, disconnected_by_user, provider_error or unknown)."
@@ -32,17 +32,9 @@
 		"label": "Payment failed",
 		"description": "A subscription charge could not be processed (Stripe subscriptions only). Sent once per invoice, on the first failed attempt; not repeated on charge retries. AI top-ups are not included."
 	},
-	"billing.plan_blocked": {
-		"label": "Plan blocked",
-		"description": "The plan was blocked because of a charge that was not processed."
-	},
 	"billing.upcoming_charge": {
 		"label": "Upcoming charge",
 		"description": "The next subscription charge is near (Stripe subscriptions only); the notice arrives a few days before the charge date."
-	},
-	"subscription.expiring": {
-		"label": "Subscription expiring",
-		"description": "The subscription is about to expire."
 	},
 	"subscription.trial_ending": {
 		"label": "Trial ending",
@@ -59,18 +51,6 @@
 	"subscription.dormant_ending": {
 		"label": "Dormant period ending",
 		"description": "The dormant account period is about to end (the notice arrives about 7 days before); on that date the given charge is attempted."
-	},
-	"ai_quota.low_balance": {
-		"label": "AI quota low",
-		"description": "The account's AI message quota is about to run out."
-	},
-	"ai_quota.topup_succeeded": {
-		"label": "AI top-up succeeded",
-		"description": "An AI quota top-up was credited."
-	},
-	"ai_quota.topup_failed": {
-		"label": "AI top-up failed",
-		"description": "An AI quota top-up could not be processed."
 	},
 	"mac.usage_80": {
 		"label": "Monthly active contacts at 80%",
@@ -218,11 +198,11 @@
 	},
 	"group.message_received": {
 		"label": "Message received in a group",
-		"description": "A person wrote a message in a group."
+		"description": "A person wrote a message in a group. The message comes in data.message with its uid, its ID on WhatsApp (the portal's example shows id; the API sends uid)."
 	},
 	"group.reaction_added": {
 		"label": "Reaction in a group",
-		"description": "A person reacted to a message in a group."
+		"description": "A person reacted to a message in a group. The message comes in data.message with its uid, its ID on WhatsApp (the portal's example shows id; the API sends uid)."
 	},
 	"group_join_request.created": {
 		"label": "Request to join a group",
@@ -231,5 +211,13 @@
 	"group_join_request.revoked": {
 		"label": "Request to join withdrawn",
 		"description": "A person withdrew a pending request to join a group before it was approved or rejected."
+	},
+	"message.reaction_failed": {
+		"label": "Message reaction failed",
+		"description": "A reaction to a message (setting, replacing or removing it) that was accepted with 202 could not be applied. It brings message_id, contact_id, device_id, emoji (null to remove it), reason and requested_at."
+	},
+	"contact.updated": {
+		"label": "Contact updated",
+		"description": "A contact's name, email, phone or the value of one of its custom fields changed, from the panel, the API, a flow or an import. changed says what changed; contact brings the contact after the change."
 	}
 }

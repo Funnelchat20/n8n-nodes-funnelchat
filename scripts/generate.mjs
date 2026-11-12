@@ -1,27 +1,34 @@
 #!/usr/bin/env node
 /**
- * Generates the operation table of the Funnelchat node from the unified OpenAPI specification.
+ * Generates the Funnelchat node from the specification the developer portal publishes.
  *
- *   npm run generate            writes nodes/Funnelchat/generated/operations.ts, the operations block of the README and
- *                               nodes/FunnelchatTrigger/generated/events.ts (the trigger's built-in event list)
- *   npm run generate -- --check exits 1 if those files are not what the specification produces (used by the tests)
+ *   npm run generate                   writes nodes/Funnelchat/generated/operations.ts, the operations block of the
+ *                                      README and nodes/FunnelchatTrigger/generated/events.ts (the trigger's built-in
+ *                                      event list) from spec/funnelchat.json
+ *   npm run generate -- --spec <file>  first copies <file> (the portal's published specification, as downloaded) to
+ *                                      spec/funnelchat.json and records it in spec/PROVENANCE.md, then generates
+ *   npm run generate -- --check        exits 1 if those files are not what the specification produces (used by the tests)
  *
- * Everything that depends on the API comes from the specification (and its supplements): operations, permissions,
- * notes, parameters, bodies and pagination. The texts the node shows are in English: the portal's specification and the
- * event catalog are in Spanish and are copied as they are, so the name and purpose of each of their operations come
- * from scripts/operations.en.json and the event labels from scripts/events.en.json (the generator refuses to run if one
- * is missing). The supplements are written in English. The config file says which tags go into each resource and how
- * fields are labelled. Regenerating with a new snapshot never requires touching code.
+ * The node carries only what the portal publishes: every operation and event type of the published specification, and
+ * nothing else. Everything that depends on the API comes from it: operations, permissions, parameters, bodies,
+ * pagination, the groups of the portal (resources) and their category, and the event types of its `webhooks`. The
+ * texts the node shows are in English: the specification is in Spanish and is copied as it is, so the name and purpose
+ * of each operation come from scripts/operations.en.json and the event labels from scripts/events.en.json. A text
+ * without its English version never stops the generation: the node shows a neutral one (the route, the event type)
+ * and the generator lists it as untranslated. The config file says which groups go into each resource and how fields
+ * are labelled. Regenerating with a new specification never requires touching code.
  */
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { basename, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CONFIG_PATH = 'scripts/generator.config.json';
 const TRANSLATIONS_PATH = 'scripts/operations.en.json';
 const EVENT_TRANSLATIONS_PATH = 'scripts/events.en.json';
+const PROVENANCE_START = '<!-- spec:start (written by npm run generate -- --spec) -->';
+const PROVENANCE_END = '<!-- spec:end -->';
 const METHODS = ['get', 'post', 'put', 'patch', 'delete'];
 const SIZE_PARAM_CANDIDATES = ['perPage', 'per_page', 'pageSize', 'limit'];
 const RESERVED_NAMES = new Set([
@@ -193,10 +200,11 @@ export function looksSpanish(text) {
  * The description of a field and the name of the field in the API. Its own text comes, in this order, from
  * `fieldDescriptionsByName` in the config (by operationId, or `*` for every operation; written in English), from
  * `fieldDescriptions` (a replacement for a text of the specification; an empty value drops it), or from the
- * specification itself. A text of the specification that is in Spanish is not shown, and the generator says so.
+ * specification itself. A text of the specification that is in Spanish is not shown, and the generator lists it as
+ * untranslated.
  */
 function describeField(ctx, operationId, schema, apiName, kind) {
-	const { config, warnings } = ctx;
+	const { config, review } = ctx;
 	const parts = [];
 	const original = cleanText(schema?.description);
 	const byName = config.fieldDescriptionsByName ?? {};
@@ -206,7 +214,7 @@ function describeField(ctx, operationId, schema, apiName, kind) {
 	else if (original && Object.hasOwn(config.fieldDescriptions ?? {}, original))
 		own = config.fieldDescriptions[original];
 	else if (looksSpanish(original)) {
-		warnings.push(
+		review.push(
 			`${operationId}: the description of ${apiName} is in Spanish and is not shown; add it in English to fieldDescriptionsByName`,
 		);
 		own = '';
@@ -295,8 +303,16 @@ function listInfo(doc, op, method, queryNames) {
 	};
 }
 
-function buildOperation(ctx, doc, path, method, op, resource, source) {
-	const { config, warnings } = ctx;
+/** Added to the description of an irreversible operation: it is what an AI agent that uses the node as a tool reads. */
+const CONFIRM_FIRST = 'Irreversible: ask for confirmation before running it.';
+
+/** The English name and purpose of an operation: by operationId, or by `METHOD /path` for one that has none. */
+function englishOf(ctx, operationId, httpMethod, path) {
+	return ctx.translations[operationId] ?? ctx.translations[`${httpMethod} ${path}`];
+}
+
+function buildOperation(ctx, doc, path, method, op, resource, category) {
+	const { config, warnings, review } = ctx;
 	const operationId = op.operationId ?? `${method}${path.replace(/[^A-Za-z0-9]+/g, '_')}`;
 	const httpMethod = method.toUpperCase();
 
@@ -412,8 +428,8 @@ function buildOperation(ctx, doc, path, method, op, resource, source) {
 	}
 
 	const notices = [];
-	// `:operate` routes are irreversible unless the source says otherwise: accounts also puts there the ones that give
-	// control of a number (create one, its QR, connect links), with `x-fc-destructive: false`.
+	// `:operate` routes are irreversible unless the specification says otherwise: accounts also puts there the ones that
+	// give control of a number (create one, its QR, connect links), with `x-fc-destructive: false`.
 	// Without the flag, only accounts:operate means irreversible (its gate says so); communities:operate is any action
 	// on a group in WhatsApp, such as creating one.
 	const destructive =
@@ -430,13 +446,11 @@ function buildOperation(ctx, doc, path, method, op, resource, source) {
 	// The portal note of a flag whose notice is empty is out of date too (it is the same note), so it is dropped.
 	const specNote =
 		op['x-fc-nota'] ?? (PORTAL_FLAG_NOTES[flag] === '' ? undefined : portalNote(op.description));
-	// The notes of the specification are in Spanish: a new one is reported, to be written in English in
-	// `operationNotes`. The supplements' own notes (`x-fc-note`) are in English.
-	if (specNote && source === 'spec' && !config.operationNotes?.[operationId])
-		warnings.push(
+	// The notes of the specification are in Spanish: a new one is listed, to be written in English in `operationNotes`.
+	if (specNote && !config.operationNotes?.[operationId])
+		review.push(
 			`${operationId}: the specification has a note; add it in English to operationNotes`,
 		);
-	if (op['x-fc-note']) notices.push(cleanText(op['x-fc-note']));
 	if (flag && PORTAL_FLAG_NOTES[flag]) notices.push(PORTAL_FLAG_NOTES[flag]);
 	if (flag && !(flag in PORTAL_FLAG_NOTES))
 		warnings.push(`${operationId}: x-portal-v0 "${flag}" without a known note`);
@@ -445,15 +459,22 @@ function buildOperation(ctx, doc, path, method, op, resource, source) {
 	if (extra) notices.push(cleanText(extra));
 
 	const permission = op['x-fc-permission'] ?? null;
-	// The specification's texts are in Spanish: its operations take their name and purpose from the translations.
-	const english = source === 'spec' ? ctx.translations[operationId] : undefined;
-	if (source === 'spec' && !english)
-		throw new Error(
-			`${operationId} has no English name and purpose in ${TRANSLATIONS_PATH}: add them before generating.`,
+	// The specification's texts are in Spanish: the operations take their name and purpose from the translations. One
+	// without them shows its route, which is neutral, and is listed to be translated.
+	const english = englishOf(ctx, operationId, httpMethod, path);
+	if (!english)
+		review.push(
+			`${operationId} (${httpMethod} ${path}) has no English name and purpose in ${TRANSLATIONS_PATH}: the node shows its route`,
 		);
-	const name = cleanText(english?.name ?? op.summary ?? operationId);
-	const purpose = firstSentences(english?.purpose ?? op['x-fc-purpose'] ?? op.summary ?? '');
-	const description = permission ? `${purpose} Permission: ${permission}.` : purpose;
+	const name = cleanText(english?.name ?? `${httpMethod} ${path}`);
+	const purpose = english ? firstSentences(english.purpose ?? '') : '';
+	const description = [
+		purpose,
+		permission ? `Permission: ${permission}.` : '',
+		destructive ? CONFIRM_FIRST : '',
+	]
+		.filter(Boolean)
+		.join(' ');
 
 	// Sorting keeps the generated parameters stable and in the order the node shows them.
 	// `topLevelFields` in the config: optional fields shown as fields of their own, after the required ones and in the
@@ -492,8 +513,8 @@ function buildOperation(ctx, doc, path, method, op, resource, source) {
 		method: httpMethod,
 		path,
 		permission,
+		...(category ? { category } : {}),
 		...(notices.length ? { notice: notices.join(' ') } : {}),
-		source,
 		...(list
 			? {
 					list: {
@@ -509,6 +530,152 @@ function buildOperation(ctx, doc, path, method, op, resource, source) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
+// Groups, resources and categories
+// ---------------------------------------------------------------------------------------------------------------
+
+/** A value for n8n from a group's name: ASCII, camelCase ("Envíos programados" → "enviosProgramados"). */
+function slug(text) {
+	const words = String(text)
+		.normalize('NFD')
+		.replace(/[̀-ͯ]/g, '')
+		.split(/[^A-Za-z0-9]+/)
+		.filter(Boolean);
+	return (
+		words
+			.map((w, i) => (i === 0 ? w.toLowerCase() : w[0].toUpperCase() + w.slice(1).toLowerCase()))
+			.join('') || 'other'
+	);
+}
+
+/**
+ * The category of each group (tag) of the specification: a property of its entry in `x-tagGroups` (or of the tag
+ * itself) named in `categories.keys` of the config, or any `x-…` property whose name says "categor" (`x-fc-categoria`,
+ * `x-categoria`, …); or, when `x-tagGroups` groups the tags by category, the name of that group if
+ * `categories.names` knows it. The root may describe the categories (`x-fc-categorias`: `{id, title, url}` each), which
+ * gives their order, title and link. Also the other `x-…` properties the groups have, which could be a category under
+ * another name.
+ */
+function categoriesOf(spec, config) {
+	const keys = config.categories?.keys ?? [];
+	const names = config.categories?.names ?? {};
+	const text = (v) => typeof v === 'string' && v.trim() !== '';
+	const own = (entry) =>
+		keys.map((k) => entry?.[k]).find(text) ??
+		Object.entries(entry ?? {}).find(([k, v]) => /^x-.*categor/i.test(k) && text(v))?.[1];
+	const described = Object.entries(spec)
+		.filter(([k, v]) => /^x-.*categor/i.test(k) && Array.isArray(v))
+		.flatMap(([, v]) => v)
+		.filter((c) => c && text(c.id ?? c.title));
+	const info = new Map();
+	for (const c of described) {
+		const entry = { title: text(c.title) ? c.title : c.id, url: text(c.url) ? c.url : undefined };
+		if (text(c.id)) info.set(c.id, entry);
+		if (text(c.title)) info.set(c.title, entry);
+	}
+	const known = new Set([...Object.keys(names), ...info.keys()]);
+	const byTag = new Map();
+	const order = described.map((c) => (text(c.id) ? c.id : c.title));
+	const otherKeys = new Set();
+	const note = (tag, category) => {
+		if (!category || byTag.has(tag)) return;
+		byTag.set(tag, category);
+		if (!order.includes(category)) order.push(category);
+	};
+	for (const group of spec['x-tagGroups'] ?? []) {
+		for (const [k, v] of Object.entries(group))
+			if (k.startsWith('x-') && text(v) && !keys.includes(k) && !/categor/i.test(k))
+				otherKeys.add(k);
+		const category = own(group) ?? (known.has(group.name) ? group.name : undefined);
+		for (const tag of group.tags ?? []) note(tag, category);
+	}
+	for (const tag of spec.tags ?? []) note(tag.name, own(tag));
+	/** The category's English name (by its id or its title in the config), or its own title. */
+	const nameOf = (category) =>
+		names[category] ?? names[info.get(category)?.title] ?? info.get(category)?.title ?? category;
+	return {
+		byTag,
+		order,
+		otherKeys,
+		info,
+		nameOf,
+		named: (c) => Boolean(names[c] ?? names[info.get(c)?.title]),
+	};
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Event types of the trigger
+// ---------------------------------------------------------------------------------------------------------------
+
+/** The event types a webhook subscription takes: the enum of `events` in the body of `events.subscriptionOperation`. */
+function subscribableTypes(spec, config) {
+	const id = config.events?.subscriptionOperation;
+	if (!id) return undefined;
+	for (const item of Object.values(spec.paths ?? {})) {
+		for (const method of METHODS) {
+			const op = item[method];
+			if (op?.operationId !== id || !op.requestBody) continue;
+			const rb = deref(spec, op.requestBody);
+			const schema = normalize(spec, rb.content?.['application/json']?.schema ?? {});
+			const events = schema.properties?.events
+				? normalize(spec, schema.properties.events)
+				: undefined;
+			const values = enumOf(normalize(spec, events?.items ?? {}));
+			return values ? values : undefined;
+		}
+	}
+	return undefined;
+}
+
+/**
+ * The trigger's built-in event list: the event types of the specification's `webhooks` that a subscription takes (the
+ * trigger shows the live catalog; this list is what it shows when the catalog cannot be read, for example with a key
+ * without `accounts:read`). Their English label and description come from scripts/events.en.json; a type without them
+ * goes with empty texts, so the trigger shows the catalog's own or the type.
+ */
+function buildEvents(ctx, spec) {
+	const { config, review } = ctx;
+	const english = ctx.eventTranslations;
+	const subscribable = subscribableTypes(spec, config);
+	const allowed = subscribable ? new Set(subscribable) : undefined;
+	const notSubscribable = new Set(config.events?.notSubscribable ?? []);
+	const events = [];
+	const seen = new Set();
+	const add = (type, op) => {
+		const en = english[type];
+		if (!en)
+			review.push(
+				`Event ${type} has no English label and description in ${EVENT_TRANSLATIONS_PATH}: the trigger shows the catalog's own texts, or its type`,
+			);
+		events.push({
+			type,
+			area: op?.['x-fc-domain'] ?? '',
+			status: op?.['x-fc-status'] === 'planned' ? 'planned' : 'active',
+			label: en ? cleanText(en.label) : '',
+			description: en ? firstSentences(en.description, 200) : '',
+		});
+	};
+	for (const [key, item] of Object.entries(spec.webhooks ?? {})) {
+		const op = item?.post ?? Object.values(item ?? {})[0] ?? {};
+		// The key may carry the domain when two of them describe the same type ("webhook.test (communities)").
+		const type = /^[a-z0-9_]+(\.[a-z0-9_]+)+$/.test(op.summary ?? '')
+			? op.summary
+			: key.replace(/\s*\(.*\)\s*$/, '');
+		if (seen.has(type)) continue;
+		seen.add(type);
+		if (allowed ? !allowed.has(type) : notSubscribable.has(type)) continue;
+		add(type, op);
+	}
+	for (const type of subscribable ?? []) {
+		if (seen.has(type)) continue;
+		review.push(
+			`Event ${type} can be subscribed to and the specification's webhooks do not describe it: it goes without its area`,
+		);
+		add(type, undefined);
+	}
+	return events;
+}
+
+// ---------------------------------------------------------------------------------------------------------------
 // Generation
 // ---------------------------------------------------------------------------------------------------------------
 
@@ -516,109 +683,139 @@ function readJson(root, file) {
 	return JSON.parse(readFileSync(resolve(root, file), 'utf8'));
 }
 
+function sha256(text) {
+	return createHash('sha256').update(text).digest('hex');
+}
+
+/**
+ * Everything the specification produces: the operation table, the README block and the trigger's event list.
+ * `warnings` are what in the config does not match the specification (saved workflows could be affected); `review` are
+ * texts without their English version and choices the generator made on its own. Neither stops the generation.
+ */
 export function generate(root = ROOT) {
 	const config = readJson(root, CONFIG_PATH);
 	const specText = readFileSync(resolve(root, config.spec), 'utf8');
 	const spec = JSON.parse(specText);
-	const specSha = createHash('sha256').update(specText).digest('hex');
+	const specSha = sha256(specText);
 	if (config.provenance) {
 		const provenance = readFileSync(resolve(root, config.provenance), 'utf8');
 		if (!provenance.includes(specSha)) {
 			throw new Error(
-				`${config.provenance} does not record the copied specification (sha256 ${specSha}): write down where it came from before generating.`,
+				`${config.provenance} does not record the specification (sha256 ${specSha}): copy it with npm run generate -- --spec <file>, or write down where it came from.`,
 			);
 		}
 	}
 	const warnings = [];
-	const translations = readJson(root, TRANSLATIONS_PATH);
-	const ctx = { config, warnings, translations };
+	const review = [];
+	const ctx = {
+		config,
+		warnings,
+		review,
+		translations: readJson(root, TRANSLATIONS_PATH),
+		eventTranslations: readJson(root, EVENT_TRANSLATIONS_PATH),
+	};
 
+	// Each group (tag) of the portal goes into the resource of the config that lists it. `operationResources` keeps an
+	// operation the node already published in its resource when the portal moves it to another group.
+	const configured = config.resources.map((r) => ({ ...r }));
 	const tagToResource = new Map();
-	for (const r of config.resources) for (const tag of r.tags) tagToResource.set(tag, r.value);
+	for (const r of configured) for (const tag of r.tags) tagToResource.set(tag, r.value);
+	const pins = config.operationResources ?? {};
+	for (const [id, value] of Object.entries(pins))
+		if (!configured.some((r) => r.value === value))
+			throw new Error(
+				`operationResources: ${id} goes to ${value}, which is not a resource of the config`,
+			);
+
+	// A group no resource of the config lists gets a resource of its own, so no operation of the portal is left out.
+	const added = [];
+	const resourceOf = (tag) => {
+		const known = tagToResource.get(tag);
+		if (known) return known;
+		const name = tag ?? 'Other';
+		let value = slug(name);
+		while ([...configured, ...added].some((r) => r.value === value)) value = `${value}_`;
+		added.push({ value, name, description: '', tags: [tag] });
+		tagToResource.set(tag, value);
+		review.push(
+			`The group "${name}" has no resource in ${CONFIG_PATH}: its operations go into a resource of their own named "${name}" (value ${value}); add it to resources with that value and an English name`,
+		);
+		return value;
+	};
+
+	// The category of each operation is the one of its group (the portal's "First use", "WhatsApp functions", …).
+	const {
+		byTag,
+		order: categoryOrder,
+		otherKeys,
+		info: categoryInfo,
+		nameOf,
+		named,
+	} = categoriesOf(spec, config);
+	for (const key of otherKeys)
+		review.push(
+			`The groups of x-tagGroups have ${key}, which is not read: if it is their category, add it to categories.keys in ${CONFIG_PATH}`,
+		);
+	for (const c of categoryOrder)
+		if (!named(c))
+			review.push(
+				`The category "${c}" has no English name in categories.names of ${CONFIG_PATH}: it is shown as "${nameOf(c)}"`,
+			);
+
 	const excluded = new Set(config.excludeOperations ?? []);
-
-	// Each operation keeps the document it came from, to resolve its references.
 	const entries = [];
-	const seen = new Set();
-	for (const [path, item] of Object.entries(spec.paths)) {
+	const ids = new Set();
+	for (const [path, item] of Object.entries(spec.paths ?? {})) {
 		for (const method of METHODS) {
-			if (!item[method]) continue;
-			seen.add(`${method.toUpperCase()} ${path}`);
-			entries.push({ doc: spec, path, method, op: item[method], source: 'spec' });
+			const op = item[method];
+			if (!op || excluded.has(op.operationId)) continue;
+			if (op.operationId) ids.add(op.operationId);
+			const tag = op.tags?.[0];
+			const resource = pins[op.operationId] ?? resourceOf(tag);
+			const category = byTag.get(tag);
+			entries.push({
+				tag,
+				rank: category === undefined ? categoryOrder.length : categoryOrder.indexOf(category),
+				op: buildOperation(
+					ctx,
+					spec,
+					path,
+					method,
+					op,
+					resource,
+					category === undefined ? undefined : nameOf(category),
+				),
+			});
 		}
 	}
+	for (const id of Object.keys(pins))
+		if (!ids.has(id))
+			warnings.push(`operationResources names ${id}, which is not in the specification`);
 
-	const supplements = [];
-	for (const file of config.supplements ?? []) {
-		const sup = readJson(root, file);
-		const info = sup['x-fc-supplement'] ?? {};
-		const record = { id: info.id ?? file, source: info.source ?? file, used: 0, ignored: 0 };
-		if (info.replaces) record.replaced = 0;
-		for (const [path, item] of Object.entries(sup.paths ?? {})) {
-			for (const method of METHODS) {
-				if (!item[method]) continue;
-				const key = `${method.toUpperCase()} ${path}`;
-				// A supplement that `replaces` is newer than the specification: its operation wins, with the same
-				// operationId so saved workflows keep finding it.
-				if (seen.has(key) && info.replaces) {
-					const index = entries.findIndex(
-						(e) => e.source === 'spec' && e.path === path && e.method === method,
-					);
-					const previous = entries[index].op.operationId;
-					if (previous !== item[method].operationId) {
-						throw new Error(
-							`${record.id}: ${key} replaces ${previous} with another operationId (${item[method].operationId})`,
-						);
-					}
-					entries[index] = { doc: sup, path, method, op: item[method], source: record.id };
-					record.replaced++;
+	const specTags = new Set([...(spec.tags ?? []).map((t) => t.name), ...entries.map((e) => e.tag)]);
+
+	// Resource by resource, in the order of the config (the added ones last), and inside each one in the order of its
+	// groups and then of the specification. A resource with no operations is left out.
+	const resources = [];
+	for (const r of [...configured, ...added]) {
+		const position = (tag) => {
+			const i = r.tags.indexOf(tag);
+			return i === -1 ? r.tags.length : i;
+		};
+		const ops = entries
+			.filter((e) => e.op.resource === r.value)
+			.sort((a, b) => position(a.tag) - position(b.tag));
+		if (!r.optional)
+			for (const tag of r.tags)
+				if (!specTags.has(tag))
 					warnings.push(
-						`${record.id}: ${key} replaces the specification's (remove the supplement when the specification brings it up to date)`,
+						`Resource ${r.value} uses the group ${tag}, which is not in the specification`,
 					);
-					continue;
-				}
-				if (seen.has(key)) {
-					record.ignored++;
-					warnings.push(
-						`${record.id}: ${key} is already in the specification; the specification's is used`,
-					);
-					continue;
-				}
-				record.used++;
-				entries.push({ doc: sup, path, method, op: item[method], source: record.id });
-			}
+		if (ops.length === 0) {
+			if (!r.optional) warnings.push(`Resource ${r.value} has no operations`);
+			continue;
 		}
-		supplements.push({ record, tags: sup.tags ?? [] });
-	}
 
-	const tagInfo = new Map();
-	for (const t of spec.tags ?? []) tagInfo.set(t.name, t);
-	for (const s of supplements)
-		for (const t of s.tags) if (!tagInfo.has(t.name)) tagInfo.set(t.name, t);
-	for (const r of config.resources) {
-		for (const tag of r.tags)
-			if (!tagInfo.has(tag))
-				warnings.push(`Resource ${r.value} uses tag ${tag}, which is not in the specification`);
-	}
-
-	const operations = [];
-	for (const { doc, path, method, op, source } of entries) {
-		const tag = op.tags?.[0];
-		const resource = tagToResource.get(tag);
-		if (!resource) continue;
-		if (excluded.has(op.operationId)) continue;
-		operations.push({
-			tagIndex: config.resources.find((r) => r.value === resource).tags.indexOf(tag),
-			op: buildOperation(ctx, doc, path, method, op, resource, source),
-		});
-	}
-
-	// Resource by resource, in the tag order of the config and then in the order of the specification.
-	const ordered = [];
-	for (const r of config.resources) {
-		const ops = operations
-			.filter((o) => o.op.resource === r.value)
-			.sort((a, b) => a.tagIndex - b.tagIndex);
 		const names = new Map();
 		const values = new Set();
 		for (const { op } of ops) {
@@ -629,39 +826,59 @@ export function generate(root = ROOT) {
 					`Repeated name in ${r.value}: "${op.name}" (${names.get(op.name)} and ${op.value})`,
 				);
 			names.set(op.name, op.value);
-			ordered.push(op);
 		}
-		if (ops.length === 0) warnings.push(`Resource ${r.value} has no operations`);
-	}
 
-	const resources = config.resources.map((r) => ({
-		value: r.value,
-		name: r.name,
-		description: r.description ?? '',
-		// Pinned in the config: a saved workflow that never changed the operation runs the default one.
-		...(r.defaultOperation ? { defaultOperation: r.defaultOperation } : {}),
-	}));
-	for (const r of resources)
-		if (
-			r.defaultOperation &&
-			!ordered.some((o) => o.resource === r.value && o.value === r.defaultOperation)
-		)
+		// A resource can take groups of several categories (Conversations and Messages has operations of the three): it
+		// says all of them, and goes with the first one.
+		const ranks = [...new Set(ops.map((e) => e.rank))].sort((a, b) => a - b);
+		const categories = ranks
+			.filter((i) => i < categoryOrder.length)
+			.map((i) => nameOf(categoryOrder[i]));
+
+		if (r.defaultOperation && !values.has(r.defaultOperation))
 			throw new Error(
 				`Resource ${r.value}: its defaultOperation ${r.defaultOperation} is not one of its operations`,
 			);
+		resources.push({
+			spec: {
+				value: r.value,
+				name: r.name,
+				description: r.description ?? '',
+				...(categories.length ? { categories } : {}),
+				// Pinned in the config: a saved workflow that never changed the operation runs the default one.
+				...(r.defaultOperation ? { defaultOperation: r.defaultOperation } : {}),
+			},
+			rank: ranks[0],
+			ops: ops.map((e) => e.op),
+		});
+	}
+	// With categories, the resources go by the first category they have, in the order the specification gives them.
+	resources.sort((a, b) => a.rank - b.rank);
+	const ordered = resources.flatMap((r) => r.ops);
+	const resourceSpecs = resources.map((r) => r.spec);
+	// Pinned in the config: a saved workflow that never changed the resource runs this one, whatever the order.
+	if (config.defaultResource) {
+		const pinned = resourceSpecs.find((r) => r.value === config.defaultResource);
+		if (!pinned)
+			throw new Error(
+				`defaultResource ${config.defaultResource} is not a resource with operations`,
+			);
+		pinned.default = true;
+	}
+
+	const events = buildEvents(ctx, spec);
 
 	const source = {
 		title: `${spec.info?.title ?? 'Funnelchat API'} ${spec.info?.version ?? ''}`.trim(),
 		sha256: specSha,
 		// The specification's own description is in Spanish.
 		description:
-			'Unified OpenAPI specification of the Funnelchat public API, copied from the developer portal (see spec/PROVENANCE.md).',
-		supplements: supplements.map((s) => s.record),
+			'The specification the Funnelchat developer portal publishes, with every operation and event type it shows (see spec/PROVENANCE.md).',
 	};
 
 	const header = [
-		'// Generated by scripts/generate.mjs from spec/funnelchat.json and its supplements.',
-		'// Do not edit by hand: change the specification, the supplements or scripts/ and run `npm run generate`.',
+		'// Generated by scripts/generate.mjs from spec/funnelchat.json, the specification the developer portal publishes.',
+		'// Do not edit by hand: replace the specification (npm run generate -- --spec <file>) or change scripts/ and run `npm run generate`.',
 		`// Specification: ${source.title}, sha256 ${source.sha256}.`,
 		'',
 		"import type { OperationSpec, ResourceSpec, SpecSource } from '../operationTypes';",
@@ -669,80 +886,50 @@ export function generate(root = ROOT) {
 	].join('\n');
 	const operationsTs =
 		`${header}\nexport const SPEC_SOURCE: SpecSource = ${JSON.stringify(source, null, '\t')};\n\n` +
-		`export const RESOURCES: ResourceSpec[] = ${JSON.stringify(resources, null, '\t')};\n\n` +
+		`export const RESOURCES: ResourceSpec[] = ${JSON.stringify(resourceSpecs, null, '\t')};\n\n` +
 		`export const OPERATIONS: OperationSpec[] = ${JSON.stringify(ordered, null, '\t')};\n`;
 
-	const readmeBlock = renderReadmeBlock(resources, ordered, source);
-	const summary = resources.map(
-		(r) => `${r.name}: ${ordered.filter((o) => o.resource === r.value).length}`,
-	);
-	return { operationsTs, readmeBlock, summary, warnings, total: ordered.length };
-}
-
-// ---------------------------------------------------------------------------------------------------------------
-// Event catalog of the trigger
-// ---------------------------------------------------------------------------------------------------------------
-
-/**
- * The trigger's built-in event list, from a copy of `GET /api/v1/webhooks/events` (`{data: [...]}`). The trigger shows
- * the live catalog; this list is what it shows when the catalog cannot be read (for example, a key without
- * `accounts:read`).
- */
-export function generateEvents(root = ROOT) {
-	const config = readJson(root, CONFIG_PATH);
-	if (!config.eventCatalog) return undefined;
-	const text = readFileSync(resolve(root, config.eventCatalog), 'utf8');
-	const sha = createHash('sha256').update(text).digest('hex');
-	if (config.provenance) {
-		const provenance = readFileSync(resolve(root, config.provenance), 'utf8');
-		if (!provenance.includes(sha)) {
-			throw new Error(
-				`${config.provenance} does not record the copied event catalog (sha256 ${sha}): write down where it came from before generating.`,
-			);
-		}
-	}
-	const body = JSON.parse(text);
-	const entries = Array.isArray(body) ? body : (body.data ?? []);
-	// The catalog is in Spanish: the label and description of each type come from the translations.
-	const english = readJson(root, EVENT_TRANSLATIONS_PATH);
-	const events = entries
-		.filter((e) => typeof e.type === 'string' && e.subscribable !== false)
-		.map((e) => {
-			const en = english[e.type];
-			if (!en)
-				throw new Error(
-					`Event ${e.type} has no English label and description in ${EVENT_TRANSLATIONS_PATH}: add them before generating.`,
-				);
-			return {
-				type: e.type,
-				area: e.area,
-				status: e.status,
-				label: cleanText(en.label),
-				description: firstSentences(en.description, 200),
-			};
-		});
-	const ts =
+	const eventsTs =
 		[
-			'// Generated by scripts/generate.mjs from the copied event catalog and scripts/events.en.json.',
-			'// Do not edit by hand: replace the copied catalog or the translations and run `npm run generate`.',
-			`// Catalog: sha256 ${sha}.`,
+			'// Generated by scripts/generate.mjs from the webhooks of spec/funnelchat.json and scripts/events.en.json.',
+			'// Do not edit by hand: replace the specification (npm run generate -- --spec <file>) or the translations and run `npm run generate`.',
+			`// Specification: sha256 ${specSha}.`,
 			'',
 			"import type { CatalogEvent } from '../catalogTypes';",
 			'',
 		].join('\n') +
 		`\nexport const EVENT_CATALOG: CatalogEvent[] = ${JSON.stringify(events, null, '\t')};\n`;
-	return { ts, total: events.length, path: resolve(root, config.eventsOutput) };
+
+	const categoryLinks = categoryOrder.map((c) => ({
+		name: nameOf(c),
+		url: categoryInfo.get(c)?.url,
+	}));
+	const readmeBlock = renderReadmeBlock(
+		resourceSpecs,
+		ordered,
+		source,
+		events.length,
+		categoryLinks,
+	);
+	const summary = resourceSpecs.map(
+		(r) => `${r.name}: ${ordered.filter((o) => o.resource === r.value).length}`,
+	);
+	return {
+		operationsTs,
+		eventsTs,
+		readmeBlock,
+		summary,
+		warnings,
+		review,
+		total: ordered.length,
+		events: events.length,
+	};
 }
 
-function renderReadmeBlock(resources, operations, source) {
-	const lines = [README_START, ''];
-	lines.push(
-		`${operations.length} operations generated from the specification (sha256 \`${source.sha256.slice(0, 12)}\`) and its supplements. ` +
-			'The ones marked ⚠ show a notice in the node (what the code requires and the specification does not say, a route closed to keys, or an irreversible operation).',
-		'',
-	);
+function renderResources(lines, resources, operations) {
 	for (const r of resources) {
 		const ops = operations.filter((o) => o.resource === r.value);
+		if (ops.length === 0) continue;
 		lines.push(`<details><summary><strong>${r.name}</strong> (${ops.length})</summary>`, '');
 		lines.push('| Operation | Route | Permission |', '|---|---|---|');
 		for (const o of ops) {
@@ -758,31 +945,65 @@ function renderReadmeBlock(resources, operations, source) {
 		}
 		lines.push('', '</details>', '');
 	}
+}
+
+/**
+ * The operations block of the README. With categories, it goes category by category (with the portal's link to each
+ * one), and inside each one resource by resource with the operations of that category: a resource that takes groups of
+ * several categories shows up in each of them, with the operations of each one.
+ */
+function renderReadmeBlock(resources, operations, source, events, categories) {
+	const lines = [README_START, ''];
+	lines.push(
+		`${operations.length} operations in ${resources.length} resources, and ${events} event types in the trigger's built-in list, ` +
+			`generated from the portal's published specification (sha256 \`${source.sha256.slice(0, 12)}\`). ` +
+			'The ones marked ⚠ show a notice in the node: what the code requires and the specification does not say, or an irreversible operation.',
+		'',
+	);
+	const used = categories.filter((c) => operations.some((o) => o.category === c.name));
+	if (used.length === 0) renderResources(lines, resources, operations);
+	const seen = new Set();
+	for (const c of used) {
+		if (seen.has(c.name)) continue;
+		seen.add(c.name);
+		const ops = operations.filter((o) => o.category === c.name);
+		lines.push(`#### ${c.url ? `[${c.name}](${c.url})` : c.name} (${ops.length})`, '');
+		renderResources(lines, resources, ops);
+	}
+	const rest = operations.filter((o) => !o.category);
+	if (used.length && rest.length) {
+		lines.push(`#### Other (${rest.length})`, '');
+		renderResources(lines, resources, rest);
+	}
 	lines.push(README_END);
 	return lines.join('\n');
 }
 
-function replaceReadmeBlock(readme, block) {
-	const start = readme.indexOf(README_START);
-	const end = readme.indexOf(README_END);
-	if (start === -1 || end === -1 || end < start) {
-		throw new Error(`The README has no operations block (${README_START} … ${README_END})`);
-	}
-	return readme.slice(0, start) + block + readme.slice(end + README_END.length);
+function replaceBlock(text, start, end, block, what) {
+	const from = text.indexOf(start);
+	const to = text.indexOf(end);
+	if (from === -1 || to === -1 || to < from)
+		throw new Error(`${what} has no block ${start} … ${end}`);
+	return text.slice(0, from) + block + text.slice(to + end.length);
 }
 
 export function expectedFiles(root = ROOT) {
 	const config = readJson(root, CONFIG_PATH);
 	const result = generate(root);
 	const readmePath = resolve(root, config.readme);
-	const readme = replaceReadmeBlock(readFileSync(readmePath, 'utf8'), result.readmeBlock);
-	const events = generateEvents(root);
+	const readme = replaceBlock(
+		readFileSync(readmePath, 'utf8'),
+		README_START,
+		README_END,
+		result.readmeBlock,
+		'The README',
+	);
 	return {
 		result,
 		files: [
 			{ path: resolve(root, config.output), content: result.operationsTs },
 			{ path: readmePath, content: readme },
-			...(events ? [{ path: events.path, content: events.ts }] : []),
+			{ path: resolve(root, config.eventsOutput), content: result.eventsTs },
 		],
 	};
 }
@@ -801,21 +1022,144 @@ export function staleFiles(root = ROOT) {
 		.map((f) => f.path.replace(`${root}/`, ''));
 }
 
+// ---------------------------------------------------------------------------------------------------------------
+// Copying a new specification (--spec)
+// ---------------------------------------------------------------------------------------------------------------
+
+function localDate(date = new Date()) {
+	const pad = (n) => String(n).padStart(2, '0');
+	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function provenanceBlock(config, file, spec, sha, date) {
+	const ops = Object.values(spec.paths ?? {}).reduce(
+		(n, item) => n + METHODS.filter((m) => item?.[m]).length,
+		0,
+	);
+	const groups = (spec['x-tagGroups'] ?? []).length || (spec.tags ?? []).length;
+	const types = new Set(
+		Object.entries(spec.webhooks ?? {}).map(([key, item]) => {
+			const op = item?.post ?? Object.values(item ?? {})[0] ?? {};
+			return /^[a-z0-9_]+(\.[a-z0-9_]+)+$/.test(op.summary ?? '')
+				? op.summary
+				: key.replace(/\s*\(.*\)\s*$/, '');
+		}),
+	);
+	const { byTag, order, info } = categoriesOf(spec, config);
+	const perCategory = new Map();
+	for (const c of order) perCategory.set(c, 0);
+	for (const c of byTag.values()) perCategory.set(c, perCategory.get(c) + 1);
+	const domains = (spec['x-fc-sources'] ?? [])
+		.map((s) => `${s.domain} (${s.operations ?? '?'} operations)`)
+		.join(', ');
+	const row = (item, value) => `| ${item} | ${value} |`;
+	return [
+		PROVENANCE_START,
+		'',
+		"## `funnelchat.json` — the portal's published specification",
+		'',
+		'Written by `npm run generate -- --spec`, which copies the file byte for byte and generates from it (it does not',
+		'download it). The node carries every operation and event type of this file, and nothing else.',
+		'',
+		'| Item | Value |',
+		'|---|---|',
+		row(
+			'What it is',
+			'The OpenAPI specification the developer portal publishes: the functions an API key can use, as the portal shows them',
+		),
+		row('Published at', config.publishedSpecUrl ? `\`${config.publishedSpecUrl}\`` : '—'),
+		row('`info`', `${spec.info?.title ?? '—'} \`${spec.info?.version ?? '—'}\``),
+		row('Operations', `${ops}, in ${groups} groups`),
+		row('Event types (`webhooks`)', String(types.size)),
+		row('Domains (`x-fc-sources`)', domains || '—'),
+		row(
+			'Categories',
+			perCategory.size
+				? [...perCategory.entries()]
+						.map(([c, n]) => {
+							const title = info.get(c)?.title;
+							return `${title && title !== c ? `${title} (\`${c}\`)` : c}: ${n} ${n === 1 ? 'group' : 'groups'}`;
+						})
+						.join(', ')
+				: 'none: the specification does not give the category of its groups',
+		),
+		row('SHA-256', `\`${sha}\``),
+		row('Copied', date),
+		'',
+		PROVENANCE_END,
+	].join('\n');
+}
+
+/**
+ * `--spec <file>`: copies the portal's published specification to spec/funnelchat.json, byte for byte, and records it
+ * in the block of spec/PROVENANCE.md between its markers (the rest of that file is history written by hand).
+ */
+export function copySpec(root, file, date = localDate()) {
+	const config = readJson(root, CONFIG_PATH);
+	const bytes = readFileSync(file);
+	let spec;
+	try {
+		spec = JSON.parse(bytes.toString('utf8'));
+	} catch (error) {
+		throw new Error(`${file} is not JSON: ${error.message}`);
+	}
+	if (!spec || typeof spec.paths !== 'object' || spec.paths === null)
+		throw new Error(`${file} has no paths: it is not an OpenAPI specification`);
+	const sha = sha256(bytes.toString('utf8'));
+	const target = resolve(root, config.spec);
+	writeFileSync(target, bytes);
+	if (config.provenance) {
+		const path = resolve(root, config.provenance);
+		const block = provenanceBlock(config, file, spec, sha, date);
+		const current = readFileSync(path, 'utf8');
+		const next = current.includes(PROVENANCE_START)
+			? replaceBlock(current, PROVENANCE_START, PROVENANCE_END, block, config.provenance)
+			: `${current.trimEnd()}\n\n${block}\n`;
+		writeFileSync(path, next);
+	}
+	return { target: config.spec, sha256: sha, provenance: config.provenance };
+}
+
 function main() {
-	const check = process.argv.includes('--check');
+	const args = process.argv.slice(2);
+	const check = args.includes('--check');
+	const specAt = args.indexOf('--spec');
+	if (specAt !== -1) {
+		const file = args[specAt + 1];
+		if (!file || file.startsWith('--')) {
+			console.error(
+				'--spec needs the path of the specification: npm run generate -- --spec <file>',
+			);
+			process.exit(2);
+		}
+		if (check) {
+			console.error(
+				'--spec copies a new specification; --check does not write anything. Use one of them.',
+			);
+			process.exit(2);
+		}
+		// npm runs the script from the package's folder; a relative path is the one where the command was typed.
+		const copied = copySpec(ROOT, resolve(process.env.INIT_CWD ?? process.cwd(), file));
+		console.log(
+			`Copied ${basename(file)} to ${copied.target} (sha256 ${copied.sha256}) and recorded it in ${copied.provenance}.`,
+		);
+	}
 	const { result, files } = expectedFiles(ROOT);
 	for (const w of result.warnings) console.warn(`warning: ${w}`);
+	for (const r of result.review) console.warn(`to review: ${r}`);
 	if (check) {
 		const stale = staleFiles(ROOT);
 		if (stale.length) {
 			console.error(`Out of date: ${stale.join(', ')}. Run npm run generate.`);
 			process.exit(1);
 		}
-		console.log(`Up to date: ${result.total} operations.`);
+		console.log(`Up to date: ${result.total} operations, ${result.events} event types.`);
 		return;
 	}
 	for (const f of files) writeFileSync(f.path, f.content);
-	console.log(`Generated ${result.total} operations (${result.summary.join(', ')}).`);
+	console.log(
+		`Generated ${result.total} operations (${result.summary.join(', ')}) and ${result.events} event types.`,
+	);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();

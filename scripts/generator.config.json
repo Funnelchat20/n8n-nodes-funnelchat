@@ -1,109 +1,217 @@
 {
-	"$comment": "Configuration of scripts/generate.mjs: which tags of the specification go into each resource of the node, in which order, the English labels of the fields, the descriptions of the specification's fields that are replaced, and notes of what a domain's code requires and its specification does not say. Operations, their names and fields come from the specification (names and purposes in English from scripts/operations.en.json); here they are only grouped and labelled. When a new specification renames an operation or changes the kind of a field the node already published, keepOperationValues and keepFieldKinds keep what saved workflows use; fieldDefaults sets which option an option field shows first; extraParameters adds query fields a domain's code reads and its specification does not list; fieldDescriptionsByName gives fields their English description (a description of the specification in Spanish is not shown).",
+	"$comment": "Configuration of scripts/generate.mjs: which groups (tags) of the portal's published specification go into each resource of the node, in which order, the English names of the categories, the English labels of the fields, the descriptions of the specification's fields that are replaced, and notes of what a domain's code requires and its specification does not say. Operations, their names and fields come from the specification (names and purposes in English from scripts/operations.en.json); here they are only grouped and labelled. A group no resource lists gets a resource of its own, so nothing the portal publishes is left out. A resource with optional: true may not be in the specification yet. When a new specification renames an operation, moves it to another group or changes the kind of a field the node already published, keepOperationValues, operationResources and keepFieldKinds keep what saved workflows use; defaultResource and each defaultOperation pin what a saved workflow that never changed them runs; fieldDefaults sets which option an option field shows first; extraParameters adds query fields a domain's code reads and its specification does not list; fieldDescriptionsByName gives fields their English description (a description of the specification in Spanish is not shown).",
 	"spec": "spec/funnelchat.json",
+	"publishedSpecUrl": "https://developers-portal.funnelchat.app/specs/funnelchat.json",
 	"provenance": "spec/PROVENANCE.md",
-	"supplements": [
-		"spec/supplements/conversations-forms.json",
-		"spec/supplements/conversations-kept-2026-10-15.json"
-	],
 	"output": "nodes/Funnelchat/generated/operations.ts",
-	"eventCatalog": "spec/webhook-events.json",
 	"eventsOutput": "nodes/FunnelchatTrigger/generated/events.ts",
 	"readme": "README.md",
+	"events": {
+		"subscriptionOperation": "webhookSubscription.store",
+		"notSubscribable": ["webhook.test"]
+	},
+	"categories": {
+		"keys": ["x-fc-categoria", "x-fc-category"],
+		"names": {
+			"primer-uso": "First use",
+			"whatsapp": "WhatsApp functions",
+			"funnelchat": "Funnelchat functions",
+			"Primer uso": "First use",
+			"Funciones de WhatsApp": "WhatsApp functions",
+			"Funciones de Funnelchat": "Funnelchat functions"
+		}
+	},
+	"defaultResource": "contact",
 	"resources": [
 		{
 			"value": "contact",
 			"name": "Contacts",
 			"description": "Contacts of the account: create, update, find and delete them, with their tags, custom fields and notes.",
 			"defaultOperation": "contact.customFields",
-			"tags": ["Contact", "ContactNote"]
+			"tags": ["Contactos", "Notas"]
 		},
 		{
 			"value": "conversation",
 			"name": "Conversations and Messages",
 			"description": "Conversations with contacts and their messages: list, assign, close, send messages and files, read a message by ID, forward, react and send contact cards.",
 			"defaultOperation": "conversation.getLatestMessages",
-			"tags": [
-				"Conversation",
-				"Message",
-				"MessageReaction",
-				"ForwardMessage",
-				"InteractiveMessage",
-				"ContactCard",
-				"ShowMessage",
-				"MarkMessageRead",
-				"TypingIndicator"
-			]
+			"tags": ["Conversaciones", "Atender una conversación", "Mensajes"]
 		},
 		{
 			"value": "template",
 			"name": "Templates",
-			"description": "WhatsApp message templates: list, create, update, delete and send them.",
-			"defaultOperation": "messageTemplate.quickReplyButtons",
-			"tags": ["MessageTemplate", "TemplateMetrics"]
+			"description": "WhatsApp message templates: list, create, update, delete and send them, bring them from Meta and see their metrics.",
+			"defaultOperation": "messageTemplate.templates",
+			"tags": ["Plantillas"]
 		},
 		{
 			"value": "form",
 			"name": "WhatsApp Forms",
 			"description": "WhatsApp native forms: build, publish on one or more numbers, send to a contact and read the answers.",
 			"defaultOperation": "whatsappForm.responses",
-			"tags": ["WhatsappForm", "WhatsappFormSend"]
+			"tags": ["Formularios"]
 		},
 		{
 			"value": "tag",
 			"name": "Tags",
-			"description": "Tags to segment contacts.",
+			"description": "Tags to segment contacts, and adding or removing them on many contacts at once.",
 			"defaultOperation": "tag.index",
-			"tags": ["Tag"]
+			"tags": ["Etiquetas"]
 		},
 		{
 			"value": "customField",
 			"name": "Custom Fields",
 			"description": "Custom fields to store your own data on contacts.",
 			"defaultOperation": "customField.index",
-			"tags": ["CustomField"]
+			"tags": ["Campos personalizados"]
 		},
 		{
 			"value": "group",
 			"name": "Groups",
-			"description": "WhatsApp groups of the account and its campaigns: list them, send them a message, and see their participants, joins and leaves.",
+			"description": "WhatsApp groups of the account: list them, follow one, send them a message, act on them (participants, admins, name, settings, invite link), and see who joins and leaves.",
 			"defaultOperation": "campaign.participantEvents",
-			"tags": ["Grupos", "Acciones de grupo", "Participantes"]
+			"tags": ["Grupos", "Acciones de grupo"]
 		},
 		{
 			"value": "device",
 			"name": "Numbers",
-			"description": "The account's WhatsApp numbers: list them and their status, connect one by QR or with a connect link, and their health, queue, logs, username and profile.",
+			"description": "The account's WhatsApp numbers: list them and their status, connect one by QR or with a connect link, their health, queue, username and connection history.",
 			"defaultOperation": "deviceConnectionEvent.index",
-			"tags": [
-				"Device",
-				"DeviceProvisioning",
-				"ConnectLink",
-				"DeviceHealth",
-				"DeviceConnectionEvent",
-				"DeviceLogs",
-				"DeviceFleetLogs",
-				"DeviceUsername",
-				"DeviceDisconnectSurvey"
-			]
+			"tags": ["Números", "Cola de mensajes de un número"]
 		},
 		{
 			"value": "webhook",
 			"name": "Webhooks",
-			"description": "Webhook subscriptions and endpoints, the event catalog and the delivery history.",
+			"description": "Webhook subscriptions, the event catalog and the delivery history.",
 			"defaultOperation": "webhookSubscriptionDelivery.index",
-			"tags": [
-				"WebhookSubscription",
-				"WebhookEventCatalog",
-				"WebhookEndpoint",
-				"WebhookEndpointEvent",
-				"WebhookDelivery",
-				"WebhookSubscriptionDelivery",
-				"WebhookSubscriptionTest"
-			]
+			"tags": ["Webhooks"]
+		},
+		{
+			"value": "campaign",
+			"name": "Group Campaigns",
+			"description": "Campaigns of WhatsApp groups: their groups, conditions, pipelines, operation plans and the actions run on their groups.",
+			"defaultOperation": "campaign.index",
+			"tags": ["Campañas"]
+		},
+		{
+			"value": "scheduledMessage",
+			"name": "Scheduled Sends",
+			"description": "Messages scheduled to groups: their groups, the result in each group, reach, runs, folders and the answers they got.",
+			"defaultOperation": "scheduledMessage.index",
+			"tags": ["Envíos programados"]
+		},
+		{
+			"value": "stats",
+			"name": "Group Statistics",
+			"description": "Statistics of groups and campaigns: participants, activity, groups by status, clicks and countries.",
+			"defaultOperation": "stats.participantStats",
+			"tags": ["Estadísticas"]
+		},
+		{
+			"value": "broadcast",
+			"name": "Broadcasts",
+			"description": "Template broadcasts to contacts: their audience, cost, statistics, messages and folders.",
+			"defaultOperation": "broadcast.index",
+			"tags": ["Difusiones"]
+		},
+		{
+			"value": "flow",
+			"name": "Automations",
+			"description": "Automation flows: list them and see their detail and nodes, who is in them, and pause or cancel them for a contact.",
+			"defaultOperation": "flow.index",
+			"tags": ["Automatizaciones"]
+		},
+		{
+			"value": "flowFolder",
+			"name": "Flow Folders",
+			"description": "The folders that organize the automation flows.",
+			"defaultOperation": "folder.index",
+			"tags": ["Carpetas de flujos"]
+		},
+		{
+			"value": "board",
+			"name": "Boards",
+			"description": "Kanban boards and their stages: move contacts between stages and see who is in each one.",
+			"defaultOperation": "kanbanSetting.index",
+			"tags": ["Tableros"]
+		},
+		{
+			"value": "ticket",
+			"name": "Tickets",
+			"description": "Tickets about contacts: create, assign, close and reopen them.",
+			"defaultOperation": "ticket.index",
+			"tags": ["Tickets"]
+		},
+		{
+			"value": "quickReply",
+			"name": "Quick Replies",
+			"description": "The quick replies your team uses in conversations.",
+			"defaultOperation": "quickReply.index",
+			"tags": ["Respuestas rápidas"]
+		},
+		{
+			"value": "leadScore",
+			"name": "Lead Score",
+			"description": "How the lead score is calculated, how it is spread, a contact's score and manual adjustments.",
+			"defaultOperation": "leadScoreSettings.show",
+			"tags": ["Puntaje"]
+		},
+		{
+			"value": "sales",
+			"name": "Sales",
+			"description": "Sales reported by the payment platforms: metrics, funnel, by platform, the sales themselves and their products.",
+			"defaultOperation": "salesDashboard.index",
+			"tags": ["Ventas"]
+		},
+		{
+			"value": "account",
+			"name": "Account and Team",
+			"description": "Your account and your team: the account behind your key, its agents and the monthly active contacts it uses.",
+			"defaultOperation": "user.index",
+			"tags": ["Tu cuenta y tu equipo"]
+		},
+		{
+			"value": "alert",
+			"name": "Alerts",
+			"description": "Operational alerts: the alert types, where they arrive and which ones each destination gets, quiet hours and the daily report.",
+			"defaultOperation": "alertCatalog.index",
+			"tags": ["Alertas"]
+		},
+		{
+			"value": "metaAccount",
+			"name": "Meta Costs and Accounts",
+			"description": "The WhatsApp Business accounts of your official numbers and what you spent on WhatsApp.",
+			"defaultOperation": "whatsAppBusinessAccount.index",
+			"tags": ["Costos y cuentas de Meta"]
+		},
+		{
+			"value": "conversionsApi",
+			"name": "Conversions API",
+			"description": "Meta's Conversions API for your official numbers: its dataset and the connection test.",
+			"defaultOperation": "capiConnection.datasets",
+			"tags": ["Conversions API"]
+		},
+		{
+			"value": "customDomain",
+			"name": "Custom Domains",
+			"description": "Your own domains for Funnelchat's link redirection, with their DNS records and SSL.",
+			"defaultOperation": "customDomain.index",
+			"tags": ["Dominios propios"]
 		}
 	],
 	"excludeOperations": [],
+	"operationResources": {
+		"contact.attachCustomField": "contact",
+		"contact.detachCustomField": "contact",
+		"contact.customFields": "contact",
+		"contact.tags": "contact",
+		"messageTemplate.templates": "template",
+		"messageTemplate.send": "template",
+		"messageTemplate.sync": "template",
+		"whatsappForm.index": "form",
+		"whatsappFormSend.store": "form",
+		"campaign.participantEvents": "group"
+	},
 	"keepOperationValues": {
 		"message.showMessage": "showMessage"
 	},
@@ -121,6 +229,9 @@
 		"group.scheduledMessages": {
 			"orderBy": "string",
 			"orderByMethod": "string"
+		},
+		"customField.store": {
+			"type": "number"
 		}
 	},
 	"fieldDefaults": {
@@ -149,8 +260,6 @@
 		]
 	},
 	"operationNotes": {
-		"interactiveMessage.storePoll": "Not open to API keys in conversations v1.19.7 (outside the allowed list of config/platform-gate.php): a key gets 403 route_not_available.",
-		"interactiveMessage.storeEvent": "Not open to API keys in conversations v1.19.7 (outside the allowed list of config/platform-gate.php): a key gets 403 route_not_available.",
 		"messageReaction.update": "With an API key it answers 202 without a body: a reaction is not a message with an ID. If the provider does not support it, 422 with reason provider_unsupported.",
 		"messageReaction.destroy": "With an API key it answers 202 without a body: a reaction is not a message with an ID. If the provider does not support it, 422 with reason provider_unsupported.",
 		"deviceProvisioning.store": "Needs a key of the account owner (403 connect_not_allowed) and a place in the plan (403 numbers_not_included or number_limit_reached). While a QR number has never been connected, it answers 409 pending_number_exists with its device_id: connect it or delete it. A QR number is not official: WhatsApp may restrict it if it sends messages people do not expect.",
@@ -411,6 +520,10 @@
 		"Prender y apagar el endpoint entero, sin perder sus suscripciones ni su secreto.": "Turns the whole endpoint on and off, without losing its subscriptions or its secret."
 	},
 	"fieldDescriptionsByName": {
+		"alertDestination.update": {
+			"name": "The destination's name; null clears it.",
+			"destination": "Only for a webhook: the new URL, https and resolving to a public internet address."
+		},
 		"apiGroupAction.sendMessage": {
 			"group": "The group's uid: one of your groups (List groups) or of the number's live list (List the groups a number manages), which is imported first.",
 			"device_id": "The number that sends: connected, and an admin of the group (a QR number) or the group's own number (an official one).",
@@ -442,6 +555,12 @@
 			"return_url": "https address the page sends your customer to at the end, with the result in the query string (connect_link_id, status, and device_id or error_code).",
 			"expires_in_minutes": "How long the link lives: 30 to 10080 minutes (7 days); 1440 (24 hours) by default."
 		},
+		"contact.store": {
+			"custom_fields": "Optional. Values of custom fields for the contact, up to 100 items {id, value}: id is the ID of a field of your account (List custom fields) and value is its value, always text, in the format of the field's type. If an id is not of your account or workspace, or a value does not fit its type, it answers 422 and creates or changes nothing."
+		},
+		"contact.updateOrCreate": {
+			"custom_fields": "Optional. Values of custom fields for the contact, up to 100 items {id, value}: id is the ID of a field of your account (List custom fields) and value is its value, always text, in the format of the field's type. If an id is not of your account or workspace, or a value does not fit its type, it answers 422 and creates or changes nothing."
+		},
 		"contactCard.store": {
 			"client_reference": "Your own identifier for this send (1 to 64 visible ASCII characters, no spaces). It comes back in the message and in the message.status_changed event, to match them with your system."
 		},
@@ -450,6 +569,15 @@
 			"file_type": "What the file is, when File is a URL that does not show its extension (for example a signed URL). Without it, such a URL answers 422 on file_type.",
 			"file_name": "Name the document arrives with (without / \\ ? #). Needed for a document whose URL does not end in a known extension.",
 			"client_reference": "Your own identifier for this send (1 to 64 visible ASCII characters, no spaces). It comes back in the message and in the message.status_changed event, to match them with your system."
+		},
+		"customDomain.switchValidationMethod": {
+			"method": "How the domain's certificate is validated. HTTP (the default): it is issued when the domain's DNS record already points, without a TXT record. TXT: validated with a TXT record, for a domain that cannot point yet."
+		},
+		"customField.index": {
+			"type": "Only the fields of this type: 0 text, 1 number, 2 date, 3 URL, 4 alphanumeric."
+		},
+		"customField.store": {
+			"type": "The field's type, chosen when it is created and not changed later. It says how its value is written (always as text): 0 text, any text; 1 number, with a dot for decimals and no thousands separator (\"1500\", \"99.90\"); 2 date, YYYY-MM-DD; 3 URL, with https:// or http://; 4 alphanumeric, any text. A value with another format answers 422 and is not saved."
 		},
 		"device.index": {
 			"external_reference": "Only the numbers with exactly this reference: yours, given when creating the number or the connect link."
@@ -495,6 +623,13 @@
 		"messageTemplate.sync": {
 			"device": "The ID of the official number whose templates are brought."
 		},
+		"scheduledMessage.groupMessages": {
+			"edit_status": "Only the groups with this result of the last edit of the text already sent (not the delivery status): 1 edited in time; 2 delivered, but 15 minutes had passed since it went to that group; 3 sent with an official number, to a channel or with a number that cannot edit; 4 WhatsApp answered an error, or the message never reached the group.",
+			"run": "Date (YYYY-MM-DD, in the account's time zone) of one run of the send: the result of each group in that run. Without it, the last result of each group."
+		},
+		"scheduledMessage.index": {
+			"only_needs_connection": "With true, only the pending or running sends that have groups without a connected number that can send. Takes true, false, 1 or 0."
+		},
 		"v2.apiGroupImport": {
 			"group": "The group's ID on WhatsApp, as List the groups a number manages returns it.",
 			"device_id": "The QR number the group belongs to."
@@ -528,6 +663,80 @@
 		},
 		"webhookSubscriptionTest.test": {
 			"id": "The `id` (UUID) of the subscription."
+		},
+		"whatsAppBusinessAccount.show": {
+			"wabaId": "The WABA's ID, as Meta gives it (numeric)."
+		},
+		"whatsappForm.addNumber": {
+			"id": "ID of a version of the form (id from List forms or from its versions).",
+			"device_id": "Number to add."
+		},
+		"whatsappForm.definition": {
+			"familyId": "ID of the form (family_id), the same in all its versions."
+		},
+		"whatsappForm.destroy": {
+			"id": "ID of a version of the form (id from List forms or from its versions)."
+		},
+		"whatsappForm.index": {
+			"q": "Searches by name.",
+			"status": "Status.",
+			"device_id": "Only the ones of this number."
+		},
+		"whatsappForm.metrics": {
+			"familyId": "ID of the form (family_id), the same in all its versions.",
+			"from": "From this date.",
+			"to": "Up to this date.",
+			"version_id": "Only this version.",
+			"origin": "Origin of the send (for example api or automation)."
+		},
+		"whatsappForm.numbersIndex": {
+			"id": "ID of a version of the form (id from List forms or from its versions)."
+		},
+		"whatsappForm.publish": {
+			"id": "ID of a version of the form (id from List forms or from its versions)."
+		},
+		"whatsappForm.removeNumber": {
+			"id": "ID of a version of the form (id from List forms or from its versions).",
+			"deviceId": "Number to remove."
+		},
+		"whatsappForm.response": {
+			"familyId": "ID of the form (family_id), the same in all its versions.",
+			"runId": "Response ID."
+		},
+		"whatsappForm.responses": {
+			"familyId": "ID of the form (family_id), the same in all its versions.",
+			"from": "From this date.",
+			"to": "Up to this date.",
+			"version_id": "Only this version.",
+			"origin": "Origin of the send (for example api or automation).",
+			"status": "Status of the response.",
+			"search": "Searches by contact."
+		},
+		"whatsappForm.retryNumbers": {
+			"id": "ID of a version of the form (id from List forms or from its versions)."
+		},
+		"whatsappForm.show": {
+			"id": "ID of a version of the form (id from List forms or from its versions)."
+		},
+		"whatsappForm.store": {
+			"device_id": "Main number of the form.",
+			"device_ids": "Other numbers (up to 50).",
+			"template_key": "Key of the form template (from List form templates); blank to start empty."
+		},
+		"whatsappForm.storeVersion": {
+			"id": "ID of a version of the form (id from List forms or from its versions)."
+		},
+		"whatsappForm.sync": {
+			"id": "ID of a version of the form (id from List forms or from its versions)."
+		},
+		"whatsappForm.update": {
+			"id": "ID of a version of the form (id from List forms or from its versions).",
+			"name": "Name (up to 120 characters).",
+			"definition": "The full definition: {screens: [...]}, as Get a form returns it.",
+			"expected_updated_at": "The updated_at you read; if it changed in between, 409 STALE."
+		},
+		"whatsappForm.versions": {
+			"familyId": "ID of the form (family_id), the same in all its versions."
 		},
 		"whatsappFormSend.store": {
 			"contact": "Contact.",

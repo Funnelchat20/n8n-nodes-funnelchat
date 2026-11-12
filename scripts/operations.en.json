@@ -1,5 +1,5 @@
 {
-	"$comment": "English name and purpose of each operation of spec/funnelchat.json, by operationId. The portal's specification is in Spanish and is copied as is (its SHA-256 is checked), so scripts/generate.mjs takes the texts the node shows from here, and refuses to generate if an operation of the specification has no entry. Operations from spec/suplementos/ are written in English there.",
+	"$comment": "English name and purpose of each operation of spec/funnelchat.json (the portal's published specification), by operationId, or by \"METHOD /path\" for an operation without one (GET /api/v1/me). The specification is in Spanish and is copied as is (its SHA-256 is checked), so scripts/generate.mjs takes the texts the node shows from here. An operation without an entry does not stop the generation: the node shows its route as its name and the generator lists it to be translated here. It also has six alert operations the portal does not publish yet (creating, updating and deleting a destination, its verification code and its webhook test), so they come in already translated.",
 	"contact.index": {
 		"name": "List contacts",
 		"purpose": "Use it to search and segment contacts from your system: filter by name, phone, email, tags, custom fields, country, creation date or lead score. It is the basis for syncing or exporting your CRM."
@@ -88,10 +88,6 @@
 		"name": "Mark all as unread",
 		"purpose": "Use it to mark a set of conversations (by agents or favorites) as unread again so the team picks them up. It has a cap and the response says whether it was reached."
 	},
-	"conversation.update": {
-		"name": "Update a contact's conversation",
-		"purpose": "Manages the conversation with a contact: assign it to an agent, open or close it, mark it as favorite or unread, or change the number that handles it."
-	},
 	"conversation.getLatestMessages": {
 		"name": "List a contact's messages",
 		"purpose": "Gets a contact's message history and keeps it in sync in your system, with cursor pagination and updated_since to ask only for what is new."
@@ -103,14 +99,6 @@
 	"messageReaction.destroy": {
 		"name": "Remove a reaction",
 		"purpose": "Removes the reaction you put on a message."
-	},
-	"interactiveMessage.storePoll": {
-		"name": "Send a poll",
-		"purpose": "Sends a contact a poll with options, single or multiple choice, for example to learn preferences or confirm an appointment."
-	},
-	"interactiveMessage.storeEvent": {
-		"name": "Send an event invitation",
-		"purpose": "Use it to send a contact an invitation to an event with a name, date and time, description and place, such as a webinar or a meeting."
 	},
 	"messageTemplate.templates": {
 		"name": "List templates",
@@ -127,10 +115,6 @@
 	"messageTemplate.update": {
 		"name": "Update a template",
 		"purpose": "Use it to edit the content of an existing template: category, header, body, variables, footer or buttons."
-	},
-	"messageTemplate.quickReplyButtons": {
-		"name": "Get a template's quick reply buttons",
-		"purpose": "Use it to get the quick reply buttons of a template, for example to plan what to do depending on the button the contact taps."
 	},
 	"messageTemplate.delete": {
 		"name": "Delete a template from a number",
@@ -208,21 +192,9 @@
 		"name": "List the session actions on a group",
 		"purpose": "Use it to see the history of actions run on a group and their result, for example to understand why its name or its admins changed."
 	},
-	"group.messages": {
-		"name": "List the messages sent to a group",
-		"purpose": "Shows the messages that were sent to a group and the scheduled send each one came from."
-	},
 	"group.scheduledMessages": {
 		"name": "List the scheduled sends that include a group",
 		"purpose": "Use it to know which scheduled sends include a group, for example before changing it."
-	},
-	"campaign.participants": {
-		"name": "List a campaign's participants",
-		"purpose": "Lists the participants of a campaign, with a search by phone and whether they are admins."
-	},
-	"campaign.campaignParticipants": {
-		"name": "List participants with their current group",
-		"purpose": "Use it to know which group each participant of a campaign is in, when they joined or left and whether they are still active. Meant for syncing members with your CRM."
 	},
 	"campaign.participantEvents": {
 		"name": "List a campaign's joins and leaves",
@@ -240,14 +212,6 @@
 		"name": "List numbers",
 		"purpose": "Lists your WhatsApp numbers with their provider, whether they are connected (connected) and active, and their health, and gets the IDs the other operations use. External Reference finds the number a connect link created."
 	},
-	"device.me": {
-		"name": "Get a number's WhatsApp profile",
-		"purpose": "Use it to read the WhatsApp profile of one of your numbers as the provider reports it."
-	},
-	"device.checkPhone": {
-		"name": "Check whether a phone has WhatsApp",
-		"purpose": "Checks whether a phone has WhatsApp before adding it as a contact or writing to it, to avoid failed sends."
-	},
 	"device.show": {
 		"name": "Get a number",
 		"purpose": "Use it to see a number's data: alias, provider, WABA, username, whether it is connected and its health."
@@ -264,25 +228,9 @@
 		"name": "Restart a number's session",
 		"purpose": "Restarts a number's WhatsApp session from scratch; the QR code has to be scanned again afterwards. It cannot be undone and needs accounts:operate."
 	},
-	"device.updateWebhookReceived": {
-		"name": "Set the received messages webhook",
-		"purpose": "Sets on a number the received messages notice that Funnelchat uses to get them."
-	},
-	"device.updateWebhookReceivedAndDelivery": {
-		"name": "Set the received and delivery webhook",
-		"purpose": "Sets on a number the received messages and delivery receipt notices that Funnelchat uses."
-	},
 	"device.clean": {
 		"name": "Clean a number",
 		"purpose": "Cleans a number's WhatsApp session: the QR code has to be scanned again afterwards. It cannot be undone and needs accounts:operate."
-	},
-	"device.chats": {
-		"name": "List a number's chats",
-		"purpose": "Use it to list the chats a number has on WhatsApp according to the provider, with a search by phone and a filter by type."
-	},
-	"device.openConversations": {
-		"name": "Check which phones have an open conversation",
-		"purpose": "Checks in bulk, up to 100 phones per call, which ones have an open conversation with a number, for example before deciding how to reach them."
 	},
 	"device.messageQueue": {
 		"name": "Get the message queue",
@@ -304,10 +252,6 @@
 		"name": "Get the connection status",
 		"purpose": "Use it to check a number's connection status, for example before starting sends or to monitor your numbers."
 	},
-	"device.extensionToken": {
-		"name": "Get a token for the WhatsApp Web extension",
-		"purpose": "Gets a single-use, short-lived code with which the Z-API Conector Chrome extension moves a WhatsApp Web session to this number. Z-API numbers only."
-	},
 	"deviceHealth.show": {
 		"name": "Get a number's health",
 		"purpose": "Use it to see the health of a WhatsApp Cloud number (status, identity, throughput level and change history) from the last stored data, without asking Meta."
@@ -319,18 +263,6 @@
 	"deviceConnectionEvent.index": {
 		"name": "Get the connection history",
 		"purpose": "Use it to see when a number connected and disconnected, newest event first, for example to investigate outages."
-	},
-	"deviceLogs.index": {
-		"name": "List a number's logs",
-		"purpose": "Use it to debug one number: its activity logs with method, HTTP code, duration and errors in a time window, newest first."
-	},
-	"deviceLogs.health": {
-		"name": "Get the logs health signal",
-		"purpose": "A quick check of a number: looks at its last 5 requests that are not sends and returns a verdict (healthy, check or attention)."
-	},
-	"deviceFleetLogs.index": {
-		"name": "List the logs of all numbers",
-		"purpose": "Reviews in one place the activity logs of all your numbers (method, URL, HTTP code, duration, errors) in a time window. Meant for diagnosing failures."
 	},
 	"deviceUsername.show": {
 		"name": "Get the username",
@@ -344,45 +276,9 @@
 		"name": "Suggest usernames",
 		"purpose": "Use it to ask Meta for username suggestions before reserving one."
 	},
-	"deviceDisconnectSurvey.show": {
-		"name": "Get the disconnection survey",
-		"purpose": "Tells whether a number has the survey about the reason for its disconnection pending."
-	},
-	"deviceDisconnectSurvey.store": {
-		"name": "Answer the disconnection survey",
-		"purpose": "Use it to record why a number disconnected, answering the disconnection survey with one of the predefined reasons."
-	},
 	"webhookEventCatalog.index": {
 		"name": "List event types",
 		"purpose": "Use it to know the catalog of events of the account and its numbers, which are emitted already and which are planned, with an example body of each."
-	},
-	"webhookEndpoint.index": {
-		"name": "List webhooks",
-		"purpose": "Use it to see the account's webhook endpoints, which events each one is subscribed to, its status and its health."
-	},
-	"webhookEndpoint.store": {
-		"name": "Create a webhook",
-		"purpose": "Lets your system know when a number connects or disconnects, without polling the API. Register an HTTPS URL and keep the secret: it is shown only once."
-	},
-	"webhookEndpoint.show": {
-		"name": "Get a webhook",
-		"purpose": "Use it to see an endpoint's configuration: URL, events, status, disabling reason and when the secret was rotated."
-	},
-	"webhookEndpoint.update": {
-		"name": "Update a webhook",
-		"purpose": "Changes an endpoint's URL or description, or turns the whole endpoint on and off without losing its subscriptions."
-	},
-	"webhookEndpoint.destroy": {
-		"name": "Delete a webhook",
-		"purpose": "Use it to remove an endpoint; its subscriptions and delivery history are deleted with it."
-	},
-	"webhookEndpointEvent.update": {
-		"name": "Choose a webhook's events",
-		"purpose": "Sets which event types an endpoint is subscribed to."
-	},
-	"webhookDelivery.index": {
-		"name": "List a webhook's deliveries",
-		"purpose": "Use it to debug a webhook endpoint: each delivery attempt, newest first."
 	},
 	"deviceProvisioning.store": {
 		"name": "Create a number to connect by QR",
@@ -547,5 +443,601 @@
 	"messageTemplate.sync": {
 		"name": "Bring templates from Meta",
 		"purpose": "Use it when you created or changed a template directly in Meta and it does not show in your list yet (they arrive on their own once a day): it brings them now. Official WhatsApp numbers only."
+	},
+	"broadcast.index": {
+		"name": "List broadcasts",
+		"purpose": "Use it to build a panel or report of your broadcasts: filter by number, status, folder, send type or scheduled date and find the one you want."
+	},
+	"broadcast.contacts": {
+		"name": "Find the contacts for a broadcast",
+		"purpose": "Use it to preview a broadcast's audience before creating it: give it the filters (tags, countries, board stage, lead score) and it returns, page by page, the contacts that would be in it."
+	},
+	"broadcast.contactsCount": {
+		"name": "Count the contacts for a broadcast",
+		"purpose": "Use it to size a broadcast's audience with the same filters you find its contacts with, without bringing them one by one. The specification does not describe the shape of the response."
+	},
+	"broadcast.costTiers": {
+		"name": "Get the cost tiers",
+		"purpose": "Use it to see the current cost tiers and the date the prices were last updated, as a reference to estimate what a broadcast can cost."
+	},
+	"broadcast.moveToFolder": {
+		"name": "Move broadcasts to a folder",
+		"purpose": "Use it to sort broadcasts in bulk: it moves several of them to a folder in one call, for example to group them by campaign or by customer."
+	},
+	"broadcast.show": {
+		"name": "Get a broadcast",
+		"purpose": "Use it to see a broadcast's full setup: number, template, folder and the audience filters it used (tags, countries, board, lead score)."
+	},
+	"broadcast.destroy": {
+		"name": "Delete a broadcast",
+		"purpose": "Use it to delete a scheduled broadcast before its send time. One already sent or going out cannot be deleted (422); a paused one is closed by cancelling it."
+	},
+	"broadcast.statistics": {
+		"name": "Get a broadcast's statistics",
+		"purpose": "Use it to measure a broadcast's result: delivered, read, replied, failed, pending and skipped (with the reason), plus the clicks on each button."
+	},
+	"broadcast.cost": {
+		"name": "Get a broadcast's cost",
+		"purpose": "Use it to know what a broadcast costs: the estimate before sending and the cost calculated for what was sent, by market, and whether the figure is still partial."
+	},
+	"broadcast.broadcastContacts": {
+		"name": "List a broadcast's contacts",
+		"purpose": "Use it to get the recipients of a broadcast, for example to match them with your CRM or to audit who it was sent to."
+	},
+	"broadcast.cancel": {
+		"name": "Cancel a broadcast",
+		"purpose": "Use it to close a broadcast that is going out or was paused: it ends there, with partial failures, and broadcast.finished arrives with reason cancelled. In any other status, scheduled included, it answers 409: a scheduled one is deleted."
+	},
+	"broadcast.broadcastMessages": {
+		"name": "List a broadcast's messages",
+		"purpose": "Use it to see a broadcast recipient by recipient: the status of each message, why it was skipped and when it was sent. Filter with tab to see the delivered, read, replied, failed or skipped ones."
+	},
+	"broadcastFolder.index": {
+		"name": "List broadcast folders",
+		"purpose": "Use it to get the broadcast folders with how many broadcasts each one has, for example to copy that organization in your system."
+	},
+	"broadcastFolder.store": {
+		"name": "Create a broadcast folder",
+		"purpose": "Use it to create a folder and group broadcasts by campaign, customer or whatever you use."
+	},
+	"broadcastFolder.update": {
+		"name": "Rename a broadcast folder",
+		"purpose": "Use it to rename a broadcast folder."
+	},
+	"broadcastFolder.destroy": {
+		"name": "Delete a broadcast folder",
+		"purpose": "Use it to delete a broadcast folder you no longer use."
+	},
+	"contact.addTags": {
+		"name": "Add tags to contacts",
+		"purpose": "Use it to tag one or more contacts from your system, up to 200 per call. One tag on one contact starts, as in the panel, that tag's \"Tag added\" automation; several in the same call start none."
+	},
+	"contact.removeTags": {
+		"name": "Remove tags from contacts",
+		"purpose": "Use it to remove tags from one or more contacts, up to 200 per call, for example when something changed in your system. It starts no automation."
+	},
+	"contactAutomation.pause": {
+		"name": "Pause a contact's automations",
+		"purpose": "Use it to pause a contact in the account's automations; conversations and broadcasts can filter the paused contacts. The pause does not expire nor lift on its own."
+	},
+	"contactAutomation.flows": {
+		"name": "List a contact's flows",
+		"purpose": "Use it to know which automation flows a contact is in and whether any of them is still running."
+	},
+	"contactLeadScore.show": {
+		"name": "Get a contact's lead score",
+		"purpose": "Use it to know how hot a lead is: score, category, confidence, whether it is disqualified and the history of signals behind it, page by page with a cursor."
+	},
+	"flow.contactFlowHistory": {
+		"name": "List a contact's flow runs",
+		"purpose": "Use it to see the history of a contact's flow runs, filtered by status (running, completed, invalidated, cancelled) and dates. Useful to find out why a contact did or did not get an automation."
+	},
+	"flow.cancelContactFlow": {
+		"name": "Cancel a flow run",
+		"purpose": "Use it to stop a flow that is running for a contact, for example when your system finds out the contact already bought or asked not to get more messages. The ID of the run comes from the contact's runs or from the flow's contacts."
+	},
+	"flow.index": {
+		"name": "List flows",
+		"purpose": "Use it to list your automation flows filtered by folder, trigger, status, number or date, for example to show them in your product or to audit them."
+	},
+	"flow.activeContacts": {
+		"name": "Count a flow's running contacts",
+		"purpose": "Use it to know how many contacts are inside a flow right now, for example before editing or turning it off."
+	},
+	"flow.pausedContacts": {
+		"name": "Count a flow's paused contacts",
+		"purpose": "Use it to know how many contacts of a flow are paused, for example for a dashboard of your automations."
+	},
+	"flow.pausedContactsList": {
+		"name": "List a flow's paused contacts",
+		"purpose": "Use it to see who is paused in a flow, with a search, for example to review those cases one by one."
+	},
+	"flow.flowContactsList": {
+		"name": "List a flow's contacts",
+		"purpose": "Use it to see every contact that went through a flow, filtered by status (running, completed, invalidated, cancelled) and dates. Good to measure its result."
+	},
+	"folder.index": {
+		"name": "List flow folders",
+		"purpose": "Use it to list the folders the flows are organized in, with their hierarchy and number of flows, for example to filter flows by folder."
+	},
+	"folder.store": {
+		"name": "Create a flow folder",
+		"purpose": "Use it to create a folder (or a subfolder, with parent_id) to organize your flows."
+	},
+	"folder.show": {
+		"name": "Get a flow folder",
+		"purpose": "Use it to see a flow folder with its subfolders and how many flows it has."
+	},
+	"folder.update": {
+		"name": "Update a flow folder",
+		"purpose": "Use it to rename a flow folder or to move it into another one by changing parent_id."
+	},
+	"folder.destroy": {
+		"name": "Delete a flow folder",
+		"purpose": "Use it to delete a flow folder you no longer need."
+	},
+	"kanbanSetting.index": {
+		"name": "List boards",
+		"purpose": "Use it to list your kanban boards and get their IDs, which you need to move contacts between stages or to filter conversations and broadcasts by board."
+	},
+	"kanbanSetting.store": {
+		"name": "Create a board",
+		"purpose": "Use it to create a kanban board, based on stages or on tags, for example to model your sales or support funnel inside Funnelchat."
+	},
+	"kanbanSetting.show": {
+		"name": "Get a board",
+		"purpose": "Use it to see a board's setup: mode, stages, days after which a contact counts as stalled, and the value and profit fields linked to it."
+	},
+	"kanbanSetting.update": {
+		"name": "Update a board",
+		"purpose": "Use it to adjust an existing board: name, structure, stalled days, view, icon or whether it is coloured by lead score."
+	},
+	"kanbanSetting.destroy": {
+		"name": "Delete a board",
+		"purpose": "Use it to delete a kanban board you no longer use."
+	},
+	"kanbanSetting.members": {
+		"name": "Check which contacts are on a board",
+		"purpose": "Use it to check in one call which of a set of contacts are on a board, for example before moving or adding them."
+	},
+	"kanbanStage.contactStages": {
+		"name": "Get a contact's stages",
+		"purpose": "Use it to see a contact's stage on each board, useful to show its progress in the funnel inside your CRM."
+	},
+	"kanbanStage.moveContact": {
+		"name": "Move a contact to a stage",
+		"purpose": "Use it to move a contact to another stage of the board when something happens in your system, for example when a payment arrives or a demo is booked."
+	},
+	"kanbanStage.bulkMove": {
+		"name": "Move contacts to a stage",
+		"purpose": "Use it to move many contacts to the same stage at once, for example when closing a campaign or importing results."
+	},
+	"kanbanStage.removeContact": {
+		"name": "Remove a contact from a board",
+		"purpose": "Use it to take a contact off a board when it is no longer in that process, for example if it was lost or discarded."
+	},
+	"kanbanStage.bulkRemove": {
+		"name": "Remove contacts from a board",
+		"purpose": "Use it to take several contacts off a board in one call."
+	},
+	"kanbanStage.store": {
+		"name": "Create a stage",
+		"purpose": "Use it to add a new stage to a board, after an existing stage."
+	},
+	"kanbanStage.reorder": {
+		"name": "Reorder the stages",
+		"purpose": "Use it to change the order of a board's stages by sending the list of IDs in the order you want."
+	},
+	"kanbanStage.update": {
+		"name": "Rename a stage",
+		"purpose": "Use it to rename a stage of a board."
+	},
+	"kanbanStage.destroy": {
+		"name": "Delete a stage",
+		"purpose": "Use it to delete a stage of a board; with reassign_to_stage_id its contacts go to another stage."
+	},
+	"kanbanStage.contacts": {
+		"name": "List a stage's contacts",
+		"purpose": "Use it to bring the contacts of a stage with filters (agent, value, stalled, tags, lead score, dates), for example to follow them up or to report on the funnel."
+	},
+	"leadScoreDistribution.show": {
+		"name": "Get the lead score distribution",
+		"purpose": "Use it to see how your contacts are spread among hot, warm, cold and not enough data, with the current thresholds. Good for a lead quality dashboard."
+	},
+	"leadScoreSettings.show": {
+		"name": "Get the lead score settings",
+		"purpose": "Use it to read how your account's lead score is calculated: hot and warm thresholds, minimum signals, hysteresis, decay and rules."
+	},
+	"leadScoreSettings.update": {
+		"name": "Set the lead score settings",
+		"purpose": "Use it to fit the lead score to your business: category thresholds, minimum signals, hysteresis, decay over the days and rules. It replaces the whole setup at once: send all of it. Only the key of the account owner."
+	},
+	"leadScoreSettings.adjust": {
+		"name": "Adjust a contact's lead score",
+		"purpose": "Use it to add or take points from a contact's lead score by hand, with a reason, for example when your sales team confirms interest through another channel."
+	},
+	"mac.status": {
+		"name": "Get your monthly active contacts usage",
+		"purpose": "Use it to know how many monthly active contacts (MAC) your account has in the cycle, its limit, how many are left and the share used, so you act before the account is blocked."
+	},
+	"mac.contacts": {
+		"name": "List your monthly active contacts",
+		"purpose": "Use it to see which contacts count as MAC, useful to understand what is using up your quota."
+	},
+	"mac.contactsHistory": {
+		"name": "List the history of your monthly active contacts",
+		"purpose": "Use it to see the history of MACs and how the usage evolved over time."
+	},
+	"paymentProduct.index": {
+		"name": "List a payment platform's products",
+		"purpose": "Use it to list the products of a payment platform with their external ID and name, for example to match them with the sales Funnelchat reports."
+	},
+	"quickReply.index": {
+		"name": "List quick replies",
+		"purpose": "Use it to list the account's quick replies, for example to offer them in your own support interface."
+	},
+	"quickReply.store": {
+		"name": "Create a quick reply",
+		"purpose": "Use it to create a quick reply with text or a file and choose who sees it (visibility and agents), so the team answers the frequent questions faster."
+	},
+	"quickReply.show": {
+		"name": "Get a quick reply",
+		"purpose": "Use it to see a quick reply with its content, its type and the agents who have it."
+	},
+	"quickReply.update": {
+		"name": "Update a quick reply",
+		"purpose": "Use it to update the content or the visibility of a quick reply."
+	},
+	"quickReply.destroy": {
+		"name": "Delete a quick reply",
+		"purpose": "Use it to delete a quick reply that is no longer used."
+	},
+	"salesDashboard.metrics": {
+		"name": "Get the sales metrics",
+		"purpose": "Use it to get sales metrics of the last 7, 30 or 90 days: totals by currency, distinct buyers and repurchase rate. Good for a sales dashboard."
+	},
+	"salesDashboard.funnel": {
+		"name": "Get the sales funnel",
+		"purpose": "Use it to see the funnel from conversations to qualified leads to purchases in a 7, 30 or 90 day window, and measure how much your WhatsApp service converts."
+	},
+	"salesDashboard.byPlatform": {
+		"name": "Get the sales by platform",
+		"purpose": "Use it to compare the sales by payment platform in the chosen window and see which platforms are connected."
+	},
+	"salesDashboard.index": {
+		"name": "List sales",
+		"purpose": "Use it to bring the sales in detail (product, amount in the minor unit of its currency, platform, status, buyer and attribution) of the last 7, 30 or 90 days, for example to reconcile them with your system."
+	},
+	"ticket.index": {
+		"name": "List tickets",
+		"purpose": "Use it to list the account's tickets filtered by status (1 open, 2 closed) or by assigned user, for example to build a view of pending cases."
+	},
+	"ticket.store": {
+		"name": "Create a ticket",
+		"purpose": "Use it to open a ticket about a contact (title and description) and assign it to a user of the team, for example when your system detects a complaint."
+	},
+	"ticket.show": {
+		"name": "Get a ticket",
+		"purpose": "Use it to see a ticket with its contact, the person in charge, the description and the due date."
+	},
+	"ticket.update": {
+		"name": "Update a ticket",
+		"purpose": "Use it to fix or extend the title and the description of a ticket."
+	},
+	"ticket.assignTicketToUser": {
+		"name": "Assign a ticket",
+		"purpose": "Use it to assign a ticket to another user of the team."
+	},
+	"ticket.closeTicket": {
+		"name": "Close a ticket",
+		"purpose": "Use it to close a ticket when the case is solved."
+	},
+	"ticket.reOpenTicket": {
+		"name": "Reopen a ticket",
+		"purpose": "Use it to reopen a closed ticket if the case needs attention again."
+	},
+	"user.show": {
+		"name": "Get a team member",
+		"purpose": "Use it to see the data of a person of your team, for example their name to show who handles a conversation."
+	},
+	"user.index": {
+		"name": "List your team",
+		"purpose": "Use it to list the account's agents and get their IDs, which you need to assign conversations or tickets and to filter by agent."
+	},
+	"whatsappForm.index": {
+		"name": "List forms",
+		"purpose": "Use it to see the WhatsApp forms of the account, one row per form with its current version, sends and responses."
+	},
+	"whatsappForm.store": {
+		"name": "Create a form",
+		"purpose": "Use it to create a draft form from a template (blank starts it empty) for one or more numbers. Then it is edited, validated and published."
+	},
+	"whatsappForm.templates": {
+		"name": "List form templates",
+		"purpose": "Use it to see which templates a form can be created from."
+	},
+	"whatsappForm.show": {
+		"name": "Get a form",
+		"purpose": "Use it to see a version of a form with its definition, its lint, its versions and its numbers."
+	},
+	"whatsappForm.update": {
+		"name": "Save a form",
+		"purpose": "Use it to save the definition of a draft (screens and questions). A published form is not edited: create a new version."
+	},
+	"whatsappForm.destroy": {
+		"name": "Delete a draft form",
+		"purpose": "Use it to delete a draft version. A published one answers 409 PUBLISHED."
+	},
+	"whatsappForm.numbersIndex": {
+		"name": "Get a form's numbers",
+		"purpose": "Use it to see which numbers the form is on and the status of its publication on each one."
+	},
+	"whatsappForm.addNumber": {
+		"name": "Add a number to a form",
+		"purpose": "Use it to add a number to the form; if it is already published, it is published on that number too."
+	},
+	"whatsappForm.removeNumber": {
+		"name": "Remove a number from a form",
+		"purpose": "Use it to take a number off the form. The main number cannot be removed (422 PRIMARY_NUMBER)."
+	},
+	"whatsappForm.retryNumbers": {
+		"name": "Retry publishing on the numbers",
+		"purpose": "Use it to retry the publication on the numbers where it failed."
+	},
+	"whatsappForm.storeVersion": {
+		"name": "Create a new version of a form",
+		"purpose": "Use it to edit a published form: creates a new draft from it, or returns the draft that already existed (created: false)."
+	},
+	"whatsappForm.sync": {
+		"name": "Validate a form with Meta",
+		"purpose": "Use it to upload the draft to Meta and get its validation errors before publishing."
+	},
+	"whatsappForm.publish": {
+		"name": "Publish a form",
+		"purpose": "Use it to publish the draft on its numbers. With errors it answers 422 LINT; if Meta rejects it, 502 META."
+	},
+	"whatsappForm.definition": {
+		"name": "Get a form's published definition",
+		"purpose": "Use it to read the definition of the current version of a form."
+	},
+	"whatsappForm.versions": {
+		"name": "List a form's versions",
+		"purpose": "Use it to see all the versions of a form with their status and responses."
+	},
+	"whatsappForm.responses": {
+		"name": "List a form's responses",
+		"purpose": "Use it to get the responses of a form, across all its versions, with the contact and the value of each field."
+	},
+	"whatsappForm.response": {
+		"name": "Get a form's response",
+		"purpose": "Use it to see a full response: each answer of the contact, the times of the send and what the form did."
+	},
+	"whatsappForm.metrics": {
+		"name": "Get a form's metrics",
+		"purpose": "Use it to see how many forms were sent, delivered, read and completed, and the rates."
+	},
+	"campaign.index": {
+		"name": "List campaigns",
+		"purpose": "Use it to list the WhatsApp group campaigns of your account, with a search by name, and get their IDs to look up their groups, participants or statistics."
+	},
+	"campaign.show": {
+		"name": "Get a campaign",
+		"purpose": "Use it to see a campaign's full setup: its groups, admins, redirect link, traffic distribution, pixel and the groups that are disconnected or failing."
+	},
+	"campaignConditional.index": {
+		"name": "List a campaign's conditions",
+		"purpose": "Use it to know a campaign's conditional rules: which conditions it checks and which URL or group it redirects to when they are met."
+	},
+	"campaign.availableGroups": {
+		"name": "List the groups you can add to a campaign",
+		"purpose": "Use it to see which groups, announcement groups or channels of your account can be added to a campaign, filtered by number or by name."
+	},
+	"campaign.groups": {
+		"name": "List a campaign's groups",
+		"purpose": "Use it to list a campaign's groups with their status, origin and admin connection, for example to spot full or disconnected groups."
+	},
+	"campaign.indexPipelines": {
+		"name": "List a campaign's pipelines",
+		"purpose": "Use it to follow the pipelines of operations on a campaign's groups, with how many actions are in each status and their progress, filtered by status or action type."
+	},
+	"campaign.showPipeline": {
+		"name": "Get a pipeline",
+		"purpose": "Use it to see the progress of a bulk operation: how many actions are scheduled, running, completed or failed, and the share done."
+	},
+	"operationPlan.config": {
+		"name": "Get the limits of an operation plan",
+		"purpose": "Use it to know the limits a campaign's operation plans are scheduled with: daily cap, minimum spacing, time window and whether weekends are allowed."
+	},
+	"operationPlan.index": {
+		"name": "List a campaign's operation plans",
+		"purpose": "Use it to list a campaign's scheduled operation plans, with their status, date range, daily cap and number of operations."
+	},
+	"operationPlan.show": {
+		"name": "Get an operation plan",
+		"purpose": "Use it to see an operation plan in detail: status, time zone, time window, date range, daily cap and spacing between operations."
+	},
+	"campaign.actions": {
+		"name": "List a campaign's actions",
+		"purpose": "Use it to audit the actions run on a campaign's groups through the WhatsApp session: what changed (old and new value), status, attempts and dates."
+	},
+	"groupManagement.actionGroup": {
+		"name": "List an action's groups",
+		"purpose": "Use it to see which groups an action was applied to and with which result on each one, useful to find the ones that failed."
+	},
+	"scheduledMessage.index": {
+		"name": "List scheduled sends",
+		"purpose": "Use it to list your scheduled sends to groups with their status, date, recurrence and campaigns, filtered by folder or by the ones that need a number reconnected."
+	},
+	"scheduledMessage.show": {
+		"name": "Get a scheduled send",
+		"purpose": "Use it to see a scheduled send in full: date, status, audience, reads, plays, link clicks and sending speed."
+	},
+	"scheduledMessage.groups": {
+		"name": "List a scheduled send's groups",
+		"purpose": "Use it to know which groups a scheduled send goes to, filtered by name or status."
+	},
+	"scheduledMessage.readedAndPlayedRates": {
+		"name": "Get a scheduled send's reads and plays",
+		"purpose": "Use it to measure a send's reach: total audience, how many read it and how many played its content, in total or by run."
+	},
+	"scheduledMessage.runs": {
+		"name": "List a recurring send's runs",
+		"purpose": "Use it to see each run of a recurring send that already went out, with how many groups went well and how many with an error."
+	},
+	"scheduledMessageFolder.index": {
+		"name": "List scheduled send folders",
+		"purpose": "Use it to get the folders the scheduled sends are organized in and filter the list by folder."
+	},
+	"scheduledMessage.responses": {
+		"name": "List the answers to a scheduled send",
+		"purpose": "Use it to collect the answers to the polls or events of a send: who answered, in which group, what they chose and when."
+	},
+	"scheduledMessage.responseTags": {
+		"name": "List the tags a scheduled send gives to who answers",
+		"purpose": "Use it to see, for each poll or event of the send, which tags are applied to who answers by the option chosen, and how many answers were left without a tag."
+	},
+	"stats.participantStats": {
+		"name": "Get participants by period",
+		"purpose": "Use it to chart participants joining and leaving by hour, day or month in your groups or campaigns, in a range of up to 366 days."
+	},
+	"stats.activeParticipants": {
+		"name": "Get active participants",
+		"purpose": "Use it to see how active and inactive participants evolve by period in your groups or campaigns, for example to follow how active your community is."
+	},
+	"stats.groupStats": {
+		"name": "Get your groups by status",
+		"purpose": "Use it to follow how many groups you have in each status over time, by hour, day or month."
+	},
+	"stats.clickStats": {
+		"name": "Get the clicks on your links",
+		"purpose": "Use it to measure the clicks on your groups' or campaigns' links by period and compare which ones bring more traffic."
+	},
+	"stats.statsRecords": {
+		"name": "List the click records",
+		"purpose": "Use it to download the individual records of your groups or campaigns (country, device, browser, referrer, group and contact data when there is any), filtered by date, country or device."
+	},
+	"stats.countryMetrics": {
+		"name": "Get the metrics by country",
+		"purpose": "Use it to analyse your audience by country: contacts, clicks, joins, join rate and leaves in your groups or campaigns."
+	},
+	"capiConnection.dataset": {
+		"name": "Set up a number's dataset",
+		"purpose": "Use it to get the Meta Conversions API dataset of a number's WABA ready, creating it or getting it back if it already existed. Only the account owner can do it."
+	},
+	"capiConnection.test": {
+		"name": "Test the Conversions API connection",
+		"purpose": "Use it to check the Conversions API connection: it checks the token's permissions and that the WABA has a dataset, without sending test events, and gives you the link to the Events Manager."
+	},
+	"capiConnection.datasets": {
+		"name": "List your Conversions API datasets",
+		"purpose": "Use it to see, without asking Meta, the last saved status of the Conversions API of each WhatsApp Business account of yours that already has a dataset."
+	},
+	"customDomain.index": {
+		"name": "List custom domains",
+		"purpose": "Use it to see your own domains with their status, the SSL and the DNS records you have to add."
+	},
+	"customDomain.store": {
+		"name": "Add a custom domain",
+		"purpose": "Use it to register a domain of yours, such as go.mybrand.com, for Funnelchat's redirection service. Then create in your DNS the records it gives so it is validated."
+	},
+	"customDomain.verify": {
+		"name": "Verify a custom domain",
+		"purpose": "Use it after publishing the DNS records to validate the domain now, instead of waiting for the automatic check."
+	},
+	"customDomain.switchValidationMethod": {
+		"name": "Change how the certificate is validated",
+		"purpose": "Use it to switch the SSL validation method between HTTP and TXT; use TXT while the CNAME does not point yet and the HTTP validation cannot complete."
+	},
+	"customDomain.destroy": {
+		"name": "Delete a custom domain",
+		"purpose": "Use it to remove a custom domain: it stops being used at once. It cannot be undone."
+	},
+	"whatsAppBusinessAccount.index": {
+		"name": "List your WhatsApp Business accounts",
+		"purpose": "Use it to see the WhatsApp Business accounts of your official numbers, each one with its numbers and the daily message limit Meta gives its business portfolio. QR numbers do not show."
+	},
+	"whatsAppBusinessAccount.show": {
+		"name": "Get a WhatsApp Business account",
+		"purpose": "Use it to see one of the WhatsApp Business accounts of your official numbers, by its Meta ID: its numbers and the daily message limit they share."
+	},
+	"whatsappCost.index": {
+		"name": "Get your WhatsApp costs",
+		"purpose": "Use it to see how much you spent on WhatsApp in a month (the current one or the one you give in month), for example to control costs or reconcile your billing."
+	},
+	"flow.show": {
+		"name": "Get a flow",
+		"purpose": "Use it to see a flow's setup: whether it is active and valid, how many times it ran and what triggers it (type, values and numbers)."
+	},
+	"flow.nodes": {
+		"name": "List a flow's nodes",
+		"purpose": "Use it to read a flow's nodes and how they are chained, for example to document or draw the automation outside Funnelchat."
+	},
+	"flow.activeContactsList": {
+		"name": "List a flow's running contacts",
+		"purpose": "Use it to know who is inside a flow right now, with a search, for example to review cases or cancel single runs."
+	},
+	"scheduledMessage.groupMessages": {
+		"name": "Get a scheduled send's result by group",
+		"purpose": "Use it to see how the send went in each group: status, error, reads, plays, reactions and clicks, optionally for one run of a recurring send."
+	},
+	"GET /api/v1/me": {
+		"name": "Get my account",
+		"purpose": "Use it to identify the account behind your key and know its plan, its limits of numbers and agents, the role, the time zone and the language, for example when connecting your integration."
+	},
+	"alertCampaign.index": {
+		"name": "List the campaigns for alerts",
+		"purpose": "Use it to list, with a search by name, the group campaigns you can choose when setting up alerts such as the daily report."
+	},
+	"alertCatalog.index": {
+		"name": "List the alert types",
+		"purpose": "Use it to know which alerts exist (disconnected numbers, MAC usage, charges, campaigns, groups and more), which ones are critical and what they mean, before turning them on for a destination."
+	},
+	"alertDailyReport.show": {
+		"name": "Get the daily report settings",
+		"purpose": "Use it to see how the daily report is set up: whether it is on, at what time it is sent and which campaigns it includes."
+	},
+	"alertDailyReport.update": {
+		"name": "Set the daily report",
+		"purpose": "Use it to turn on or adjust the daily report: the time it is sent and whether it covers every campaign or only some."
+	},
+	"alertDestination.index": {
+		"name": "List alert destinations",
+		"purpose": "Use it to see where your alerts arrive (phones or webhooks), whether they are verified and which alerts each one has on."
+	},
+	"alertDestination.store": {
+		"name": "Create an alert destination",
+		"purpose": "Use it to add a phone or an https webhook that gets your operational alerts. Then it has to be verified; for a webhook, keep the signing secret, which is shown only once."
+	},
+	"alertDestination.update": {
+		"name": "Update an alert destination",
+		"purpose": "Use it to rename an alert destination or, for a webhook, fix its URL; changing the URL makes it be verified again."
+	},
+	"alertDestination.destroy": {
+		"name": "Delete an alert destination",
+		"purpose": "Use it to stop sending alerts to a phone or a webhook; its alert settings are deleted too."
+	},
+	"alertOtp.send": {
+		"name": "Send a verification code",
+		"purpose": "Use it to send (or send again) the verification code to an alert phone, the step before you can turn alerts on for it. There is a wait between sends and a cap per hour."
+	},
+	"alertOtp.verify": {
+		"name": "Verify the code",
+		"purpose": "Use it to confirm an alert phone with the code it got; once verified, you can turn alerts on for it."
+	},
+	"alertQuietHour.show": {
+		"name": "Get the quiet hours",
+		"purpose": "Use it to see whether quiet hours are set for the alerts and between which hours they apply."
+	},
+	"alertQuietHour.update": {
+		"name": "Set the quiet hours",
+		"purpose": "Use it to set a time range without alerts, for example at night, or to turn it off."
+	},
+	"alertSetting.upsert": {
+		"name": "Turn an alert on or off",
+		"purpose": "Use it to choose which alerts each verified destination gets, turning them on or off one by one, for example a number's disconnection or a failed payment."
+	},
+	"alertWebhookTest.test": {
+		"name": "Test a webhook destination",
+		"purpose": "Use it to check that your alerts webhook answers: it sends a test payload and gives back the status and the latency."
 	}
 }
