@@ -140,15 +140,16 @@ function webhookUrl(context: IHookFunctions): string {
 
 /**
  * One option of the event list, from an entry of the catalog (live or built in). The live catalog answers in Spanish:
- * a type the node knows shows its English label and description; status and area always come from the entry.
+ * a type the node knows shows its English label and description (a type of the built-in list without English texts
+ * has them empty, and shows the entry's own); status and area always come from the entry.
  */
 function eventOption(e: IDataObject): INodePropertyOptions {
 	const type = e.type as string;
 	const area = typeof e.area === 'string' ? e.area : undefined;
 	const known = EVENT_CATALOG.find((x) => x.type === type);
-	const label = known?.label ?? e.label;
+	const label = known?.label || e.label;
 	const description = [
-		known?.description ?? (typeof e.description === 'string' ? e.description : ''),
+		known?.description || (typeof e.description === 'string' ? e.description : ''),
 		e.status === 'planned' ? 'Not emitted yet (planned).' : '',
 		area ? `Area: ${area}; with an API key it needs ${area}:read.` : '',
 	]
@@ -163,8 +164,9 @@ function eventOption(e: IDataObject): INodePropertyOptions {
 
 /**
  * The event types that can be subscribed to, from the live catalog (`GET /api/v1/webhooks/events`, which asks for
- * `accounts:read`). If the catalog cannot be read, the list built into the node (`generated/events.ts`, copied from
- * the catalog of accounts) is shown instead, so a key without that permission can still pick its events.
+ * `accounts:read`). If the catalog cannot be read, the list built into the node (`generated/events.ts`, from the
+ * webhooks of the portal's published specification) is shown instead, so a key without that permission can still pick
+ * its events.
  */
 export async function getEvents(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 	let entries: IDataObject[];

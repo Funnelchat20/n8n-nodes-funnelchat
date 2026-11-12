@@ -1,5 +1,5 @@
 {
-	"$comment": "Every operation the node has published, as resource and value (the n8n option saved workflows use): the 128 of 0.1.1, the 11 that 0.2.0 added, the 14 group actions of 0.2.1 Follow a group of 0.2.2 and Bring templates from Meta of 0.2.3. test/generate.test.ts checks each one is still there, in the same resource. Add new operations here when they are released; never remove one.",
+	"$comment": "Every operation the node has published, as resource and value (the n8n option saved workflows use): the 128 of 0.1.1, the 11 that 0.2.0 added, the 14 group actions of 0.2.1, Follow a group of 0.2.2, Bring templates from Meta of 0.2.3 and the 124 that 0.3.0 added with every function the portal publishes. test/generate.test.ts checks each one is still there, in the same resource, unless it is in removed. Add new operations here when they are released, and never take one out of operations: one the portal stops publishing goes to removed too, with the version that took it out of the node.",
 	"operations": [
 		{
 			"resource": "contact",
@@ -620,6 +620,634 @@
 		{
 			"resource": "template",
 			"value": "messageTemplate.sync"
+		},
+		{
+			"resource": "tag",
+			"value": "contact.addTags"
+		},
+		{
+			"resource": "tag",
+			"value": "contact.removeTags"
+		},
+		{
+			"resource": "campaign",
+			"value": "campaign.index"
+		},
+		{
+			"resource": "campaign",
+			"value": "campaign.show"
+		},
+		{
+			"resource": "campaign",
+			"value": "campaignConditional.index"
+		},
+		{
+			"resource": "campaign",
+			"value": "campaign.availableGroups"
+		},
+		{
+			"resource": "campaign",
+			"value": "campaign.groups"
+		},
+		{
+			"resource": "campaign",
+			"value": "campaign.indexPipelines"
+		},
+		{
+			"resource": "campaign",
+			"value": "campaign.showPipeline"
+		},
+		{
+			"resource": "campaign",
+			"value": "operationPlan.config"
+		},
+		{
+			"resource": "campaign",
+			"value": "operationPlan.index"
+		},
+		{
+			"resource": "campaign",
+			"value": "operationPlan.show"
+		},
+		{
+			"resource": "campaign",
+			"value": "campaign.actions"
+		},
+		{
+			"resource": "campaign",
+			"value": "groupManagement.actionGroup"
+		},
+		{
+			"resource": "scheduledMessage",
+			"value": "scheduledMessage.index"
+		},
+		{
+			"resource": "scheduledMessage",
+			"value": "scheduledMessage.show"
+		},
+		{
+			"resource": "scheduledMessage",
+			"value": "scheduledMessage.groups"
+		},
+		{
+			"resource": "scheduledMessage",
+			"value": "scheduledMessage.readedAndPlayedRates"
+		},
+		{
+			"resource": "scheduledMessage",
+			"value": "scheduledMessage.runs"
+		},
+		{
+			"resource": "scheduledMessage",
+			"value": "scheduledMessageFolder.index"
+		},
+		{
+			"resource": "scheduledMessage",
+			"value": "scheduledMessage.responses"
+		},
+		{
+			"resource": "scheduledMessage",
+			"value": "scheduledMessage.responseTags"
+		},
+		{
+			"resource": "stats",
+			"value": "stats.participantStats"
+		},
+		{
+			"resource": "stats",
+			"value": "stats.activeParticipants"
+		},
+		{
+			"resource": "stats",
+			"value": "stats.groupStats"
+		},
+		{
+			"resource": "stats",
+			"value": "stats.clickStats"
+		},
+		{
+			"resource": "stats",
+			"value": "stats.statsRecords"
+		},
+		{
+			"resource": "stats",
+			"value": "stats.countryMetrics"
+		},
+		{
+			"resource": "broadcast",
+			"value": "broadcast.index"
+		},
+		{
+			"resource": "broadcast",
+			"value": "broadcast.contacts"
+		},
+		{
+			"resource": "broadcast",
+			"value": "broadcast.contactsCount"
+		},
+		{
+			"resource": "broadcast",
+			"value": "broadcast.costTiers"
+		},
+		{
+			"resource": "broadcast",
+			"value": "broadcast.moveToFolder"
+		},
+		{
+			"resource": "broadcast",
+			"value": "broadcast.show"
+		},
+		{
+			"resource": "broadcast",
+			"value": "broadcast.destroy"
+		},
+		{
+			"resource": "broadcast",
+			"value": "broadcast.statistics"
+		},
+		{
+			"resource": "broadcast",
+			"value": "broadcast.cost"
+		},
+		{
+			"resource": "broadcast",
+			"value": "broadcast.broadcastContacts"
+		},
+		{
+			"resource": "broadcast",
+			"value": "broadcast.cancel"
+		},
+		{
+			"resource": "broadcast",
+			"value": "broadcast.broadcastMessages"
+		},
+		{
+			"resource": "broadcast",
+			"value": "broadcastFolder.index"
+		},
+		{
+			"resource": "broadcast",
+			"value": "broadcastFolder.store"
+		},
+		{
+			"resource": "broadcast",
+			"value": "broadcastFolder.update"
+		},
+		{
+			"resource": "broadcast",
+			"value": "broadcastFolder.destroy"
+		},
+		{
+			"resource": "flow",
+			"value": "contactAutomation.pause"
+		},
+		{
+			"resource": "flow",
+			"value": "contactAutomation.flows"
+		},
+		{
+			"resource": "flow",
+			"value": "flow.contactFlowHistory"
+		},
+		{
+			"resource": "flow",
+			"value": "flow.cancelContactFlow"
+		},
+		{
+			"resource": "flow",
+			"value": "flow.index"
+		},
+		{
+			"resource": "flow",
+			"value": "flow.activeContacts"
+		},
+		{
+			"resource": "flow",
+			"value": "flow.pausedContacts"
+		},
+		{
+			"resource": "flow",
+			"value": "flow.pausedContactsList"
+		},
+		{
+			"resource": "flow",
+			"value": "flow.flowContactsList"
+		},
+		{
+			"resource": "flowFolder",
+			"value": "folder.index"
+		},
+		{
+			"resource": "flowFolder",
+			"value": "folder.store"
+		},
+		{
+			"resource": "flowFolder",
+			"value": "folder.show"
+		},
+		{
+			"resource": "flowFolder",
+			"value": "folder.update"
+		},
+		{
+			"resource": "flowFolder",
+			"value": "folder.destroy"
+		},
+		{
+			"resource": "board",
+			"value": "kanbanSetting.index"
+		},
+		{
+			"resource": "board",
+			"value": "kanbanSetting.store"
+		},
+		{
+			"resource": "board",
+			"value": "kanbanSetting.show"
+		},
+		{
+			"resource": "board",
+			"value": "kanbanSetting.update"
+		},
+		{
+			"resource": "board",
+			"value": "kanbanSetting.destroy"
+		},
+		{
+			"resource": "board",
+			"value": "kanbanSetting.members"
+		},
+		{
+			"resource": "board",
+			"value": "kanbanStage.contactStages"
+		},
+		{
+			"resource": "board",
+			"value": "kanbanStage.moveContact"
+		},
+		{
+			"resource": "board",
+			"value": "kanbanStage.bulkMove"
+		},
+		{
+			"resource": "board",
+			"value": "kanbanStage.removeContact"
+		},
+		{
+			"resource": "board",
+			"value": "kanbanStage.bulkRemove"
+		},
+		{
+			"resource": "board",
+			"value": "kanbanStage.store"
+		},
+		{
+			"resource": "board",
+			"value": "kanbanStage.reorder"
+		},
+		{
+			"resource": "board",
+			"value": "kanbanStage.update"
+		},
+		{
+			"resource": "board",
+			"value": "kanbanStage.destroy"
+		},
+		{
+			"resource": "board",
+			"value": "kanbanStage.contacts"
+		},
+		{
+			"resource": "ticket",
+			"value": "ticket.index"
+		},
+		{
+			"resource": "ticket",
+			"value": "ticket.store"
+		},
+		{
+			"resource": "ticket",
+			"value": "ticket.show"
+		},
+		{
+			"resource": "ticket",
+			"value": "ticket.update"
+		},
+		{
+			"resource": "ticket",
+			"value": "ticket.assignTicketToUser"
+		},
+		{
+			"resource": "ticket",
+			"value": "ticket.closeTicket"
+		},
+		{
+			"resource": "ticket",
+			"value": "ticket.reOpenTicket"
+		},
+		{
+			"resource": "quickReply",
+			"value": "quickReply.index"
+		},
+		{
+			"resource": "quickReply",
+			"value": "quickReply.store"
+		},
+		{
+			"resource": "quickReply",
+			"value": "quickReply.show"
+		},
+		{
+			"resource": "quickReply",
+			"value": "quickReply.update"
+		},
+		{
+			"resource": "quickReply",
+			"value": "quickReply.destroy"
+		},
+		{
+			"resource": "leadScore",
+			"value": "contactLeadScore.show"
+		},
+		{
+			"resource": "leadScore",
+			"value": "leadScoreDistribution.show"
+		},
+		{
+			"resource": "leadScore",
+			"value": "leadScoreSettings.show"
+		},
+		{
+			"resource": "leadScore",
+			"value": "leadScoreSettings.update"
+		},
+		{
+			"resource": "leadScore",
+			"value": "leadScoreSettings.adjust"
+		},
+		{
+			"resource": "sales",
+			"value": "paymentProduct.index"
+		},
+		{
+			"resource": "sales",
+			"value": "salesDashboard.metrics"
+		},
+		{
+			"resource": "sales",
+			"value": "salesDashboard.funnel"
+		},
+		{
+			"resource": "sales",
+			"value": "salesDashboard.byPlatform"
+		},
+		{
+			"resource": "sales",
+			"value": "salesDashboard.index"
+		},
+		{
+			"resource": "account",
+			"value": "mac.status"
+		},
+		{
+			"resource": "account",
+			"value": "mac.contacts"
+		},
+		{
+			"resource": "account",
+			"value": "mac.contactsHistory"
+		},
+		{
+			"resource": "account",
+			"value": "user.show"
+		},
+		{
+			"resource": "account",
+			"value": "user.index"
+		},
+		{
+			"resource": "metaAccount",
+			"value": "whatsAppBusinessAccount.index"
+		},
+		{
+			"resource": "metaAccount",
+			"value": "whatsAppBusinessAccount.show"
+		},
+		{
+			"resource": "metaAccount",
+			"value": "whatsappCost.index"
+		},
+		{
+			"resource": "conversionsApi",
+			"value": "capiConnection.dataset"
+		},
+		{
+			"resource": "conversionsApi",
+			"value": "capiConnection.test"
+		},
+		{
+			"resource": "conversionsApi",
+			"value": "capiConnection.datasets"
+		},
+		{
+			"resource": "customDomain",
+			"value": "customDomain.index"
+		},
+		{
+			"resource": "customDomain",
+			"value": "customDomain.store"
+		},
+		{
+			"resource": "customDomain",
+			"value": "customDomain.verify"
+		},
+		{
+			"resource": "customDomain",
+			"value": "customDomain.switchValidationMethod"
+		},
+		{
+			"resource": "customDomain",
+			"value": "customDomain.destroy"
+		},
+		{
+			"resource": "scheduledMessage",
+			"value": "scheduledMessage.groupMessages"
+		},
+		{
+			"resource": "flow",
+			"value": "flow.show"
+		},
+		{
+			"resource": "flow",
+			"value": "flow.nodes"
+		},
+		{
+			"resource": "account",
+			"value": "get_api_v1_me"
+		},
+		{
+			"resource": "alert",
+			"value": "alertCampaign.index"
+		},
+		{
+			"resource": "alert",
+			"value": "alertCatalog.index"
+		},
+		{
+			"resource": "alert",
+			"value": "alertDailyReport.show"
+		},
+		{
+			"resource": "alert",
+			"value": "alertDailyReport.update"
+		},
+		{
+			"resource": "alert",
+			"value": "alertDestination.index"
+		},
+		{
+			"resource": "alert",
+			"value": "alertQuietHour.show"
+		},
+		{
+			"resource": "alert",
+			"value": "alertQuietHour.update"
+		},
+		{
+			"resource": "alert",
+			"value": "alertSetting.upsert"
+		}
+	],
+	"removed": [
+		{
+			"resource": "conversation",
+			"value": "conversation.update",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "conversation",
+			"value": "interactiveMessage.storePoll",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "conversation",
+			"value": "interactiveMessage.storeEvent",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "template",
+			"value": "messageTemplate.quickReplyButtons",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "group",
+			"value": "group.messages",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "group",
+			"value": "campaign.participants",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "group",
+			"value": "campaign.campaignParticipants",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "device",
+			"value": "device.me",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "device",
+			"value": "device.checkPhone",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "device",
+			"value": "device.updateWebhookReceived",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "device",
+			"value": "device.updateWebhookReceivedAndDelivery",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "device",
+			"value": "device.chats",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "device",
+			"value": "device.openConversations",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "device",
+			"value": "device.extensionToken",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "device",
+			"value": "deviceLogs.index",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "device",
+			"value": "deviceLogs.health",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "device",
+			"value": "deviceFleetLogs.index",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "device",
+			"value": "deviceDisconnectSurvey.show",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "device",
+			"value": "deviceDisconnectSurvey.store",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "webhook",
+			"value": "webhookEndpoint.index",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "webhook",
+			"value": "webhookEndpoint.store",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "webhook",
+			"value": "webhookEndpoint.show",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "webhook",
+			"value": "webhookEndpoint.update",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "webhook",
+			"value": "webhookEndpoint.destroy",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "webhook",
+			"value": "webhookEndpointEvent.update",
+			"version": "0.3.0"
+		},
+		{
+			"resource": "webhook",
+			"value": "webhookDelivery.index",
+			"version": "0.3.0"
 		}
 	]
 }

@@ -162,18 +162,23 @@ export function buildProperties(
 	resources: ResourceSpec[],
 	operations: OperationSpec[],
 ): INodeProperties[] {
-	const defaultResource = resources[0]?.value ?? '';
+	const defaultResource = (resources.find((r) => r.default) ?? resources[0])?.value ?? '';
 	const props: INodeProperties[] = [
 		{
 			displayName: 'Resource',
 			name: 'resource',
 			type: 'options',
 			noDataExpression: true,
-			options: resources.map((r) => ({
-				name: r.name,
-				value: r.value,
-				...(r.description ? { description: r.description } : {}),
-			})),
+			// The portal's categories of each resource, when the specification gives them, open its description.
+			options: resources.map((r) => {
+				const description = [
+					r.categories?.length ? `${r.categories.join(', ')}.` : '',
+					r.description,
+				]
+					.filter(Boolean)
+					.join(' ');
+				return { name: r.name, value: r.value, ...(description ? { description } : {}) };
+			}),
 			default: defaultResource,
 		},
 	];

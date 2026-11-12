@@ -483,7 +483,7 @@ describe('event list from the catalog', () => {
 		expect(options[0].name).toBe('Evento nuevo (nuevo.evento)');
 	});
 
-	it("if the key cannot read the catalog, it shows the node's list (accounts v1.5.97 catalog)", async () => {
+	it("if the key cannot read the catalog, it shows the node's list (from the published specification)", async () => {
 		const { ctx, calls } = loadOptionsContext([
 			{
 				status: 403,
@@ -527,7 +527,7 @@ describe('event list from the catalog', () => {
 			'device.health_changed',
 		])
 			expect(values).toContain(type);
-		expect(values).toHaveLength(58);
+		expect(values).toHaveLength(EVENT_CATALOG.length);
 		expect(values).not.toContain('webhook.test');
 		const form = options.find((o) => o.value === 'whatsapp_form.completed')!;
 		expect(form.name).toBe('WhatsApp form completed (whatsapp_form.completed)');
