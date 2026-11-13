@@ -180,10 +180,10 @@ git clone https://github.com/Funnelchat20/n8n-nodes-funnelchat.git
 cd n8n-nodes-funnelchat
 npm ci
 npm run build
-npm pack            # creates funnelchat-hq-n8n-nodes-funnelchat-0.3.0.tgz
+npm pack            # creates funnelchat-hq-n8n-nodes-funnelchat-0.3.1.tgz
 ```
 
-Then, in n8n's nodes folder, `npm install /path/to/funnelchat-hq-n8n-nodes-funnelchat-0.3.0.tgz`.
+Then, in n8n's nodes folder, `npm install /path/to/funnelchat-hq-n8n-nodes-funnelchat-0.3.1.tgz`.
 
 ## Credential
 
