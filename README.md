@@ -911,7 +911,9 @@ with in-memory state and signed webhooks, and has no real effects: nothing goes 
 its README. By default it listens on `http://localhost:4010`.
 
 1. **Start the sandbox**, for example with `npx @funnelchat-hq/sandbox` or
-   `docker run --rm -p 4010:4010 funnelchat-sandbox`. Its panel is at `http://localhost:4010/_sandbox`.
+   `docker run --rm -p 127.0.0.1:4010:4010 funnelchat-sandbox`. Its panel is at `http://localhost:4010/_sandbox`.
+   The sandbox takes any key shaped like a real one: publish its port only on your machine (`127.0.0.1:`), not to
+   your network.
 2. **Create a Funnelchat API credential** for the sandbox:
    - **Environment**: **Custom**.
    - **Base URL**: `http://localhost:4010`. If n8n runs in Docker and the sandbox on your machine,
@@ -922,11 +924,11 @@ its README. By default it listens on `http://localhost:4010`.
    The credential test calls the sandbox's `GET /api/v1/me`.
 
 3. **Actions.** Contacts, conversations and messages, tags, custom fields, templates, WhatsApp forms, numbers
-   (connecting them by QR and with connect links too) and webhook subscriptions keep what you do; most of the rest
-   answers an example built from the specification. Sending with an API key is open in the sandbox, with the API's
-   24-hour window and anti-spam guards, and every response carries `X-Request-Id`. The sandbox `0.2.0` does not have
-   **Send a message to a group** and **Get a group action** yet (`405` and `404`), nor `data.workspace_id` in its
-   events.
+   (connecting them by QR and with connect links too), groups (the number's live list, **Follow a group**, **Send a
+   message to a group** and **Get a group action**) and webhook subscriptions keep what you do, in one or more
+   workspaces; most of the rest answers an example built from the specification. Sending with an API key is open in
+   the sandbox, with the API's 24-hour window and anti-spam guards, every response carries `X-Request-Id`, and every
+   event carries `data.workspace_id` (sandbox `0.4.0`).
 4. **Trigger.** The sandbox accepts `http` and local URLs, so an n8n on `http://localhost:5678` receives the events.
    Activate the workflow with the **Funnelchat Trigger** and simulate an incoming message:
 
@@ -948,8 +950,8 @@ its README. By default it listens on `http://localhost:4010`.
 5. **What the sandbox does not show you:** with the real API, n8n's URL has to be `https` and public (try it with
    `npx @funnelchat-hq/sandbox --require-https`).
 
-The end-to-end tests (`npm run test:e2e`, see [Development](#development)) passed on 2026-11-04 against the sandbox
-`0.2.0` (`main` @ `b3b4513`): the first use of 0.2.0 (**Send a message** to a contact and the trigger up to `read`, with the
+The end-to-end tests (`npm run test:e2e`, see [Development](#development)) last passed on 2026-11-04, against the
+sandbox `0.2.0` (`main` @ `b3b4513`): the first use of 0.2.0 (**Send a message** to a contact and the trigger up to `read`, with the
 `client_reference`), a number created by QR, its QR and `device.connected` through the trigger, a connect link
 created, read, listed by reference and revoked, the group participant events, sending and reading a message, file by
 URL, `X-Request-Id` in errors, and a WhatsApp form created, published, sent and completed through the trigger. By
@@ -1050,6 +1052,6 @@ npm run dev                   # starts n8n on http://localhost:5678 with the nod
 | `data.message.uid` in `group.message_received` and `group.reaction_added` | The portal's example (since `v0.6.14`) | Published |
 | The page size of "List forms" and "List a form's responses" | The specification: `perPage` | The conversations code read `per_page` in `v1.18.10` (the supplement the node had until 0.2.3); not checked against the code in production |
 | The signature algorithm and vectors, the event envelope | developers-portal (`snippets/verificar-firma.js`, `tests/test_firmas.py`) | Published |
-| The local sandbox of "Testing with the sandbox" | funnelchat-sandbox `0.2.0` (`main` @ `b3b4513`) | No group messages nor `workspace_id` yet; not tried with the functions 0.3.0 added |
+| The local sandbox of "Testing with the sandbox" | funnelchat-sandbox `0.4.0` (`@funnelchat-hq/sandbox` on npm, 2026-11-12) | Groups, the send to a group and its action, workspaces and `data.workspace_id`; the end-to-end tests last ran against `0.2.0` |
 
 The details of each source are in [`spec/PROVENANCE.md`](spec/PROVENANCE.md).
