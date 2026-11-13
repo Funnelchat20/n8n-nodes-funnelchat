@@ -1031,7 +1031,9 @@ npm run dev                   # starts n8n on http://localhost:5678 with the nod
 
 **Checks:** every pull request and every push to `main` run `.github/workflows/ci.yml`: install, the generated files
 up to date, lint, build and tests on the current Node.js LTS, and the tests on Node.js 20.15, the minimum of
-`engines`. The build and the lint need Node.js 20.19 or 22.12 (`@n8n/node-cli`).
+`engines`, installing with `npm ci --ignore-scripts` (`isolated-vm`, a native development dependency that needs
+Node.js 24, does not build there, and the tests do not load it). The build and the lint need Node.js 20.19 or 22.12
+(`@n8n/node-cli`).
 
 **Publishing:** a `vX.Y.Z` tag on a commit of `main`, matching the `package.json` version; GitHub Actions
 (`.github/workflows/publish.yml`) runs the tests and publishes it through npm Trusted Publishing. A tag on a commit
