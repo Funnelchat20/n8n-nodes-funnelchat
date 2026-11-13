@@ -306,6 +306,30 @@ function listInfo(doc, op, method, queryNames) {
 /** Added to the description of an irreversible operation: it is what an AI agent that uses the node as a tool reads. */
 const CONFIRM_FIRST = 'Irreversible: ask for confirmation before running it.';
 
+/** The action of an operationId that deletes, as Laravel names it (`contact.destroy`, `messageTemplate.delete`). */
+const DELETING_ACTIONS = new Set(['destroy', 'delete']);
+
+/**
+ * Whether an operation is irreversible, from the specification alone: every one that deletes (a `DELETE` route, or one
+ * whose operationId says it deletes, such as `POST /api/v1/contacts/delete`, `contact.destroy`) and every one marked
+ * `x-fc-destructive: true`. A deletion asks for confirmation even when the specification marks it
+ * `x-fc-destructive: false`: an AI agent never deletes without asking. Without the flag, `accounts:operate` means
+ * irreversible too (its gate says so); `communities:operate` is any action on a group in WhatsApp, such as creating
+ * one. `:operate` routes marked `x-fc-destructive: false` that do not delete (accounts puts there the ones that give
+ * control of a number: create one, its QR, a connect link) are not irreversible.
+ */
+export function isIrreversible(httpMethod, op) {
+	const action = String(op.operationId ?? '')
+		.split('.')
+		.pop();
+	return (
+		httpMethod === 'DELETE' ||
+		DELETING_ACTIONS.has(action) ||
+		op['x-fc-destructive'] === true ||
+		(op['x-fc-destructive'] === undefined && op['x-fc-permission'] === 'accounts:operate')
+	);
+}
+
 /** The English name and purpose of an operation: by operationId, or by `METHOD /path` for one that has none. */
 function englishOf(ctx, operationId, httpMethod, path) {
 	return ctx.translations[operationId] ?? ctx.translations[`${httpMethod} ${path}`];
@@ -428,13 +452,7 @@ function buildOperation(ctx, doc, path, method, op, resource, category) {
 	}
 
 	const notices = [];
-	// `:operate` routes are irreversible unless the specification says otherwise: accounts also puts there the ones that
-	// give control of a number (create one, its QR, connect links), with `x-fc-destructive: false`.
-	// Without the flag, only accounts:operate means irreversible (its gate says so); communities:operate is any action
-	// on a group in WhatsApp, such as creating one.
-	const destructive =
-		op['x-fc-destructive'] === true ||
-		(op['x-fc-destructive'] === undefined && op['x-fc-permission'] === 'accounts:operate');
+	const destructive = isIrreversible(httpMethod, op);
 	if (destructive) {
 		notices.push(
 			String(op['x-fc-permission'] ?? '').endsWith(':operate')

@@ -6,9 +6,10 @@
 # was built by this exact workflow, from this exact repository and commit.
 #
 # Based on the template scaffolded by `n8n-node release --init-workflow`
-# (@n8n/node-cli 0.52.4), with "v" tags, a check that the tag matches the
-# version in package.json, a skip when that version is already on npm, and
-# npm Trusted Publishing instead of a token.
+# (@n8n/node-cli 0.52.4), with "v" tags, a check that the tagged commit is in
+# main and that the tag matches the version in package.json, a skip when that
+# version is already on npm, the tests before publishing, pre-releases under
+# the npm dist-tag `next`, and npm Trusted Publishing instead of a token.
 #
 # ─── ONE-TIME SETUP ────────────────────────────────────────────────────────────
 #
@@ -21,9 +22,18 @@
 #
 # ─── RELEASE PROCESS ───────────────────────────────────────────────────────────
 #
-# Set the version in package.json, commit it on main, then tag and push:
+# Set the version in package.json, commit it on main, then tag that commit and
+# push the tag:
 #
 #   git tag v0.1.0 && git push origin v0.1.0
+#
+# The run fails before publishing if the tagged commit is not in main or the
+# tag does not match the version. Then it checks the generated files and runs
+# the tests; `npm run release` lints, builds and publishes.
+#
+# A pre-release (v0.4.0-rc.1, v0.4.0-beta.2: any version with a "-") goes out
+# with the npm dist-tag `next`, so `npm install` keeps getting the last stable
+# version; a stable one goes out as `latest`.
 #
 # ─── DRY RUN ───────────────────────────────────────────────────────────────────
 #
@@ -58,6 +68,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The whole history, to tell whether the tagged commit is in main.
+          fetch-depth: 0
+
+      - name: Tagged commit is in main
+        if: github.event_name == 'push'
+        run: |
+          COMMIT="$(git rev-parse "${GITHUB_REF}^{commit}")"
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor "$COMMIT" origin/main; then
+            echo "::error::Tag $GITHUB_REF_NAME points to $COMMIT, which is not in main: nothing is published"
+            exit 1
+          fi
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -109,6 +132,18 @@ jobs:
             exit 1
           fi
 
+      - name: npm dist-tag
+        id: channel
+        if: github.event_name == 'push'
+        run: |
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          case "$PACKAGE_VERSION" in
+            *-*) DIST_TAG=next ;;
+            *) DIST_TAG=latest ;;
+          esac
+          echo "::notice::$PACKAGE_VERSION goes out with the npm dist-tag $DIST_TAG"
+          echo "dist_tag=$DIST_TAG" >> "$GITHUB_OUTPUT"
+
       - name: Version not published yet
         id: published
         if: github.event_name == 'push'
@@ -124,9 +159,20 @@ jobs:
         if: github.event_name == 'push' && steps.published.outputs.already != 'true'
         run: npm ci
 
+      - name: Generated files are up to date
+        if: github.event_name == 'push' && steps.published.outputs.already != 'true'
+        run: npm run generate -- --check
+
+      - name: Test
+        if: github.event_name == 'push' && steps.published.outputs.already != 'true'
+        run: npm test
+
       - name: Release
         if: github.event_name == 'push' && steps.published.outputs.already != 'true'
         # In GitHub Actions, `n8n-node release` runs lint and build, then
-        # `npm publish` with NPM_CONFIG_PROVENANCE=true. npm authenticates
+        # `npm publish` with NPM_CONFIG_PROVENANCE=true and this environment, so
+        # NPM_CONFIG_TAG is the dist-tag it publishes under. npm authenticates
         # through Trusted Publishing.
+        env:
+          NPM_CONFIG_TAG: ${{ steps.channel.outputs.dist_tag }}
         run: npm run release

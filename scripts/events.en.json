@@ -198,11 +198,11 @@
 	},
 	"group.message_received": {
 		"label": "Message received in a group",
-		"description": "A person wrote a message in a group. The message comes in data.message with its uid, its ID on WhatsApp (the portal's example shows id; the API sends uid)."
+		"description": "A person wrote a message in a group. The message comes in data.message with its uid, its ID on WhatsApp."
 	},
 	"group.reaction_added": {
 		"label": "Reaction in a group",
-		"description": "A person reacted to a message in a group. The message comes in data.message with its uid, its ID on WhatsApp (the portal's example shows id; the API sends uid)."
+		"description": "A person reacted to a message in a group. The message comes in data.message with its uid, its ID on WhatsApp."
 	},
 	"group_join_request.created": {
 		"label": "Request to join a group",
