@@ -30,10 +30,28 @@ download it). The node carries every operation and event type of this file, and 
 | Event types (`webhooks`) | 56 |
 | Domains (`x-fc-sources`) | conversations (147 operations), communities (55 operations), accounts (51 operations) |
 | Categories | Primer uso (`primer-uso`): 1 group, Funciones de WhatsApp (`whatsapp`): 9 groups, Funciones de Funnelchat (`funnelchat`): 20 groups |
-| SHA-256 | `37c54a5aad4cc467e088af50294012484692ef668714dcdd748babc7314b587f` |
+| SHA-256 | `3e5bc8ef01a2c74650a2581beb9bcfee4dd14252bec8ab52542fa3240ab60475` |
 | Copied | 2026-11-13 |
 
 <!-- spec:end -->
+
+## The copy of 2026-11-13, second (portal `v0.6.15`)
+
+The specification published at `https://developers-portal.funnelchat.app/specs/funnelchat.json`, portal `v0.6.15`,
+SHA-256 `3e5bc8ef01a2c74650a2581beb9bcfee4dd14252bec8ab52542fa3240ab60475`: 253 operations and 57 entries in
+`webhooks`, as in `v0.6.14`.
+
+- **The common error format.** Every error response declares `error` (a stable code) and `message`: `422`
+  `validation_failed` with `errors`, `404` `not_found`, `401` `unauthenticated`, `403` `forbidden` (or the codes of the
+  entry point). `402 payment_required` came in on 142 operations (conversations and accounts), `429` with its limits on
+  50, `502 provider_error` on four (a number's status and QR, marking as read, typing) and `409 device_not_connected`
+  on a number's status. The node already read `error` and `message` of any status; the README lists the codes.
+- **Texts and fields.** Seven descriptions in Spanish changed (the system tag "No contactar", which adding or removing
+  tags does not touch, `422` on `errors.tag`; the monthly active contacts' `429` without `Retry-After`; connecting an
+  official number with "Update a number"; a number's status without QR), and `is_system` and `opted_out` came in the
+  responses of tags and contacts. The node's texts are its English ones, so nothing of that changes in it.
+- **Parameters.** Only the order of the filters of "List conversations" (Name, Contact ID and Updated Since come
+  first). No operation, parameter, group or event type came in or went out; there was no warning nor text to review.
 
 ## The copy of 2026-11-13 (portal `v0.6.14`)
 
