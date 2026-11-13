@@ -180,10 +180,10 @@ git clone https://github.com/Funnelchat20/n8n-nodes-funnelchat.git
 cd n8n-nodes-funnelchat
 npm ci
 npm run build
-npm pack            # creates funnelchat-hq-n8n-nodes-funnelchat-0.3.2.tgz
+npm pack            # creates funnelchat-hq-n8n-nodes-funnelchat-0.3.3.tgz
 ```
 
-Then, in n8n's nodes folder, `npm install /path/to/funnelchat-hq-n8n-nodes-funnelchat-0.3.2.tgz`.
+Then, in n8n's nodes folder, `npm install /path/to/funnelchat-hq-n8n-nodes-funnelchat-0.3.3.tgz`.
 
 ## Credential
 
@@ -195,6 +195,9 @@ Then, in n8n's nodes folder, `npm install /path/to/funnelchat-hq-n8n-nodes-funne
      or **Custom**, with a **Base URL** of your own: for example the local sandbox, `http://localhost:4010` (see
      [Testing with the sandbox](#testing-with-the-sandbox)). The base URL starts with `http://` or `https://`, does not
      end in `/` and has no `/api/v1`: the node adds it. Otherwise the credential test fails and the node sends nothing.
+     With an `fc_live_` key (every real key), the base URL has to be `https://`, or `http://` to this machine only
+     (`localhost`, `127.0.0.1` or `[::1]`, the local sandbox): with another host the node stops with an error before
+     sending anything, and the credential test fails on `live-key-needs-https.invalid`.
 3. When you save it, n8n tests the credential with `GET /api/v1/me` ("Get my account"). **That test needs the
    `accounts:read` permission**: if your key does not have it, the test fails even if the key works for everything
    else. You can save it anyway.
@@ -926,8 +929,9 @@ its README. By default it listens on `http://localhost:4010`.
    your network.
 2. **Create a Funnelchat API credential** for the sandbox:
    - **Environment**: **Custom**.
-   - **Base URL**: `http://localhost:4010`. If n8n runs in Docker and the sandbox on your machine,
-     `http://host.docker.internal:4010` (with Podman, `http://host.containers.internal:4010`).
+   - **Base URL**: `http://localhost:4010`. With an `fc_live_` key the node only takes `http://` to `localhost`,
+     `127.0.0.1` or `[::1]`: if n8n runs in Docker, start the sandbox in the network of n8n's container
+     (`docker run --rm --network container:<n8n's container> funnelchat-sandbox`) and keep `http://localhost:4010`.
    - **API Key**: `1|fc_live_sandbox`. The sandbox accepts any key shaped like a real one, and all of them have every
      permission.
 

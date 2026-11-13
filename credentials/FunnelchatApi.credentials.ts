@@ -13,7 +13,8 @@ import type {
  *
  * The base URL of each environment and the check of a custom one live in `nodes/shared/transport.ts`; the test below
  * repeats them because a credential test cannot import code. A custom URL that is not http(s) or ends in `/` makes the
- * test point at an `.invalid` host, so it fails instead of testing something else.
+ * test point at an `.invalid` host, so it fails instead of testing something else; so does an fc_live_ key with http:// to another machine
+ * (`live-key-needs-https.invalid`): the key never goes out in clear text.
  */
 export class FunnelchatApi implements ICredentialType {
 	name = 'funnelchatApi';
@@ -68,7 +69,7 @@ export class FunnelchatApi implements ICredentialType {
 			default: '',
 			placeholder: 'http://localhost:4010',
 			description:
-				'Starts with http:// or https:// and does not end in /. Without /api/v1: the node adds it. If n8n runs in Docker and the sandbox on your machine, use http://host.docker.internal:4010.',
+				'Starts with http:// or https:// and does not end in /. Without /api/v1: the node adds it. With an fc_live_ key, http:// only to localhost, 127.0.0.1 or [::1] (the local sandbox); another host needs https://.',
 			displayOptions: {
 				show: {
 					environment: ['custom'],
@@ -90,7 +91,7 @@ export class FunnelchatApi implements ICredentialType {
 	test: ICredentialTestRequest = {
 		request: {
 			baseURL:
-				'={{$credentials.environment === "custom" ? ((($credentials.baseUrl || "").startsWith("http://") || ($credentials.baseUrl || "").startsWith("https://")) && !($credentials.baseUrl || "").endsWith("/") ? $credentials.baseUrl : "https://invalid-base-url.invalid") : ($credentials.environment === "staging" ? "https://api-staging.funnelchat.com" : "https://api.funnelchat.com")}}',
+				'={{$credentials.environment === "custom" ? (!(($credentials.baseUrl || "").startsWith("http://") || ($credentials.baseUrl || "").startsWith("https://")) || ($credentials.baseUrl || "").endsWith("/") ? "https://invalid-base-url.invalid" : ($credentials.baseUrl || "").startsWith("http://") && /(^|\\|)fc_live_/.test(String($credentials.apiKey || "").trim()) && !/^http:\\/\\/(localhost|127\\.0\\.0\\.1|\\[::1\\])(:\\d+)?(\\/|$)/i.test($credentials.baseUrl) ? "https://live-key-needs-https.invalid" : $credentials.baseUrl) : ($credentials.environment === "staging" ? "https://api-staging.funnelchat.com" : "https://api.funnelchat.com")}}',
 			url: '/api/v1/me',
 			method: 'GET',
 			headers: { Accept: 'application/json' },

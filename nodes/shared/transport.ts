@@ -59,6 +59,24 @@ export function isValidBaseUrl(value: unknown): value is string {
 	}
 }
 
+/** Where a live key may go over plain http://: this machine only (the local sandbox). */
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+
+/** Whether the key is a live one (`<id>|fc_live_…`, every real key). */
+export function isLiveKey(apiKey: unknown): boolean {
+	return typeof apiKey === 'string' && /(^|\|)fc_live_/.test(apiKey.trim());
+}
+
+/** Whether a live key may go to a base URL: `https://`, or `http://` to localhost, 127.0.0.1 or [::1]. */
+export function allowsLiveKey(baseUrl: string): boolean {
+	try {
+		const url = new URL(baseUrl);
+		return url.protocol === 'https:' || LOOPBACK_HOSTS.has(url.hostname);
+	} catch {
+		return false;
+	}
+}
+
 /** The base URL of the credential: the one of its environment, or its own when the environment is `custom`. */
 export function baseUrlFor(environment: unknown, customBaseUrl?: unknown): string | undefined {
 	if (environment === CUSTOM_ENVIRONMENT)
@@ -187,6 +205,16 @@ export async function funnelchatApiRequest(
 			{
 				itemIndex: request.itemIndex,
 				description: `Current value: ${String(credentials.baseUrl ?? '') || '(empty)'}. For example: http://localhost:4010.`,
+			},
+		);
+	}
+	if (isLiveKey(credentials.apiKey) && !allowsLiveKey(baseURL)) {
+		throw new NodeOperationError(
+			this.getNode(),
+			'A live key (fc_live_) only goes to an https:// base URL, or over http:// to this machine (localhost, 127.0.0.1 or [::1]).',
+			{
+				itemIndex: request.itemIndex,
+				description: `Current value: ${baseURL}. Nothing was sent. Use https://, or http://localhost:4010 for the local sandbox.`,
 			},
 		);
 	}

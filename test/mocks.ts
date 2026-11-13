@@ -58,6 +58,7 @@ export function executeContext(opts: {
 	environment?: string;
 	baseUrl?: string;
 	items?: number;
+	apiKey?: string;
 }) {
 	const http = fakeHttp(opts.responses);
 	const ctx = {
@@ -67,7 +68,7 @@ export function executeContext(opts: {
 		getNode: () => NODE,
 		continueOnFail: () => opts.continueOnFail ?? false,
 		getCredentials: async () => ({
-			apiKey: 'test-key',
+			apiKey: opts.apiKey ?? 'test-key',
 			environment: opts.environment ?? 'production',
 			...(opts.baseUrl !== undefined ? { baseUrl: opts.baseUrl } : {}),
 		}),
