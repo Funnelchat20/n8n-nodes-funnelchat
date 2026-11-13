@@ -242,11 +242,13 @@ permission it needs.
 ### As a tool of an AI agent
 
 The node can be used as a tool of an n8n AI agent, with every operation of the portal. Each operation's description
-says what it is for and which permission it needs, and that is what the agent reads. **An irreversible operation (the
-ones the specification marks with `x-fc-destructive`, such as "Delete a number", "Restart a number's session" or
-"Delete a custom domain") ends its description with "Irreversible: ask for confirmation before running it."**: tell
-your agent, in its system message, to ask the person and wait for a yes before running one of them. Give the
-credential's key only the permissions the agent needs.
+says what it is for and which permission it needs, and that is what the agent reads. **Every operation that deletes
+(every `DELETE` route, and the deletions that go by `POST`, such as "Delete contacts" or "Delete tags") and every one
+the specification marks with `x-fc-destructive` (such as "Restart a number's session" or "Clean a number") ends its
+description with "Irreversible: ask for confirmation before running it."** and shows the ⚠ notice: tell your agent, in
+its system message, to ask the person and wait for a yes before running one of them. The node decides it from the
+specification, so a new deletion asks for confirmation too. Give the credential's key only the permissions the agent
+needs.
 
 ### Operations
 
@@ -316,7 +318,7 @@ resource shows up in each one with the operations of that category.
 | Create a template | `POST /api/v1/templates` | `conversations:write` |
 | Get a template | `GET /api/v1/templates/{template}` | `conversations:read` |
 | Update a template | `PUT /api/v1/templates/{template}` | `conversations:write` |
-| Delete a template from a number | `DELETE /api/v1/devices/{device}/templates/{template}` | `conversations:write` |
+| Delete a template from a number ⚠ | `DELETE /api/v1/devices/{device}/templates/{template}` | `conversations:write` |
 | Get a template's metrics | `GET /api/v1/templates/{template}/metrics` | `conversations:read` |
 
 </details>
@@ -334,13 +336,13 @@ resource shows up in each one with the operations of that category.
 | Get a form's published definition | `GET /api/v1/forms/families/{familyId}/definition` | `conversations:read` |
 | Get a form | `GET /api/v1/forms/{id}` | `conversations:read` |
 | Save a form | `PUT /api/v1/forms/{id}` | `conversations:write` |
-| Delete a draft form | `DELETE /api/v1/forms/{id}` | `conversations:write` |
+| Delete a draft form ⚠ | `DELETE /api/v1/forms/{id}` | `conversations:write` |
 | Get a form's numbers | `GET /api/v1/forms/{id}/numbers` | `conversations:read` |
 | Add a number to a form | `POST /api/v1/forms/{id}/numbers` | `conversations:write` |
 | Create a new version of a form | `POST /api/v1/forms/{id}/versions` | `conversations:write` |
 | Validate a form with Meta | `POST /api/v1/forms/{id}/sync` | `conversations:write` |
 | Publish a form | `POST /api/v1/forms/{id}/publish` | `conversations:write` |
-| Remove a number from a form | `DELETE /api/v1/forms/{id}/numbers/{deviceId}` | `conversations:write` |
+| Remove a number from a form ⚠ | `DELETE /api/v1/forms/{id}/numbers/{deviceId}` | `conversations:write` |
 | Retry publishing on the numbers | `POST /api/v1/forms/{id}/numbers/retry` | `conversations:write` |
 | List forms "return all" | `GET /api/v1/forms` | `conversations:read` |
 | Send a form to a contact ⚠ | `POST /api/v1/contacts/{contact}/message/form` | `conversations:send` |
@@ -405,7 +407,7 @@ resource shows up in each one with the operations of that category.
 | Set the username | `POST /api/v1/devices/{device}/username` | `accounts:write` |
 | Suggest usernames | `GET /api/v1/devices/{device}/username/suggestions` | `accounts:read` |
 | Get the message queue | `GET /api/v1/devices/{device}/message-queue` | `accounts:read` |
-| Delete messages from the queue | `DELETE /api/v1/devices/{device}/message-queue` | `accounts:write` |
+| Delete messages from the queue ⚠ | `DELETE /api/v1/devices/{device}/message-queue` | `accounts:write` |
 | Count the messages in the queue | `GET /api/v1/devices/{device}/message-queue/count` | `accounts:read` |
 | Empty the message queue ⚠ | `DELETE /api/v1/devices/{device}/message-queue/all` | `accounts:operate` |
 
@@ -467,10 +469,10 @@ resource shows up in each one with the operations of that category.
 | Update a contact | `PUT /api/v1/contacts/{contact}` | `conversations:write` |
 | Get a contact's 24-hour window | `GET /api/v1/contacts/{contact}/meta-window` | `conversations:read` |
 | List a number's contacts "return all" | `GET /api/v1/devices/{device}/contacts` | `conversations:read` |
-| Delete contacts | `POST /api/v1/contacts/delete` | `conversations:write` |
+| Delete contacts ⚠ | `POST /api/v1/contacts/delete` | `conversations:write` |
 | List a contact's notes "return all" | `GET /api/v1/contacts/{contact}/notes` | `conversations:read` |
 | Add a note to a contact | `POST /api/v1/contacts/{contact}/notes` | `conversations:write` |
-| Delete a note | `DELETE /api/v1/contacts/{contact}/notes/{note}` | `conversations:write` |
+| Delete a note ⚠ | `DELETE /api/v1/contacts/{contact}/notes/{note}` | `conversations:write` |
 | Set a custom field on contacts | `POST /api/v1/contacts/attach-custom-field` | `conversations:write` |
 | Remove a custom field from contacts | `POST /api/v1/contacts/detach-custom-field` | `conversations:write` |
 | List a contact's tags "return all" | `GET /api/v1/contacts/{contact}/tags` | `conversations:read` |
@@ -489,7 +491,7 @@ resource shows up in each one with the operations of that category.
 | Get a tag | `GET /api/v1/tags/{tag}` | `conversations:read` |
 | Update a tag | `PUT /api/v1/tags/{tag}` | `conversations:write` |
 | List the contacts with a tag "return all" | `GET /api/v1/tags/{tag}/contacts` | `conversations:read` |
-| Delete tags | `POST /api/v1/tags/delete` | `conversations:write` |
+| Delete tags ⚠ | `POST /api/v1/tags/delete` | `conversations:write` |
 
 </details>
 
@@ -499,7 +501,7 @@ resource shows up in each one with the operations of that category.
 |---|---|---|
 | List custom fields "return all" | `GET /api/v1/custom-fields` | `conversations:read` |
 | Create a custom field | `POST /api/v1/custom-fields` | `conversations:write` |
-| Delete custom fields | `POST /api/v1/custom-fields/delete` | `conversations:write` |
+| Delete custom fields ⚠ | `POST /api/v1/custom-fields/delete` | `conversations:write` |
 | Get a custom field | `GET /api/v1/custom-fields/{customField}` | `conversations:read` |
 | Update a custom field | `PUT /api/v1/custom-fields/{customField}` | `conversations:write` |
 
@@ -578,7 +580,7 @@ resource shows up in each one with the operations of that category.
 | Get the cost tiers | `GET /api/v1/broadcasts/cost-tiers` | `conversations:read` |
 | Move broadcasts to a folder | `POST /api/v1/broadcasts/move-to-folder` | `conversations:write` |
 | Get a broadcast | `GET /api/v1/broadcasts/{broadcast}` | `conversations:read` |
-| Delete a broadcast | `DELETE /api/v1/broadcasts/{broadcast}` | `conversations:write` |
+| Delete a broadcast ⚠ | `DELETE /api/v1/broadcasts/{broadcast}` | `conversations:write` |
 | Get a broadcast's statistics | `GET /api/v1/broadcasts/{broadcast}/statistics` | `conversations:read` |
 | Get a broadcast's cost | `GET /api/v1/broadcasts/{broadcast}/cost` | `conversations:read` |
 | List a broadcast's contacts "return all" | `GET /api/v1/broadcasts/{broadcast}/contacts` | `conversations:read` |
@@ -587,7 +589,7 @@ resource shows up in each one with the operations of that category.
 | List broadcast folders "return all" | `GET /api/v1/broadcasts/folders` | `conversations:read` |
 | Create a broadcast folder | `POST /api/v1/broadcasts/folders` | `conversations:write` |
 | Rename a broadcast folder | `PUT /api/v1/broadcasts/folders/{broadcastFolder}` | `conversations:write` |
-| Delete a broadcast folder | `DELETE /api/v1/broadcasts/folders/{broadcastFolder}` | `conversations:write` |
+| Delete a broadcast folder ⚠ | `DELETE /api/v1/broadcasts/folders/{broadcastFolder}` | `conversations:write` |
 
 </details>
 
@@ -617,7 +619,7 @@ resource shows up in each one with the operations of that category.
 | Create a flow folder | `POST /api/v1/folders` | `conversations:write` |
 | Get a flow folder | `GET /api/v1/folders/{folder}` | `conversations:read` |
 | Update a flow folder | `PUT /api/v1/folders/{folder}` | `conversations:write` |
-| Delete a flow folder | `DELETE /api/v1/folders/{folder}` | `conversations:write` |
+| Delete a flow folder ⚠ | `DELETE /api/v1/folders/{folder}` | `conversations:write` |
 
 </details>
 
@@ -629,7 +631,7 @@ resource shows up in each one with the operations of that category.
 | Create a board | `POST /api/v1/kanban-settings` | `conversations:write` |
 | Get a board | `GET /api/v1/kanban-settings/{kanbanSetting}` | `conversations:read` |
 | Update a board | `PUT /api/v1/kanban-settings/{kanbanSetting}` | `conversations:write` |
-| Delete a board | `DELETE /api/v1/kanban-settings/{kanbanSetting}` | `conversations:write` |
+| Delete a board ⚠ | `DELETE /api/v1/kanban-settings/{kanbanSetting}` | `conversations:write` |
 | Check which contacts are on a board | `GET /api/v1/kanban-settings/{kanbanSetting}/members` | `conversations:read` |
 | Get a contact's stages "return all" | `GET /api/v1/contacts/{contact}/kanban-stages` | `conversations:read` |
 | Move a contact to a stage | `POST /api/v1/kanban-settings/{kanbanSetting}/move-contact` | `conversations:write` |
@@ -639,7 +641,7 @@ resource shows up in each one with the operations of that category.
 | Create a stage | `POST /api/v1/kanban-settings/{kanbanSetting}/stages` | `conversations:write` |
 | Reorder the stages | `POST /api/v1/kanban-settings/{kanbanSetting}/stages/reorder` | `conversations:write` |
 | Rename a stage | `PUT /api/v1/kanban-settings/{kanbanSetting}/stages/{stage}` | `conversations:write` |
-| Delete a stage | `DELETE /api/v1/kanban-settings/{kanbanSetting}/stages/{stage}` | `conversations:write` |
+| Delete a stage ⚠ | `DELETE /api/v1/kanban-settings/{kanbanSetting}/stages/{stage}` | `conversations:write` |
 | List a stage's contacts "return all" | `GET /api/v1/kanban-settings/{kanbanSetting}/stages/{stage}/contacts` | `conversations:read` |
 
 </details>
@@ -666,7 +668,7 @@ resource shows up in each one with the operations of that category.
 | Create a quick reply | `POST /api/v1/quick-replies` | `conversations:write` |
 | Get a quick reply | `GET /api/v1/quick-replies/{quickReply}` | `conversations:read` |
 | Update a quick reply | `PUT /api/v1/quick-replies/{quickReply}` | `conversations:write` |
-| Delete a quick reply | `DELETE /api/v1/quick-replies/{quickReply}` | `conversations:write` |
+| Delete a quick reply ⚠ | `DELETE /api/v1/quick-replies/{quickReply}` | `conversations:write` |
 
 </details>
 

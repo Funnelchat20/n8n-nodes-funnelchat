@@ -104,19 +104,41 @@ describe('generation from the published specification', () => {
 		expect(OPERATIONS.filter((o) => o.operationId).map((o) => o.value)).toEqual(['showMessage']);
 	});
 
-	it('an irreversible operation (x-fc-destructive) asks for confirmation, and only those', () => {
+	it('every operation that deletes, and every one marked x-fc-destructive, asks for confirmation, and only those', () => {
 		const destructive = specOperations.filter(({ op }) => op['x-fc-destructive'] === true);
 		expect(destructive.length).toBeGreaterThan(0);
 		for (const o of OPERATIONS) {
 			const fromSpec = paths[o.path][o.method.toLowerCase()];
+			const action = (fromSpec.operationId ?? '').split('.').pop();
 			const irreversible =
+				o.method === 'DELETE' ||
+				action === 'destroy' ||
+				action === 'delete' ||
 				fromSpec['x-fc-destructive'] === true ||
 				(fromSpec['x-fc-destructive'] === undefined &&
 					fromSpec['x-fc-permission'] === 'accounts:operate');
 			expect(o.description.endsWith(CONFIRM), o.value).toBe(irreversible);
-			if (irreversible) expect(o.notice, o.value).toContain('Irreversible operation');
+			if (irreversible) {
+				expect(o.notice, o.value).toContain('Irreversible operation');
+				expect(o.notice!.split('Irreversible operation').length, o.value).toBe(2);
+			}
 		}
-		expect(OPERATIONS.find((o) => o.value === 'device.destroy')!.description).toContain(CONFIRM);
+		// Every DELETE route, even one the specification marks x-fc-destructive: false (a webhook subscription), and the
+		// deletions that go by POST (contacts, tags, custom fields).
+		for (const o of OPERATIONS.filter((x) => x.method === 'DELETE'))
+			expect(o.description, o.value).toContain(CONFIRM);
+		for (const value of [
+			'device.destroy',
+			'broadcast.destroy',
+			'contactNote.destroy',
+			'whatsappForm.destroy',
+			'messageTemplate.delete',
+			'webhookSubscription.destroy',
+			'contact.destroy',
+			'tag.destroy',
+			'customField.destroy',
+		])
+			expect(OPERATIONS.find((o) => o.value === value)!.description, value).toContain(CONFIRM);
 	});
 
 	it('the webhook subscriptions come from the specification, with webhooks:* and the area rule', () => {
@@ -288,8 +310,10 @@ describe('generation from the published specification', () => {
 		);
 		for (const o of numbers) {
 			expect(o.resource, o.value).toBe('device');
-			// accounts:operate here gives control of a number; it is not an irreversible operation.
-			expect(o.notice ?? '', o.value).not.toContain('Irreversible');
+			// accounts:operate here gives control of a number; it is not an irreversible operation. Revoking a link
+			// deletes it, so that one asks for confirmation.
+			if (o.method === 'DELETE') expect(o.description, o.value).toContain(CONFIRM);
+			else expect(o.notice ?? '', o.value).not.toContain('Irreversible');
 		}
 		const list = OPERATIONS.find((o) => o.value === 'device.index')!;
 		expect(list.list).toEqual({ pagination: 'page', sizeParam: 'perPage', maxPageSize: 100 });

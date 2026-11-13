@@ -1251,12 +1251,12 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "conversation",
 		"value": "messageReaction.destroy",
 		"name": "Remove a reaction",
-		"description": "Removes the reaction you put on a message. Permission: conversations:send.",
+		"description": "Removes the reaction you put on a message. Permission: conversations:send. Irreversible: ask for confirmation before running it.",
 		"method": "DELETE",
 		"path": "/api/v1/contacts/{contact}/messages/{message}/reaction",
 		"permission": "conversations:send",
 		"category": "WhatsApp functions",
-		"notice": "With an API key it answers 202 without a body: a reaction is not a message with an ID. If the provider does not support it, 422 with reason provider_unsupported.",
+		"notice": "Irreversible operation. With an API key it answers 202 without a body: a reaction is not a message with an ID. If the provider does not support it, 422 with reason provider_unsupported.",
 		"params": [
 			{
 				"name": "contact",
@@ -1900,11 +1900,12 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "template",
 		"value": "messageTemplate.delete",
 		"name": "Delete a template from a number",
-		"description": "Use it to delete a template from one of your numbers when you no longer need it. Permission: conversations:write.",
+		"description": "Use it to delete a template from one of your numbers when you no longer need it. Permission: conversations:write. Irreversible: ask for confirmation before running it.",
 		"method": "DELETE",
 		"path": "/api/v1/devices/{device}/templates/{template}",
 		"permission": "conversations:write",
 		"category": "WhatsApp functions",
+		"notice": "Irreversible operation.",
 		"params": [
 			{
 				"name": "device",
@@ -2706,11 +2707,12 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "form",
 		"value": "whatsappForm.destroy",
 		"name": "Delete a draft form",
-		"description": "Use it to delete a draft version. A published one answers 409 PUBLISHED. Permission: conversations:write.",
+		"description": "Use it to delete a draft version. A published one answers 409 PUBLISHED. Permission: conversations:write. Irreversible: ask for confirmation before running it.",
 		"method": "DELETE",
 		"path": "/api/v1/forms/{id}",
 		"permission": "conversations:write",
 		"category": "WhatsApp functions",
+		"notice": "Irreversible operation.",
 		"params": [
 			{
 				"name": "id",
@@ -2852,11 +2854,12 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "form",
 		"value": "whatsappForm.removeNumber",
 		"name": "Remove a number from a form",
-		"description": "Use it to take a number off the form. The main number cannot be removed (422 PRIMARY_NUMBER). Permission: conversations:write.",
+		"description": "Use it to take a number off the form. The main number cannot be removed (422 PRIMARY_NUMBER). Permission: conversations:write. Irreversible: ask for confirmation before running it.",
 		"method": "DELETE",
 		"path": "/api/v1/forms/{id}/numbers/{deviceId}",
 		"permission": "conversations:write",
 		"category": "WhatsApp functions",
+		"notice": "Irreversible operation.",
 		"params": [
 			{
 				"name": "id",
@@ -4791,12 +4794,12 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "device",
 		"value": "connectLink.destroy",
 		"name": "Revoke a connect link",
-		"description": "Revokes a pending connect link: its page then answers that the link no longer works. If the page had already created a number that is not connected yet, that number is deleted. Permission: accounts:operate.",
+		"description": "Revokes a pending connect link: its page then answers that the link no longer works. If the page had already created a number that is not connected yet, that number is deleted. Permission: accounts:operate. Irreversible: ask for confirmation before running it.",
 		"method": "DELETE",
 		"path": "/api/v1/connect-links/{link}",
 		"permission": "accounts:operate",
 		"category": "WhatsApp functions",
-		"notice": "Only a pending link: otherwise it answers 409 link_not_pending.",
+		"notice": "Irreversible operation: needs the accounts:operate permission. Only a pending link: otherwise it answers 409 link_not_pending.",
 		"params": [
 			{
 				"name": "link",
@@ -5406,11 +5409,12 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "device",
 		"value": "device.deleteMessageQueue",
 		"name": "Delete messages from the queue",
-		"description": "Removes specific messages from the queue, by their UID, before they are sent, for example one queued by mistake. Permission: accounts:write.",
+		"description": "Removes specific messages from the queue, by their UID, before they are sent, for example one queued by mistake. Permission: accounts:write. Irreversible: ask for confirmation before running it.",
 		"method": "DELETE",
 		"path": "/api/v1/devices/{device}/message-queue",
 		"permission": "accounts:write",
 		"category": "WhatsApp functions",
+		"notice": "Irreversible operation.",
 		"params": [
 			{
 				"name": "device",
@@ -6336,11 +6340,12 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "contact",
 		"value": "contact.destroy",
 		"name": "Delete contacts",
-		"description": "Use it to delete contacts in bulk: by IDs, by filters (tags, custom fields, country, creation date) or all of them. Meant for large clean-ups of the base. Permission: conversations:write.",
+		"description": "Use it to delete contacts in bulk: by IDs, by filters (tags, custom fields, country, creation date) or all of them. Meant for large clean-ups of the base. Permission: conversations:write. Irreversible: ask for confirmation before running it.",
 		"method": "POST",
 		"path": "/api/v1/contacts/delete",
 		"permission": "conversations:write",
 		"category": "Funnelchat functions",
+		"notice": "Irreversible operation.",
 		"body": {
 			"required": false,
 			"root": "object"
@@ -6598,11 +6603,12 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "contact",
 		"value": "contactNote.destroy",
 		"name": "Delete a note",
-		"description": "Deletes a contact's note that is out of date or was added by mistake. Permission: conversations:write.",
+		"description": "Deletes a contact's note that is out of date or was added by mistake. Permission: conversations:write. Irreversible: ask for confirmation before running it.",
 		"method": "DELETE",
 		"path": "/api/v1/contacts/{contact}/notes/{note}",
 		"permission": "conversations:write",
 		"category": "Funnelchat functions",
+		"notice": "Irreversible operation.",
 		"params": [
 			{
 				"name": "contact",
@@ -7074,11 +7080,12 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "tag",
 		"value": "tag.destroy",
 		"name": "Delete tags",
-		"description": "Use it to delete several tags at once. Permission: conversations:write.",
+		"description": "Use it to delete several tags at once. Permission: conversations:write. Irreversible: ask for confirmation before running it.",
 		"method": "POST",
 		"path": "/api/v1/tags/delete",
 		"permission": "conversations:write",
 		"category": "Funnelchat functions",
+		"notice": "Irreversible operation.",
 		"body": {
 			"required": true,
 			"root": "object"
@@ -7239,11 +7246,12 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "customField",
 		"value": "customField.destroy",
 		"name": "Delete custom fields",
-		"description": "Use it to delete in bulk the custom fields you no longer use. Permission: conversations:write.",
+		"description": "Use it to delete in bulk the custom fields you no longer use. Permission: conversations:write. Irreversible: ask for confirmation before running it.",
 		"method": "POST",
 		"path": "/api/v1/custom-fields/delete",
 		"permission": "conversations:write",
 		"category": "Funnelchat functions",
+		"notice": "Irreversible operation.",
 		"body": {
 			"required": true,
 			"root": "object"
@@ -7524,7 +7532,7 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "webhook",
 		"value": "webhookSubscription.destroy",
 		"name": "Delete a webhook subscription",
-		"description": "Use it to remove a subscription. Its events and delivery history are deleted with it. Do not delete the ones you do not recognize: they may belong to another integration of the account. Permission: webhooks:write.",
+		"description": "Use it to remove a subscription. Its events and delivery history are deleted with it. Do not delete the ones you do not recognize: they may belong to another integration of the account. Permission: webhooks:write. Irreversible: ask for confirmation before running it.",
 		"method": "DELETE",
 		"path": "/api/v1/webhooks/{id}",
 		"permission": "webhooks:write",
@@ -9824,11 +9832,12 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "broadcast",
 		"value": "broadcast.destroy",
 		"name": "Delete a broadcast",
-		"description": "Use it to delete a scheduled broadcast before its send time. One already sent or going out cannot be deleted (422); a paused one is closed by cancelling it. Permission: conversations:write.",
+		"description": "Use it to delete a scheduled broadcast before its send time. One already sent or going out cannot be deleted (422); a paused one is closed by cancelling it. Permission: conversations:write. Irreversible: ask for confirmation before running it.",
 		"method": "DELETE",
 		"path": "/api/v1/broadcasts/{broadcast}",
 		"permission": "conversations:write",
 		"category": "Funnelchat functions",
+		"notice": "Irreversible operation.",
 		"params": [
 			{
 				"name": "broadcast",
@@ -10113,11 +10122,12 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "broadcast",
 		"value": "broadcastFolder.destroy",
 		"name": "Delete a broadcast folder",
-		"description": "Use it to delete a broadcast folder you no longer use. Permission: conversations:write.",
+		"description": "Use it to delete a broadcast folder you no longer use. Permission: conversations:write. Irreversible: ask for confirmation before running it.",
 		"method": "DELETE",
 		"path": "/api/v1/broadcasts/folders/{broadcastFolder}",
 		"permission": "conversations:write",
 		"category": "Funnelchat functions",
+		"notice": "Irreversible operation.",
 		"params": [
 			{
 				"name": "broadcastFolder",
@@ -10796,11 +10806,12 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "flowFolder",
 		"value": "folder.destroy",
 		"name": "Delete a flow folder",
-		"description": "Use it to delete a flow folder you no longer need. Permission: conversations:write.",
+		"description": "Use it to delete a flow folder you no longer need. Permission: conversations:write. Irreversible: ask for confirmation before running it.",
 		"method": "DELETE",
 		"path": "/api/v1/folders/{folder}",
 		"permission": "conversations:write",
 		"category": "Funnelchat functions",
+		"notice": "Irreversible operation.",
 		"params": [
 			{
 				"name": "folder",
@@ -11125,11 +11136,12 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "board",
 		"value": "kanbanSetting.destroy",
 		"name": "Delete a board",
-		"description": "Use it to delete a kanban board you no longer use. Permission: conversations:write.",
+		"description": "Use it to delete a kanban board you no longer use. Permission: conversations:write. Irreversible: ask for confirmation before running it.",
 		"method": "DELETE",
 		"path": "/api/v1/kanban-settings/{kanbanSetting}",
 		"permission": "conversations:write",
 		"category": "Funnelchat functions",
+		"notice": "Irreversible operation.",
 		"params": [
 			{
 				"name": "kanbanSetting",
@@ -11498,11 +11510,12 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "board",
 		"value": "kanbanStage.destroy",
 		"name": "Delete a stage",
-		"description": "Use it to delete a stage of a board; with reassign_to_stage_id its contacts go to another stage. Permission: conversations:write.",
+		"description": "Use it to delete a stage of a board; with reassign_to_stage_id its contacts go to another stage. Permission: conversations:write. Irreversible: ask for confirmation before running it.",
 		"method": "DELETE",
 		"path": "/api/v1/kanban-settings/{kanbanSetting}/stages/{stage}",
 		"permission": "conversations:write",
 		"category": "Funnelchat functions",
+		"notice": "Irreversible operation.",
 		"params": [
 			{
 				"name": "kanbanSetting",
@@ -12363,11 +12376,12 @@ export const OPERATIONS: OperationSpec[] = [
 		"resource": "quickReply",
 		"value": "quickReply.destroy",
 		"name": "Delete a quick reply",
-		"description": "Use it to delete a quick reply that is no longer used. Permission: conversations:write.",
+		"description": "Use it to delete a quick reply that is no longer used. Permission: conversations:write. Irreversible: ask for confirmation before running it.",
 		"method": "DELETE",
 		"path": "/api/v1/quick-replies/{quickReply}",
 		"permission": "conversations:write",
 		"category": "Funnelchat functions",
+		"notice": "Irreversible operation.",
 		"params": [
 			{
 				"name": "quickReply",
