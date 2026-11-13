@@ -1,6 +1,6 @@
 {
 	"name": "@funnelchat-hq/n8n-nodes-funnelchat",
-	"version": "0.3.3",
+	"version": "0.3.4",
 	"description": "n8n community node for the Funnelchat public API: every function the developer portal publishes (WhatsApp numbers, messages, templates, forms, groups, contacts, conversations, campaigns, broadcasts, automations, boards, tickets and more), and a trigger for its signed events.",
 	"license": "MIT",
 	"homepage": "https://developers-portal.funnelchat.app/docs/",
