@@ -10,8 +10,12 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   build:
+    name: Checks, build and tests (Node.js LTS)
     runs-on: ubuntu-latest
 
     steps:
@@ -34,6 +38,27 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Test
+        run: npm test
+
+  minimum:
+    # The node's code and its tests on the minimum package.json allows (engines.node). The build and the lint of
+    # @n8n/node-cli need require() of ES modules (Node.js 20.19 or 22.12), so they run on the LTS only.
+    name: Tests (Node.js 20.15, the minimum of engines)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.15'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Test
         run: npm test

@@ -1029,8 +1029,14 @@ FUNNELCHAT_SANDBOX_URL=http://127.0.0.1:4010 npm run test:e2e   # e2e against a 
 npm run dev                   # starts n8n on http://localhost:5678 with the node loaded
 ```
 
-**Publishing:** a `vX.Y.Z` tag on `main`, matching the `package.json` version; GitHub Actions
-(`.github/workflows/publish.yml`) publishes it through npm Trusted Publishing.
+**Checks:** every pull request and every push to `main` run `.github/workflows/ci.yml`: install, the generated files
+up to date, lint, build and tests on the current Node.js LTS, and the tests on Node.js 20.15, the minimum of
+`engines`. The build and the lint need Node.js 20.19 or 22.12 (`@n8n/node-cli`).
+
+**Publishing:** a `vX.Y.Z` tag on a commit of `main`, matching the `package.json` version; GitHub Actions
+(`.github/workflows/publish.yml`) runs the tests and publishes it through npm Trusted Publishing. A tag on a commit
+that is not in `main` fails before publishing. A pre-release (`vX.Y.Z-rc.N`, `vX.Y.Z-beta.N`) goes out with the npm
+tag `next`, never as the default version.
 
 - `nodes/Funnelchat/`: the action node. `generated/operations.ts` is the generated table; `description.ts` builds the
   fields from it and `request.ts` builds the requests (route, query and body) and the pagination.
