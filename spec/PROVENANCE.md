@@ -30,10 +30,31 @@ download it). The node carries every operation and event type of this file, and 
 | Event types (`webhooks`) | 56 |
 | Domains (`x-fc-sources`) | conversations (147 operations), communities (55 operations), accounts (51 operations) |
 | Categories | Primer uso (`primer-uso`): 1 group, Funciones de WhatsApp (`whatsapp`): 9 groups, Funciones de Funnelchat (`funnelchat`): 20 groups |
-| SHA-256 | `3e5bc8ef01a2c74650a2581beb9bcfee4dd14252bec8ab52542fa3240ab60475` |
+| SHA-256 | `7db2ead826697c80fd8feef3f0ea556b5374dd3d2cb5e02f3cfe4584af79e33c` |
 | Copied | 2026-11-13 |
 
 <!-- spec:end -->
+
+## The copy of 2026-11-13, third (portal `v0.6.16`)
+
+The specification published at `https://developers-portal.funnelchat.app/specs/funnelchat.json`, portal `v0.6.16`,
+SHA-256 `7db2ead826697c80fd8feef3f0ea556b5374dd3d2cb5e02f3cfe4584af79e33c`: 253 operations and 57 entries in
+`webhooks`, as in `v0.6.15`.
+
+- **Responses.** Deleting a template documents `204`, `401`, `402`, `403`, `404`, `422` (`number_not_connected_to_meta`,
+  `meta_rejected`) and `502`; creating a group, `402`; the two sends of a message, `415`; a form's new version, `201`.
+  The three operations of a number's username answer `502 provider_error`, and Meta's refusal with Meta's own HTTP
+  status and `error` `meta_error`. `ApiGroupActionResource`, which "Get a group action" pointed to, is now in the
+  specification, so the generator no longer takes that operation for a list without pagination (the node ran it the
+  same way: one request, one item).
+- **Texts.** The Spanish descriptions of 8 operations and 12 event types changed: a send the monthly active contacts
+  stop leaves nothing in the contact's history; an empty description of an official number's group answers `422`;
+  up to 50 webhook subscriptions per workspace (`422 webhooks_limit_reached`), and creating one takes no
+  `Idempotency-Key`; `group_participant.joined` and `.left` go out at most once per person, group and UTC day;
+  `group.blocked`, `group.recovered` and `pipeline.finished` are of campaign groups only; the dates of the number
+  events' examples end in `Z`. The node's texts are its English ones, so nothing of that changes in it.
+- **Nothing else.** No operation, parameter, group or event type came in, went out or changed; there was no warning
+  nor text to review.
 
 ## The copy of 2026-11-13, second (portal `v0.6.15`)
 
