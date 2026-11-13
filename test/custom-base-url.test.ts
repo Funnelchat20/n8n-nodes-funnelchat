@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { FunnelchatApi } from '../credentials/FunnelchatApi.credentials';
 import { Funnelchat } from '../nodes/Funnelchat/Funnelchat.node';
 import { FunnelchatTrigger } from '../nodes/FunnelchatTrigger/FunnelchatTrigger.node';
-import { baseUrlFor, isValidBaseUrl } from '../nodes/shared/transport';
+import { allowsLiveKey, baseUrlFor, isLiveKey, isValidBaseUrl } from '../nodes/shared/transport';
 import vectors from './fixtures/firmas.json';
 import { executeContext, hookContext, requestLine } from './mocks';
 
@@ -190,5 +190,65 @@ describe('the trigger with a custom base URL and a local n8n', () => {
 			'DELETE /api/v1/webhooks/0f486bfd-2f55-4ed6-8a12-b09e31a6ac08',
 		);
 		expect(created.staticData.subscriptions).toBeUndefined();
+	});
+});
+
+describe('a live key (fc_live_) over http://', () => {
+	const LIVE = '1|fc_live_abc';
+	const node = new Funnelchat();
+
+	it.each([
+		['http://localhost:4010', true],
+		['http://127.0.0.1:4010', true],
+		['http://[::1]:4010', true],
+		['https://sandbox.example.com', true],
+		['http://host.docker.internal:4010', false],
+		['http://sandbox.example.com', false],
+		['http://localhost:4010@evil.example.com', false],
+	])('%s allowed: %s', (url, allowed) => {
+		expect(allowsLiveKey(url)).toBe(allowed);
+	});
+
+	it('only fc_live_ keys are live', () => {
+		expect(isLiveKey(LIVE)).toBe(true);
+		expect(isLiveKey('fc_live_abc')).toBe(true);
+		expect(isLiveKey('test-key')).toBe(false);
+	});
+
+	it('to another machine, the node sends nothing and says why', async () => {
+		const { ctx, calls } = executeContext({
+			apiKey: LIVE,
+			environment: 'custom',
+			baseUrl: 'http://host.docker.internal:4010',
+			params: { resource: 'contact', operation: 'contact.show', contact: '2001' },
+			responses: [],
+		});
+		const error = await node.execute.call(ctx).catch((e: unknown) => e);
+		expect(error).toBeInstanceOf(NodeOperationError);
+		expect((error as Error).message).toContain('fc_live_');
+		expect(calls).toHaveLength(0);
+	});
+
+	it('the credential test points to an .invalid host instead', () => {
+		const expression = String(new FunnelchatApi().test.request.baseURL);
+		// The expression as n8n resolves it, with $credentials: it is the credential's own text, not input.
+		// eslint-disable-next-line @n8n/community-nodes/no-dangerous-functions
+		const resolve = new Function('$credentials', `return (${expression.slice(3, -2)});`) as (
+			credentials: object,
+		) => string;
+		const custom = (apiKey: string, baseUrl: string) =>
+			resolve({ environment: 'custom', apiKey, baseUrl });
+		expect(custom(LIVE, 'http://host.docker.internal:4010')).toBe(
+			'https://live-key-needs-https.invalid',
+		);
+		expect(custom(LIVE, 'http://localhost:4010@evil.example.com')).toBe(
+			'https://live-key-needs-https.invalid',
+		);
+		expect(custom(LIVE, 'http://[::1]:4010')).toBe('http://[::1]:4010');
+		expect(custom(LIVE, 'https://sandbox.example.com')).toBe('https://sandbox.example.com');
+		expect(custom('test-key', 'http://host.docker.internal:4010')).toBe(
+			'http://host.docker.internal:4010',
+		);
+		expect(custom(LIVE, 'http://localhost:4010/')).toBe('https://invalid-base-url.invalid');
 	});
 });
