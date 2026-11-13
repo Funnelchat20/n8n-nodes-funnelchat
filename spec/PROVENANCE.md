@@ -30,10 +30,24 @@ download it). The node carries every operation and event type of this file, and 
 | Event types (`webhooks`) | 56 |
 | Domains (`x-fc-sources`) | conversations (147 operations), communities (55 operations), accounts (51 operations) |
 | Categories | Primer uso (`primer-uso`): 1 group, Funciones de WhatsApp (`whatsapp`): 9 groups, Funciones de Funnelchat (`funnelchat`): 20 groups |
-| SHA-256 | `a7b480743848dabccbea2a1f2314263ca070316eeed97aab4a6f09f171c80e5a` |
-| Copied | 2026-11-11 |
+| SHA-256 | `37c54a5aad4cc467e088af50294012484692ef668714dcdd748babc7314b587f` |
+| Copied | 2026-11-13 |
 
 <!-- spec:end -->
+
+## The copy of 2026-11-13 (portal `v0.6.14`)
+
+The specification published at `https://developers-portal.funnelchat.app/specs/funnelchat.json`, portal `v0.6.14`,
+SHA-256 `37c54a5aad4cc467e088af50294012484692ef668714dcdd748babc7314b587f`: 253 operations and 57 entries in
+`webhooks` (56 event types, since `webhook.test` has two), as in `v0.6.13`.
+
+- **Only two examples changed.** The example of `group.message_received` and `group.reaction_added` now identifies
+  the message by `data.message.uid` (it showed `data.message.id`), which is what Funnelchat sends; the one of
+  `group.message_received` also shows `caption`, `media_url`, `mime_type`, `file_name` and `quoted_uid`. The English
+  description of both events no longer says the example differs (`scripts/events.en.json`).
+- **Nothing else.** No operation, parameter, group or event type came in, went out or changed, so the generated table
+  is the same but for the SHA-256. There was no warning nor text to review, and nothing of
+  `scripts/generator.config.json` became unnecessary.
 
 ## The copy of 2026-11-11, final (portal `v0.6.13`)
 

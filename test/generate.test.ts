@@ -170,11 +170,13 @@ describe('generation from the published specification', () => {
 			expect(described.has(e.type), e.type).toBe(true);
 			expect(['accounts', 'conversations', 'communities'], e.type).toContain(e.area);
 		}
-		// Production sends message.uid in these two (communities v2.35.28), although the published example says id.
-		for (const type of ['group.message_received', 'group.reaction_added'])
-			expect(EVENT_CATALOG.find((e) => e.type === type)!.description, type).toContain(
-				'data.message with its uid',
-			);
+		// These two identify the message by data.message.uid, as the portal's example shows since v0.6.14: the description
+		// says so and no longer says the example differs.
+		for (const type of ['group.message_received', 'group.reaction_added']) {
+			const description = EVENT_CATALOG.find((e) => e.type === type)!.description;
+			expect(description, type).toContain('data.message with its uid');
+			expect(description, type).not.toContain('example');
+		}
 	});
 
 	it('when the specification gives the category of the groups, every operation has its own', () => {
