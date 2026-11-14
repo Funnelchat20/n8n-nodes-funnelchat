@@ -30,10 +30,23 @@ download it). The node carries every operation and event type of this file, and 
 | Event types (`webhooks`) | 56 |
 | Domains (`x-fc-sources`) | conversations (147 operations), communities (55 operations), accounts (51 operations) |
 | Categories | Primer uso (`primer-uso`): 1 group, Funciones de WhatsApp (`whatsapp`): 9 groups, Funciones de Funnelchat (`funnelchat`): 20 groups |
-| SHA-256 | `19e91748ddfe19eef74886264ee984d360417596745e5a900a02a7a831b570a0` |
+| SHA-256 | `3a5f39f1bd8d62c548810937c6aa35cc6fb6533444103939a88dfb80a7459593` |
 | Copied | 2026-11-14 |
 
 <!-- spec:end -->
+
+## The copy of 2026-11-14, second (portal `v0.6.19`)
+
+The specification published at `https://developers-portal.funnelchat.app/specs/funnelchat.json`, portal `v0.6.19`,
+SHA-256 `3a5f39f1bd8d62c548810937c6aa35cc6fb6533444103939a88dfb80a7459593`: 253 operations and 57 entries in
+`webhooks`, as in `v0.6.18`.
+
+- **Texts only.** The descriptions of 46 operations, 11 event types and 1 schema changed: "workspace" where it said
+  "account", limits per minute per workspace, the text of `402 payment_required` (of the account or of the workspace)
+  and the `403` of an archived workspace. The node's texts are its English ones, so nothing of that changes in it;
+  only the README's line on `402 payment_required` was brought in line.
+- **Nothing else.** No operation, parameter, group, field, error code or event type came in or went out; the generator
+  gave no warning.
 
 ## The copy of 2026-11-14 (portal `v0.6.18`)
 
