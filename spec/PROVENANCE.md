@@ -30,10 +30,25 @@ download it). The node carries every operation and event type of this file, and 
 | Event types (`webhooks`) | 56 |
 | Domains (`x-fc-sources`) | conversations (147 operations), communities (55 operations), accounts (51 operations) |
 | Categories | Primer uso (`primer-uso`): 1 group, Funciones de WhatsApp (`whatsapp`): 9 groups, Funciones de Funnelchat (`funnelchat`): 20 groups |
-| SHA-256 | `7db2ead826697c80fd8feef3f0ea556b5374dd3d2cb5e02f3cfe4584af79e33c` |
-| Copied | 2026-11-13 |
+| SHA-256 | `19e91748ddfe19eef74886264ee984d360417596745e5a900a02a7a831b570a0` |
+| Copied | 2026-11-14 |
 
 <!-- spec:end -->
+
+## The copy of 2026-11-14 (portal `v0.6.18`)
+
+The specification published at `https://developers-portal.funnelchat.app/specs/funnelchat.json`, portal `v0.6.18`,
+SHA-256 `19e91748ddfe19eef74886264ee984d360417596745e5a900a02a7a831b570a0`: 253 operations and 57 entries in
+`webhooks`, as in `v0.6.16`.
+
+- **Body.** `PUT /api/v1/lead-score/settings` now documents its body (`UpdateLeadScoreSettingsRequest`: `hot_threshold`,
+  `warm_threshold`, `min_signals`, `hysteresis`, `decay_enabled`, `rules`, `decay_steps`, all required), so "Set the lead
+  score settings" takes those fields in the node; before, it had none.
+- **Texts and examples.** The examples of 12 events changed (a short campaign uuid, `participant.identity` without `+`);
+  the descriptions of `whatsapp_form.completed` and `group.created` changed; `identity_type` accepts `whatsapp_user` (a
+  person without a phone number in official groups). The node's texts are its English ones, so nothing of that changes
+  in it.
+- **Nothing else.** No operation, group or event type came in or went out.
 
 ## The copy of 2026-11-13, third (portal `v0.6.16`)
 
