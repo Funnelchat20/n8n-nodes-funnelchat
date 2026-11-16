@@ -30,10 +30,27 @@ download it). The node carries every operation and event type of this file, and 
 | Event types (`webhooks`) | 56 |
 | Domains (`x-fc-sources`) | conversations (147 operations), communities (55 operations), accounts (51 operations) |
 | Categories | Primer uso (`primer-uso`): 1 group, Funciones de WhatsApp (`whatsapp`): 9 groups, Funciones de Funnelchat (`funnelchat`): 20 groups |
-| SHA-256 | `3a5f39f1bd8d62c548810937c6aa35cc6fb6533444103939a88dfb80a7459593` |
-| Copied | 2026-11-14 |
+| SHA-256 | `fadcd73731cba99d0b49adfec7b5799d7318fe99944c88282a444362d869e576` |
+| Copied | 2026-11-16 |
 
 <!-- spec:end -->
+
+## The copy of 2026-11-16 (portal `v0.7.0`)
+
+The specification published at `https://developers-portal.funnelchat.app/specs/funnelchat.json`, portal `v0.7.0`,
+SHA-256 `fadcd73731cba99d0b49adfec7b5799d7318fe99944c88282a444362d869e576`: 253 operations and 57 entries in
+`webhooks`, as in `v0.6.19`.
+
+- **Opaque IDs.** Every whole-number ID of the API is now text with a type prefix (`ctc_ABsza6Ialu1BCUyPFZ8WJvV`,
+  `^xxx_[A-Za-z0-9]{23}$`), with no transition: a whole number or an ID of another type answers `404`. The fields that
+  were `integer` IDs are `string` in the specification, so the generator now writes them as `string` (before, as
+  `number` with `valueType: integer`) and the node sends them as they come. The ones that were already opaque (group
+  `uid`, campaign `uuid`, message `uid`, WABA IDs) and `workspace_id` did not change.
+- **Descriptions.** Their descriptions say "Id opaco: un texto que empieza con `xxx_`…", in Spanish, so
+  `fieldDescriptions` in `scripts/generator.config.json` has the English text of each one (48 entries, one per prefix
+  and per variant); the generator lists no field as untranslated.
+- **Nothing else.** No operation, group or event type came in or went out. `spec/pending.json` does not exist in this
+  repository, so there was nothing to report.
 
 ## The copy of 2026-11-14, second (portal `v0.6.19`)
 

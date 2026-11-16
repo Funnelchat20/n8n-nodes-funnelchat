@@ -130,7 +130,11 @@ describe('the node against a custom base URL', () => {
 		const { ctx, calls } = executeContext({
 			environment: 'custom',
 			baseUrl: 'http://localhost:4010/',
-			params: { resource: 'contact', operation: 'contact.show', contact: '2001' },
+			params: {
+				resource: 'contact',
+				operation: 'contact.show',
+				contact: 'ctc_ABsza6Ialu1BCUyPFZ8WJvV',
+			},
 			responses: [],
 		});
 		const error = await node.execute.call(ctx).catch((e: unknown) => e);
@@ -220,7 +224,11 @@ describe('a live key (fc_live_) over http://', () => {
 			apiKey: LIVE,
 			environment: 'custom',
 			baseUrl: 'http://host.docker.internal:4010',
-			params: { resource: 'contact', operation: 'contact.show', contact: '2001' },
+			params: {
+				resource: 'contact',
+				operation: 'contact.show',
+				contact: 'ctc_ABsza6Ialu1BCUyPFZ8WJvV',
+			},
 			responses: [],
 		});
 		const error = await node.execute.call(ctx).catch((e: unknown) => e);

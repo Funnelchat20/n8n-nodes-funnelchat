@@ -13,23 +13,43 @@ import { FunnelchatTrigger } from '../../nodes/FunnelchatTrigger/FunnelchatTrigg
 import { startReceiver } from './receiver.mjs';
 
 /*
- * End to end against a running funnelchat-sandbox (Funnelchat20/funnelchat-sandbox, 0.2.0 or later: connecting
+ * End to end against a running funnelchat-sandbox (Funnelchat20/funnelchat-sandbox, 0.6.0 or later: connecting
  * numbers came in 0.2.0): the real HTTP of the node, with a credential on the "Custom" environment. Skipped unless
  * FUNNELCHAT_SANDBOX_URL is set:
  *
  *   npx @funnelchat-hq/sandbox --port 4010 --status-delays 0.2,0.2,0.2
  *   FUNNELCHAT_SANDBOX_URL=http://127.0.0.1:4010 npm run test:e2e
  *
- * Uses the sandbox's seed (contact 2001 with phone 5491100000000, QR number 4 without a 24-hour window) and resets it
+ * Uses the sandbox's seed (the contact with phone 5491100000000, a QR number without a 24-hour window and the official number; their opaque IDs are looked up) and resets it
  * before each test with POST /_sandbox/reset. Short status delays make the wait for "read" short; with the default
  * ones (1, 2 and 3 seconds) the first use takes about six seconds.
  */
 
 const SANDBOX = inject('sandboxUrl') || undefined;
 const KEY = '1|fc_live_e2e';
-const CONTACT = 2001;
 const PHONE = '5491100000000';
-const DEVICE = 4;
+
+// IDs are opaque since portal v0.7.0, so the seed's ones are looked up once per test (through the sandbox's own API)
+// instead of being written here: the contact with PHONE, the QR number and the official number.
+let CONTACT = '';
+let DEVICE = '';
+let OFFICIAL = '';
+
+async function seedIds() {
+	const get = async (path: string) => {
+		const response = await fetch(`${SANDBOX}${path}`, {
+			headers: { Authorization: `Bearer ${KEY}` },
+		});
+		expect(response.ok).toBe(true);
+		return ((await response.json()) as { data: IDataObject[] }).data;
+	};
+	const contact = (await get('/api/v1/contacts')).find((c) => c.phone === PHONE);
+	const devices = await get('/api/v1/devices');
+	CONTACT = String(contact?.id);
+	DEVICE = String(devices.find((d) => d.type === 'qr')?.id);
+	OFFICIAL = String(devices.find((d) => d.type === 'meta')?.id);
+	for (const id of [CONTACT, DEVICE, OFFICIAL]) expect(id).toMatch(/^[a-z]{3}_[A-Za-z0-9]{23}$/);
+}
 
 const NODE = {
 	id: 'e2e',
@@ -91,15 +111,16 @@ describe.skipIf(!SANDBOX)('e2e against the sandbox', () => {
 	beforeEach(async () => {
 		const reset = await fetch(`${SANDBOX}/_sandbox/reset`, { method: 'POST' });
 		expect(reset.ok).toBe(true);
+		await seedIds();
 	});
 
 	it('sending a message returns the queued message, and it can be read by ID', async () => {
 		const [queued] = await run({
 			resource: 'conversation',
 			operation: 'conversation.sendMessage',
-			contact: String(CONTACT),
-			device_id: String(DEVICE),
-			contact_id: String(CONTACT),
+			contact: CONTACT,
+			device_id: DEVICE,
+			contact_id: CONTACT,
 			useJsonBody: false,
 			additionalFields: { phone: PHONE, text: 'Hello from n8n', client_reference: 'e2e-send-1' },
 		});
@@ -115,7 +136,7 @@ describe.skipIf(!SANDBOX)('e2e against the sandbox', () => {
 		const [read] = await run({
 			resource: 'conversation',
 			operation: 'showMessage',
-			contact: String(CONTACT),
+			contact: CONTACT,
 			message: String(queued.id),
 		});
 		expect(read).toMatchObject({ id: queued.id, client_reference: 'e2e-send-1' });
@@ -125,9 +146,9 @@ describe.skipIf(!SANDBOX)('e2e against the sandbox', () => {
 		const params = {
 			resource: 'conversation',
 			operation: 'conversation.sendMessage',
-			contact: String(CONTACT),
-			device_id: String(DEVICE),
-			contact_id: String(CONTACT),
+			contact: CONTACT,
+			device_id: DEVICE,
+			contact_id: CONTACT,
 			useJsonBody: false,
 		};
 		const file = 'https://cdn.example.com/descarga?id=9&firma=abc';
@@ -150,7 +171,7 @@ describe.skipIf(!SANDBOX)('e2e against the sandbox', () => {
 		const error = (await run({
 			resource: 'conversation',
 			operation: 'showMessage',
-			contact: String(CONTACT),
+			contact: CONTACT,
 			message: '999999',
 		}).catch((e: unknown) => e)) as NodeApiError;
 		expect(error).toBeInstanceOf(NodeApiError);
@@ -163,7 +184,7 @@ describe.skipIf(!SANDBOX)('e2e against the sandbox', () => {
 				{
 					resource: 'conversation',
 					operation: 'showMessage',
-					contact: String(CONTACT),
+					contact: CONTACT,
 					message: '999999',
 				},
 				true,
@@ -231,8 +252,8 @@ describe.skipIf(!SANDBOX)('e2e against the sandbox', () => {
 			const [queued] = await run({
 				resource: 'conversation',
 				operation: 'message.sendMessage',
-				device_id: String(DEVICE),
-				contact_id: String(CONTACT),
+				device_id: DEVICE,
+				contact_id: CONTACT,
 				useJsonBody: false,
 				additionalFields: { text: 'Hello!', client_reference: 'e2e-first-use' },
 			});
@@ -277,7 +298,7 @@ describe.skipIf(!SANDBOX)('e2e against the sandbox', () => {
 			expect(String(qr.qr_code)).toMatch(/^data:image\/png;base64,/);
 
 			// The scan of the QR, which only the sandbox can do.
-			const scan = await fetch(`${SANDBOX}/_sandbox/devices/${number.id as number}/connect`, {
+			const scan = await fetch(`${SANDBOX}/_sandbox/devices/${number.id as string}/connect`, {
 				method: 'POST',
 			});
 			expect(scan.ok).toBe(true);
@@ -387,9 +408,9 @@ describe.skipIf(!SANDBOX)('e2e against the sandbox', () => {
 			const [queued] = await run({
 				resource: 'conversation',
 				operation: 'conversation.sendMessage',
-				contact: String(CONTACT),
-				device_id: String(DEVICE),
-				contact_id: String(CONTACT),
+				contact: CONTACT,
+				device_id: DEVICE,
+				contact_id: CONTACT,
 				useJsonBody: false,
 				additionalFields: { phone: PHONE, text: 'Hello', client_reference: 'e2e-event-1' },
 			});
@@ -427,11 +448,11 @@ describe.skipIf(!SANDBOX)('e2e against the sandbox', () => {
 			const ctx = hookContext(staticData, ['whatsapp_form.completed']);
 			expect(await methods.create.call(ctx)).toBe(true);
 
-			// Forms only go out from the official number (3), inside the 24-hour window.
+			// Forms only go out from the official number, inside the 24-hour window.
 			const [created] = await run({
 				resource: 'form',
 				operation: 'whatsappForm.store',
-				device_id: '3',
+				device_id: OFFICIAL,
 				template_key: 'lead',
 				useJsonBody: false,
 				additionalFields: {},
@@ -441,16 +462,16 @@ describe.skipIf(!SANDBOX)('e2e against the sandbox', () => {
 			const window = await fetch(`${SANDBOX}/_sandbox/window`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ contact_id: CONTACT, device_id: 3, open: true }),
+				body: JSON.stringify({ contact_id: CONTACT, device_id: OFFICIAL, open: true }),
 			});
 			expect(window.ok).toBe(true);
 
 			const [sent] = await run({
 				resource: 'form',
 				operation: 'whatsappFormSend.store',
-				contact: String(CONTACT),
+				contact: CONTACT,
 				form_id: String(form.family_id),
-				device_id: '3',
+				device_id: OFFICIAL,
 				useJsonBody: false,
 				additionalFields: { client_reference: 'e2e-form-1' },
 			});

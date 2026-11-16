@@ -336,9 +336,9 @@ describe('deliveries: signature check', () => {
 			version: 1,
 			occurred_at: '2026-11-04T12:00:05Z',
 			data: {
-				message_id: 1001,
-				contact_id: 2001,
-				device_id: 4,
+				message_id: 'msg_H2kVb7XcRm4PzLq9TwNe5Ja',
+				contact_id: 'ctc_ABsza6Ialu1BCUyPFZ8WJvV',
+				device_id: 'dev_N7pLw2QeYt5HcRa9KmXz3Vb',
 				status: 'read',
 				previous_status: 'delivered',
 				error: null,
