@@ -5,6 +5,24 @@ import { OPERATIONS } from '../nodes/Funnelchat/generated/operations';
 import type { OperationSpec } from '../nodes/Funnelchat/operationTypes';
 import { buildRequest, RequestBuildError, toUrl } from '../nodes/Funnelchat/request';
 import { funnelchatApiRequest } from '../nodes/shared/transport';
+import {
+	CONTACT,
+	CONTACT_2,
+	CONTACT_3,
+	DEVICE,
+	FIELD,
+	FORM,
+	FORM_FAMILY,
+	KANBAN,
+	LINK,
+	MESSAGE,
+	MESSAGE_2,
+	NOTE,
+	STAGE,
+	TAG,
+	TAG_2,
+	TEMPLATE,
+} from './ids';
 import { executeContext, requestLine } from './mocks';
 
 /** The generated operation, so these tests follow the specification and not a hand-written copy. */
@@ -24,19 +42,21 @@ describe('building requests (buildRequest)', () => {
 		expect(
 			url('contact.index', {
 				name: 'Ana',
-				tag_ids: '1, 2',
+				tag_ids: `${TAG}, ${TAG_2}`,
 				tag_mode: 'any',
 				lead_score_min: 40,
 				country_codes: ['AR', 'UY'],
 			}),
 		).toBe(
-			'GET /api/v1/contacts?name=Ana&country_codes[]=AR&country_codes[]=UY&tag_ids[]=1&tag_ids[]=2&tag_mode=any&lead_score_min=40',
+			`GET /api/v1/contacts?name=Ana&country_codes[]=AR&country_codes[]=UY&tag_ids[]=${TAG}&tag_ids[]=${TAG_2}&tag_mode=any&lead_score_min=40`,
 		);
 	});
 
 	it('List contacts: a filter with objects (deepObject) goes with indexes', () => {
-		expect(url('contact.index', { tag_filters: '[{"mode":"all","tag_ids":[3,4]}]' })).toBe(
-			'GET /api/v1/contacts?tag_filters[0][mode]=all&tag_filters[0][tag_ids][]=3&tag_filters[0][tag_ids][]=4',
+		expect(
+			url('contact.index', { tag_filters: `[{"mode":"all","tag_ids":["${TAG}","${TAG_2}"]}]` }),
+		).toBe(
+			`GET /api/v1/contacts?tag_filters[0][mode]=all&tag_filters[0][tag_ids][]=${TAG}&tag_filters[0][tag_ids][]=${TAG_2}`,
 		);
 	});
 
@@ -71,19 +91,19 @@ describe('building requests (buildRequest)', () => {
 
 	it('Send a message to a contact: route with the contact and IDs as integers', () => {
 		const built = buildRequest(op('conversation.sendMessage'), {
-			contact: '2001',
-			device_id: '7',
-			contact_id: 2001,
+			contact: CONTACT,
+			device_id: DEVICE,
+			contact_id: CONTACT,
 			text: 'Hi, how can I help you?',
 			link_preview: false,
 		});
 		expect(built).toEqual({
 			method: 'POST',
-			path: '/api/v1/contacts/2001/message',
+			path: `/api/v1/contacts/${CONTACT}/message`,
 			query: [],
 			body: {
-				device_id: 7,
-				contact_id: 2001,
+				device_id: DEVICE,
+				contact_id: CONTACT,
 				text: 'Hi, how can I help you?',
 				link_preview: false,
 			},
@@ -92,9 +112,9 @@ describe('building requests (buildRequest)', () => {
 
 	it('Send a message to a contact: file by URL with type, name and client reference', () => {
 		const built = buildRequest(op('conversation.sendMessage'), {
-			contact: '2001',
-			device_id: '7',
-			contact_id: 2001,
+			contact: CONTACT,
+			device_id: DEVICE,
+			contact_id: CONTACT,
 			phone: '5491100000000',
 			file: 'https://cdn.example.com/f?id=9&signature=abc',
 			file_type: 'document',
@@ -102,8 +122,8 @@ describe('building requests (buildRequest)', () => {
 			client_reference: 'order-981',
 		});
 		expect(built.body).toEqual({
-			device_id: 7,
-			contact_id: 2001,
+			device_id: DEVICE,
+			contact_id: CONTACT,
 			phone: '5491100000000',
 			file: 'https://cdn.example.com/f?id=9&signature=abc',
 			file_type: 'document',
@@ -114,33 +134,37 @@ describe('building requests (buildRequest)', () => {
 
 	it('Send a form to a contact: form_id and device_id as integers', () => {
 		const built = buildRequest(op('whatsappFormSend.store'), {
-			contact: '2001',
-			form_id: '8001',
-			device_id: '7',
+			contact: CONTACT,
+			form_id: FORM,
+			device_id: DEVICE,
 			button_text: 'Fill in',
 		});
 		expect(built).toEqual({
 			method: 'POST',
-			path: '/api/v1/contacts/2001/message/form',
+			path: `/api/v1/contacts/${CONTACT}/message/form`,
 			query: [],
-			body: { form_id: 8001, device_id: 7, button_text: 'Fill in' },
+			body: { form_id: FORM, device_id: DEVICE, button_text: 'Fill in' },
 		});
 	});
 
 	it('Get a message, and the form routes by version and by form', () => {
-		expect(url('showMessage', { contact: '2001', message: '1001' })).toBe(
-			'GET /api/v1/contacts/2001/messages/1001',
+		expect(url('showMessage', { contact: CONTACT, message: MESSAGE })).toBe(
+			`GET /api/v1/contacts/${CONTACT}/messages/${MESSAGE}`,
 		);
-		expect(url('whatsappForm.publish', { id: '8105' })).toBe('POST /api/v1/forms/8105/publish');
+		expect(url('whatsappForm.publish', { id: FORM })).toBe(`POST /api/v1/forms/${FORM}/publish`);
 		expect(
-			url('whatsappForm.responses', { familyId: '8001', status: 'completed', from: '2026-10-01' }),
-		).toBe('GET /api/v1/forms/families/8001/responses?from=2026-10-01&status=completed');
+			url('whatsappForm.responses', {
+				familyId: FORM_FAMILY,
+				status: 'completed',
+				from: '2026-10-01',
+			}),
+		).toBe(`GET /api/v1/forms/families/${FORM_FAMILY}/responses?from=2026-10-01&status=completed`);
 	});
 
 	it('Send a message (the first use): number, contact and text, without a phone', () => {
 		const built = buildRequest(op('message.sendMessage'), {
-			device_id: '4',
-			contact_id: '2001',
+			device_id: DEVICE,
+			contact_id: CONTACT,
 			text: 'Hello!',
 			client_reference: 'order-981',
 		});
@@ -148,7 +172,12 @@ describe('building requests (buildRequest)', () => {
 			method: 'POST',
 			path: '/api/v1/message/send-message',
 			query: [],
-			body: { device_id: 4, contact_id: 2001, text: 'Hello!', client_reference: 'order-981' },
+			body: {
+				device_id: DEVICE,
+				contact_id: CONTACT,
+				text: 'Hello!',
+				client_reference: 'order-981',
+			},
 		});
 	});
 
@@ -166,7 +195,9 @@ describe('building requests (buildRequest)', () => {
 			query: [],
 			body: { connection: 'qr', alias: 'Sales', external_reference: 'customer-42', country: 'mx' },
 		});
-		expect(url('deviceProvisioning.qr', { device: '5' })).toBe('GET /api/v1/devices/5/qr');
+		expect(url('deviceProvisioning.qr', { device: DEVICE })).toBe(
+			`GET /api/v1/devices/${DEVICE}/qr`,
+		);
 	});
 
 	it('Create a connect link: a QR link with a reference and a return URL; a Meta one with its connections', () => {
@@ -189,8 +220,8 @@ describe('building requests (buildRequest)', () => {
 				allowed_connection_types: ['coexistence', 'dedicated'],
 			}).body,
 		).toEqual({ type: 'meta', allowed_connection_types: ['coexistence', 'dedicated'] });
-		expect(url('connectLink.show', { link: '12' })).toBe('GET /api/v1/connect-links/12');
-		expect(url('connectLink.destroy', { link: '12' })).toBe('DELETE /api/v1/connect-links/12');
+		expect(url('connectLink.show', { link: LINK })).toBe(`GET /api/v1/connect-links/${LINK}`);
+		expect(url('connectLink.destroy', { link: LINK })).toBe(`DELETE /api/v1/connect-links/${LINK}`);
 		expect(url('connectLink.index', { status: 'pending', external_reference: 'customer-42' })).toBe(
 			'GET /api/v1/connect-links?status=pending&external_reference=customer-42',
 		);
@@ -205,7 +236,7 @@ describe('building requests (buildRequest)', () => {
 	it('Send a message to a group (communities v2.35.5): the group UID goes escaped in the route', () => {
 		const built = buildRequest(op('apiGroupAction.sendMessage'), {
 			group: '120363012345678901@g.us',
-			device_id: '4',
+			device_id: DEVICE,
 			type: 'text',
 			text: 'Hello, group!',
 		});
@@ -213,7 +244,7 @@ describe('building requests (buildRequest)', () => {
 			method: 'POST',
 			path: '/api/v1/groups/120363012345678901%40g.us/messages',
 			query: [],
-			body: { device_id: 4, type: 'text', text: 'Hello, group!' },
+			body: { device_id: DEVICE, type: 'text', text: 'Hello, group!' },
 		});
 		expect(url('apiGroupAction.show', { action: '9b1f6c1e-1c8e-4c2b-9a51-6a3d5f2e8b70' })).toBe(
 			'GET /api/v1/groups/actions/9b1f6c1e-1c8e-4c2b-9a51-6a3d5f2e8b70',
@@ -221,20 +252,20 @@ describe('building requests (buildRequest)', () => {
 	});
 
 	it('Mark a message as read, show "typing…" and a template\'s metrics (new in the full specification)', () => {
-		expect(url('message.markMessageRead', { contact: '2001', message: '1001' })).toBe(
-			'POST /api/v1/contacts/2001/messages/1001/read',
+		expect(url('message.markMessageRead', { contact: CONTACT, message: MESSAGE })).toBe(
+			`POST /api/v1/contacts/${CONTACT}/messages/${MESSAGE}/read`,
 		);
 		expect(
-			buildRequest(op('message.typingIndicator'), { contact: '2001', device_id: '3' }),
+			buildRequest(op('message.typingIndicator'), { contact: CONTACT, device_id: DEVICE }),
 		).toEqual({
 			method: 'POST',
-			path: '/api/v1/contacts/2001/typing',
+			path: `/api/v1/contacts/${CONTACT}/typing`,
 			query: [],
-			body: { device_id: 3 },
+			body: { device_id: DEVICE },
 		});
 		expect(
-			url('message.templateMetrics', { template: '45', from: '2026-11-01', to: '2026-11-04' }),
-		).toBe('GET /api/v1/templates/45/metrics?from=2026-11-01&to=2026-11-04');
+			url('message.templateMetrics', { template: TEMPLATE, from: '2026-11-01', to: '2026-11-04' }),
+		).toBe(`GET /api/v1/templates/${TEMPLATE}/metrics?from=2026-11-01&to=2026-11-04`);
 	});
 
 	it("List a subscription's deliveries keeps its event filters, which the specification does not list", () => {
@@ -250,37 +281,49 @@ describe('building requests (buildRequest)', () => {
 
 	it('Follow a group (communities v2.35.7): imports a group of the number by its uid', () => {
 		expect(
-			buildRequest(op('v2.apiGroupImport'), { group: '120363012345678901@g.us', device_id: '4' }),
+			buildRequest(op('v2.apiGroupImport'), {
+				group: '120363012345678901@g.us',
+				device_id: DEVICE,
+			}),
 		).toEqual({
 			method: 'POST',
 			path: '/api/v1/groups/120363012345678901%40g.us/import',
 			query: [],
-			body: { device_id: 4 },
+			body: { device_id: DEVICE },
 		});
 		expect(op('v2.apiGroupImport').resource).toBe('group');
 	});
 
-	it('an ID that is not a number is rejected before calling the API', () => {
-		expect(() =>
-			buildRequest(op('conversation.sendMessage'), {
-				contact: '1',
-				device_id: 'abc',
-				contact_id: 1,
-			}),
-		).toThrow('"Number ID" has to be a number');
+	it('IDs are opaque text: they go out as they came, never converted to a number', () => {
+		const built = buildRequest(op('conversation.sendMessage'), {
+			contact: CONTACT,
+			device_id: DEVICE,
+			contact_id: CONTACT,
+			text: 'Hi',
+		});
+		expect(built.body).toMatchObject({ device_id: DEVICE, contact_id: CONTACT });
+		// A whole number is not an ID any more, and it is not turned into one either: the API answers 404.
+		const legacy = buildRequest(op('conversation.sendMessage'), {
+			contact: '2001',
+			device_id: '7',
+			contact_id: '2001',
+			text: 'Hi',
+		});
+		expect(legacy.path).toBe('/api/v1/contacts/2001/message');
+		expect(legacy.body).toMatchObject({ device_id: '7', contact_id: '2001' });
 	});
 
 	it('Delete tags: a comma-separated list', () => {
-		expect(buildRequest(op('tag.destroy'), { tagIds: '3, 4' }).body).toEqual({
-			tagIds: ['3', '4'],
+		expect(buildRequest(op('tag.destroy'), { tagIds: `${TAG}, ${TAG_2}` }).body).toEqual({
+			tagIds: [TAG, TAG_2],
 		});
 	});
 
 	it('Set a custom field on contacts: the body is a JSON list', () => {
 		const built = buildRequest(op('contact.attachCustomField'), {
-			body: '[{"customFieldId":5,"contactId":2001,"value":"Premium"}]',
+			body: `[{"customFieldId":"${FIELD}","contactId":"${CONTACT}","value":"Premium"}]`,
 		});
-		expect(built.body).toEqual([{ customFieldId: 5, contactId: 2001, value: 'Premium' }]);
+		expect(built.body).toEqual([{ customFieldId: FIELD, contactId: CONTACT, value: 'Premium' }]);
 	});
 
 	it('Get a contact: the ID is escaped in the route', () => {
@@ -313,13 +356,13 @@ describe('building requests (buildRequest)', () => {
 	it("List a stage's contacts: date-time values as given, tag IDs with []", () => {
 		expect(
 			url('kanbanStage.contacts', {
-				kanbanSetting: 3,
-				stage: 7,
+				kanbanSetting: KANBAN,
+				stage: STAGE,
 				dateFrom: '2026-10-15T00:00:00Z',
-				tagIds: '1,2',
+				tagIds: `${TAG},${TAG_2}`,
 			}),
 		).toBe(
-			'GET /api/v1/kanban-settings/3/stages/7/contacts?dateFrom=2026-10-15T00:00:00Z&tagIds[]=1&tagIds[]=2',
+			`GET /api/v1/kanban-settings/${KANBAN}/stages/${STAGE}/contacts?dateFrom=2026-10-15T00:00:00Z&tagIds[]=${TAG}&tagIds[]=${TAG_2}`,
 		);
 	});
 
@@ -332,12 +375,12 @@ describe('building requests (buildRequest)', () => {
 	it('with "Send Body as JSON" that body is used and the route still comes from the fields', () => {
 		const built = buildRequest(
 			op('contact.update'),
-			{ contact: '55', name: 'ignored' },
+			{ contact: CONTACT, name: 'ignored' },
 			'{"name":"Ana","email":null}',
 		);
 		expect(built).toEqual({
 			method: 'PUT',
-			path: '/api/v1/contacts/55',
+			path: `/api/v1/contacts/${CONTACT}`,
 			query: [],
 			body: { name: 'Ana', email: null },
 		});
@@ -415,26 +458,31 @@ describe('running the node with simulated responses', () => {
 				useJsonBody: false,
 				additionalFields: { phone: '5491100000099', name: 'Ana' },
 			},
-			responses: [{ body: { id: 10, phone: '5491100000099' } }],
+			responses: [{ body: { id: CONTACT, phone: '5491100000099' } }],
 		});
 		const [created] = await node.execute.call(create.ctx);
-		expect(created[0].json).toEqual({ id: 10, phone: '5491100000099' });
+		expect(created[0].json).toEqual({ id: CONTACT, phone: '5491100000099' });
 		expect(create.calls[0].options.body).toEqual({ phone: '5491100000099', name: 'Ana' });
 
 		const remove = executeContext({
-			params: { resource: 'contact', operation: 'contactNote.destroy', contact: '10', note: '3' },
+			params: {
+				resource: 'contact',
+				operation: 'contactNote.destroy',
+				contact: CONTACT,
+				note: NOTE,
+			},
 			responses: [{ status: 204, body: '' }],
 		});
 		const [removed] = await node.execute.call(remove.ctx);
-		expect(requestLine(remove.calls[0])).toBe('DELETE /api/v1/contacts/10/notes/3');
+		expect(requestLine(remove.calls[0])).toBe(`DELETE /api/v1/contacts/${CONTACT}/notes/${NOTE}`);
 		expect(removed[0].json).toEqual({ success: true });
 	});
 
 	it('a send returns the queued message, not the envelope', async () => {
 		const queued = {
-			id: 1001,
-			contact_id: 2001,
-			device_id: 7,
+			id: MESSAGE,
+			contact_id: CONTACT,
+			device_id: DEVICE,
 			direction: 'outbound',
 			type: 'text',
 			status: 'queued',
@@ -447,16 +495,16 @@ describe('running the node with simulated responses', () => {
 			params: {
 				resource: 'conversation',
 				operation: 'conversation.sendMessage',
-				contact: '2001',
-				device_id: '7',
-				contact_id: '2001',
+				contact: CONTACT,
+				device_id: DEVICE,
+				contact_id: CONTACT,
 				useJsonBody: false,
 				additionalFields: { phone: '5491100000000', text: 'Hello', client_reference: 'order-981' },
 			},
 			responses: [{ body: { message: queued } }],
 		});
 		const [out] = await node.execute.call(ctx);
-		expect(requestLine(calls[0])).toBe('POST /api/v1/contacts/2001/message');
+		expect(requestLine(calls[0])).toBe(`POST /api/v1/contacts/${CONTACT}/message`);
 		expect(calls[0].options.body).toMatchObject({ client_reference: 'order-981' });
 		expect(out.map((i) => i.json)).toEqual([queued]);
 	});
@@ -473,39 +521,43 @@ describe('running the node with simulated responses', () => {
 			params: {
 				resource: 'conversation',
 				operation: 'message.sendMessage',
-				device_id: '4',
+				device_id: DEVICE,
 				phone: '5491100000000',
 				useJsonBody: false,
 				additionalFields: { text: 'Hello!' },
 			},
-			responses: [{ body: { message: { id: 1001, contact_id: 2001, status: 'queued' } } }],
+			responses: [{ body: { message: { id: MESSAGE, contact_id: CONTACT, status: 'queued' } } }],
 		});
 		const [out] = await node.execute.call(byPhone.ctx);
 		expect(byPhone.calls[0].options.body).toEqual({
-			device_id: 4,
+			device_id: DEVICE,
 			phone: '5491100000000',
 			text: 'Hello!',
 		});
-		expect(out[0].json).toMatchObject({ contact_id: 2001, status: 'queued' });
+		expect(out[0].json).toMatchObject({ contact_id: CONTACT, status: 'queued' });
 		// A workflow saved before 0.2.1 has Contact ID as a field of its own: it keeps going out.
 		const saved = executeContext({
 			params: {
 				resource: 'conversation',
 				operation: 'message.sendMessage',
-				device_id: '4',
-				contact_id: '2001',
+				device_id: DEVICE,
+				contact_id: CONTACT,
 				useJsonBody: false,
 				additionalFields: { text: 'Hello!' },
 			},
-			responses: [{ body: { message: { id: 1002, contact_id: 2001, status: 'queued' } } }],
+			responses: [{ body: { message: { id: MESSAGE_2, contact_id: CONTACT, status: 'queued' } } }],
 		});
 		await node.execute.call(saved.ctx);
-		expect(saved.calls[0].options.body).toEqual({ device_id: 4, contact_id: 2001, text: 'Hello!' });
+		expect(saved.calls[0].options.body).toEqual({
+			device_id: DEVICE,
+			contact_id: CONTACT,
+			text: 'Hello!',
+		});
 	});
 
 	it('Create a connect link returns the link with its url; Send a message to a group, the queued action', async () => {
 		const link = {
-			id: 12,
+			id: LINK,
 			type: 'qr',
 			status: 'pending',
 			url: 'https://api.funnelchat.com/connect/abc',
@@ -534,7 +586,7 @@ describe('running the node with simulated responses', () => {
 				resource: 'group',
 				operation: 'apiGroupAction.sendMessage',
 				group: '120363012345678901@g.us',
-				device_id: '4',
+				device_id: DEVICE,
 				type: 'text',
 				useJsonBody: false,
 				additionalFields: { text: 'Hello, group!' },
@@ -549,7 +601,7 @@ describe('running the node with simulated responses', () => {
 		const [actions] = await node.execute.call(sent.ctx);
 		expect(requestLine(sent.calls[0])).toBe('POST /api/v1/groups/120363012345678901@g.us/messages');
 		expect(sent.calls[0].options.body).toEqual({
-			device_id: 4,
+			device_id: DEVICE,
 			type: 'text',
 			text: 'Hello, group!',
 		});
@@ -560,16 +612,16 @@ describe('running the node with simulated responses', () => {
 
 	it('Bring templates from Meta: POST without a body, the status as an item, and meta_rejected with its meta_code', async () => {
 		const done = executeContext({
-			params: { resource: 'template', operation: 'messageTemplate.sync', device: '3' },
+			params: { resource: 'template', operation: 'messageTemplate.sync', device: DEVICE },
 			responses: [{ status: 202, body: { status: 'completed' } }],
 		});
 		const [out] = await node.execute.call(done.ctx);
-		expect(requestLine(done.calls[0])).toBe('POST /api/v1/devices/3/templates');
+		expect(requestLine(done.calls[0])).toBe(`POST /api/v1/devices/${DEVICE}/templates`);
 		expect(done.calls[0].options.body).toBeUndefined();
 		expect(out.map((i) => i.json)).toEqual([{ status: 'completed' }]);
 
 		const refused = executeContext({
-			params: { resource: 'template', operation: 'messageTemplate.sync', device: '3' },
+			params: { resource: 'template', operation: 'messageTemplate.sync', device: DEVICE },
 			responses: [
 				{
 					status: 422,
@@ -592,9 +644,9 @@ describe('running the node with simulated responses', () => {
 			params: {
 				resource: 'conversation',
 				operation: 'contactCard.store',
-				contact: '2001',
-				device_id: '7',
-				contact_card_ids: '2002, 2003',
+				contact: CONTACT,
+				device_id: DEVICE,
+				contact_card_ids: `${CONTACT_2}, ${CONTACT_3}`,
 				useJsonBody: false,
 				additionalFields: {},
 			},
@@ -610,16 +662,19 @@ describe('running the node with simulated responses', () => {
 			],
 		});
 		const [cards] = await node.execute.call(card.ctx);
-		expect(card.calls[0].options.body).toEqual({ device_id: 7, contact_card_ids: [2002, 2003] });
+		expect(card.calls[0].options.body).toEqual({
+			device_id: DEVICE,
+			contact_card_ids: [CONTACT_2, CONTACT_3],
+		});
 		expect(cards.map((i) => i.json.id)).toEqual([1, 2]);
 
 		const forward = executeContext({
 			params: {
 				resource: 'conversation',
 				operation: 'forwardMessage.store',
-				contact: '2001',
-				message: '1001',
-				targets: '[{"contact_id": 2002, "device_id": 7}]',
+				contact: CONTACT,
+				message: MESSAGE,
+				targets: `[{"contact_id": "${CONTACT_2}", "device_id": "${DEVICE}"}]`,
 				useJsonBody: false,
 				additionalFields: {},
 			},
@@ -627,7 +682,7 @@ describe('running the node with simulated responses', () => {
 				{
 					body: [
 						{
-							contact_id: 2002,
+							contact_id: CONTACT_2,
 							mode: 'internal',
 							status: 'queued',
 							reason: null,
@@ -638,7 +693,7 @@ describe('running the node with simulated responses', () => {
 			],
 		});
 		const [forwarded] = await node.execute.call(forward.ctx);
-		expect(forwarded[0].json).toMatchObject({ contact_id: 2002, status: 'queued' });
+		expect(forwarded[0].json).toMatchObject({ contact_id: CONTACT_2, status: 'queued' });
 	});
 
 	it('List forms with "Return All" goes through the pages, with the page size the specification gives', async () => {
@@ -663,9 +718,9 @@ describe('running the node with simulated responses', () => {
 			params: {
 				resource: 'conversation',
 				operation: 'conversation.sendMessage',
-				contact: '1',
-				device_id: '2',
-				contact_id: '1',
+				contact: CONTACT,
+				device_id: DEVICE,
+				contact_id: CONTACT,
 				useJsonBody: false,
 				additionalFields: { text: 'hello' },
 			},
@@ -713,10 +768,10 @@ describe('running the node with simulated responses', () => {
 		const { ctx } = executeContext({
 			continueOnFail: true,
 			items: 2,
-			params: { resource: 'tag', operation: 'tag.show', tag: '99' },
+			params: { resource: 'tag', operation: 'tag.show', tag: TAG },
 			responses: [
 				{ status: 404, body: { error: 'not_found', message: 'No existe la etiqueta.' } },
-				{ body: { id: 99, name: 'VIP' } },
+				{ body: { id: TAG, name: 'VIP' } },
 			],
 		});
 		const [out] = await node.execute.call(ctx);
@@ -725,7 +780,7 @@ describe('running the node with simulated responses', () => {
 			message: 'No existe la etiqueta.',
 			httpCode: '404',
 		});
-		expect(out[1].json).toEqual({ id: 99, name: 'VIP' });
+		expect(out[1].json).toEqual({ id: TAG, name: 'VIP' });
 		expect(out.map((i) => (i.pairedItem as { item: number }).item)).toEqual([0, 1]);
 	});
 
@@ -733,7 +788,7 @@ describe('running the node with simulated responses', () => {
 		const requestId = '0b3f5a1e-6c2d-4e8f-9a7b-1c2d3e4f5a6b';
 		const failing = () =>
 			executeContext({
-				params: { resource: 'tag', operation: 'tag.show', tag: '99' },
+				params: { resource: 'tag', operation: 'tag.show', tag: TAG },
 				responses: [
 					{
 						status: 404,
@@ -748,7 +803,7 @@ describe('running the node with simulated responses', () => {
 
 		const { ctx } = executeContext({
 			continueOnFail: true,
-			params: { resource: 'tag', operation: 'tag.show', tag: '99' },
+			params: { resource: 'tag', operation: 'tag.show', tag: TAG },
 			responses: [
 				{
 					status: 404,
@@ -768,7 +823,7 @@ describe('running the node with simulated responses', () => {
 
 	it("the API entry point's own errors (route_not_found) come out the same, with their ID", async () => {
 		const { ctx } = executeContext({
-			params: { resource: 'tag', operation: 'tag.show', tag: '99' },
+			params: { resource: 'tag', operation: 'tag.show', tag: TAG },
 			responses: [
 				{
 					status: 404,
@@ -807,7 +862,7 @@ describe('running the node with simulated responses', () => {
 		expect(write.calls).toHaveLength(1);
 
 		const read = executeContext({
-			params: { resource: 'tag', operation: 'tag.show', tag: '99' },
+			params: { resource: 'tag', operation: 'tag.show', tag: TAG },
 			responses: [edge],
 		});
 		const readError = (await node.execute.call(read.ctx).catch((e: unknown) => e)) as NodeApiError;
