@@ -118,7 +118,7 @@ export function loadOptionsContext(responses: FakeResponse[]) {
 	const http = fakeHttp(responses);
 	const ctx = {
 		getNode: () => NODE,
-		getCredentials: async () => ({ apiKey: 'test-key', environment: 'staging' }),
+		getCredentials: async () => ({ apiKey: 'test-key', environment: 'production' }),
 		helpers: { httpRequestWithAuthentication: http.httpRequestWithAuthentication },
 	};
 	return { ctx: ctx as unknown as ILoadOptionsFunctions, calls: http.calls };

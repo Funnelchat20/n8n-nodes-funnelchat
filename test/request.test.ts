@@ -435,7 +435,7 @@ describe('running the node with simulated responses', () => {
 				returnAll: false,
 				limit: 3,
 			},
-			environment: 'staging',
+			environment: 'production',
 			responses: [
 				{ body: { data: [{ id: 1 }, { id: 2 }], meta: { next_cursor: 'abc', per_page: 3 } } },
 				{ body: { data: [{ id: 3 }, { id: 4 }], meta: { next_cursor: 'def', per_page: 3 } } },
@@ -447,7 +447,17 @@ describe('running the node with simulated responses', () => {
 			'GET /api/v1/conversations?perPage=3',
 			'GET /api/v1/conversations?perPage=3&cursor=abc',
 		]);
-		expect(calls[0].options.baseURL).toBe('https://api-staging.funnelchat.com');
+		expect(calls[0].options.baseURL).toBe('https://api.funnelchat.com');
+	});
+
+	it('a credential saved with Staging, which is no longer offered, stops before sending anything', async () => {
+		const { ctx, calls } = executeContext({
+			params: { resource: 'conversation', operation: 'conversation.index', returnAll: false, limit: 3 },
+			environment: 'staging',
+			responses: [],
+		});
+		await expect(node.execute.call(ctx)).rejects.toThrow(/environment, staging, is no longer offered/);
+		expect(calls).toEqual([]);
 	});
 
 	it('Create a contact returns the contact, and a 204 comes back as success', async () => {

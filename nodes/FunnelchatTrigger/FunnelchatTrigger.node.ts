@@ -221,7 +221,7 @@ export class FunnelchatTrigger implements INodeType {
 		properties: [
 			{
 				displayName:
-					'Activating the workflow creates a subscription in Funnelchat (POST /api/v1/webhooks) for the chosen events, and deactivating it deletes it. Choose each event by name: "Message status changed" (sent, delivered, read, failed) only arrives if you choose it. Every event carries data.workspace_id, the workspace of your API key. With Production or Staging, the n8n URL has to be https and public; with a custom base URL (for example the local sandbox) a local URL works too, such as http://localhost:5678. Deliveries without a valid signature are rejected with 400. The event list comes from the Funnelchat catalog, or from the list built into the node if the key cannot read it (it needs accounts:read); with an API key, each event type needs the read permission of its area.',
+					'Activating the workflow creates a subscription in Funnelchat (POST /api/v1/webhooks) for the chosen events, and deactivating it deletes it. Choose each event by name: "Message status changed" (sent, delivered, read, failed) only arrives if you choose it. Every event carries data.workspace_id, the workspace of your API key. With Production, the n8n URL has to be https and public; with a custom base URL (for example the local sandbox) a local URL works too, such as http://localhost:5678. Deliveries without a valid signature are rejected with 400. The event list comes from the Funnelchat catalog, or from the list built into the node if the key cannot read it (it needs accounts:read); with an API key, each event type needs the read permission of its area.',
 				name: 'notice',
 				type: 'notice',
 				default: '',

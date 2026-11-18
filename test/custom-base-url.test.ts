@@ -19,12 +19,12 @@ describe('credential with a custom base URL', () => {
 	const environment = credential.properties.find((p) => p.name === 'environment');
 	const baseUrl = credential.properties.find((p) => p.name === 'baseUrl');
 
-	it('the environment offers Production, Staging and Custom', () => {
+	it('the environment offers Production and Custom, and no longer Staging', () => {
 		expect(environment?.options?.map((o) => ('value' in o ? o.value : undefined))).toEqual([
 			'production',
-			'staging',
 			'custom',
 		]);
+		expect(JSON.stringify(credential)).not.toContain('api-staging');
 		expect(environment?.default).toBe('production');
 	});
 
@@ -43,7 +43,8 @@ describe('credential with a custom base URL', () => {
 		expect(expression).toContain('$credentials.environment === "custom"');
 		expect(expression).toContain('$credentials.baseUrl');
 		expect(expression).toContain('https://invalid-base-url.invalid');
-		expect(expression).toContain('https://api-staging.funnelchat.com');
+		expect(expression).toContain('https://environment-not-offered.invalid');
+		expect(expression).not.toContain('api-staging');
 		expect(expression).toContain('https://api.funnelchat.com');
 		expect(credential.test.request.url).toBe('/api/v1/me');
 	});
@@ -76,10 +77,11 @@ describe('base URL validation', () => {
 		expect(baseUrlFor('custom', value)).toBeUndefined();
 	});
 
-	it('Production and Staging do not change and ignore the base URL', () => {
+	it('Production does not change and ignores the base URL; a credential saved with Staging has no base URL', () => {
 		expect(baseUrlFor('production', SANDBOX)).toBe('https://api.funnelchat.com');
-		expect(baseUrlFor('staging', SANDBOX)).toBe('https://api-staging.funnelchat.com');
 		expect(baseUrlFor(undefined)).toBe('https://api.funnelchat.com');
+		expect(baseUrlFor('staging', SANDBOX)).toBeUndefined();
+		expect(baseUrlFor('toString')).toBeUndefined();
 	});
 });
 

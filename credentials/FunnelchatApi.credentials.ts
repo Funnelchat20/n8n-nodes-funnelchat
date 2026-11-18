@@ -7,14 +7,15 @@ import type {
 } from 'n8n-workflow';
 
 /**
- * API key of the Funnelchat public API (`Authorization: Bearer <id>|fc_live_...`) and the environment it belongs to:
- * production, staging, or a custom base URL (for example the local sandbox, Funnelchat20/funnelchat-sandbox, on
- * http://localhost:4010).
+ * API key of the Funnelchat public API (`Authorization: Bearer <id>|fc_live_...`) and where it goes: production, or a
+ * custom base URL (for example the local sandbox, Funnelchat20/funnelchat-sandbox, on http://localhost:4010).
  *
  * The base URL of each environment and the check of a custom one live in `nodes/shared/transport.ts`; the test below
  * repeats them because a credential test cannot import code. A custom URL that is not http(s) or ends in `/` makes the
  * test point at an `.invalid` host, so it fails instead of testing something else; so does an fc_live_ key with http:// to another machine
- * (`live-key-needs-https.invalid`): the key never goes out in clear text.
+ * (`live-key-needs-https.invalid`): the key never goes out in clear text. Staging is no longer offered (since 0.5.0):
+ * it shares the data and the numbers of production, so it was never a place to test. A credential saved with it fails
+ * the test on `environment-not-offered.invalid`, and the node stops before sending anything.
  */
 export class FunnelchatApi implements ICredentialType {
 	name = 'funnelchatApi';
@@ -48,18 +49,14 @@ export class FunnelchatApi implements ICredentialType {
 					description: 'https://api.funnelchat.com',
 				},
 				{
-					name: 'Staging',
-					value: 'staging',
-					description: 'https://api-staging.funnelchat.com',
-				},
-				{
 					name: 'Custom',
 					value: 'custom',
 					description: 'Another base URL, for example the local sandbox on http://localhost:4010',
 				},
 			],
 			default: 'production',
-			description: 'Which base URL the requests go to. A production key does not work on staging.',
+			description:
+				'Where the requests go: Funnelchat (Production), or a base URL of your own, such as the local sandbox to test without real effects.',
 		},
 		{
 			displayName: 'Base URL',
@@ -91,7 +88,7 @@ export class FunnelchatApi implements ICredentialType {
 	test: ICredentialTestRequest = {
 		request: {
 			baseURL:
-				'={{$credentials.environment === "custom" ? (!(($credentials.baseUrl || "").startsWith("http://") || ($credentials.baseUrl || "").startsWith("https://")) || ($credentials.baseUrl || "").endsWith("/") ? "https://invalid-base-url.invalid" : ($credentials.baseUrl || "").startsWith("http://") && /(^|\\|)fc_live_/.test(String($credentials.apiKey || "").trim()) && !/^http:\\/\\/(localhost|127\\.0\\.0\\.1|\\[::1\\])(:\\d+)?(\\/|$)/i.test($credentials.baseUrl) ? "https://live-key-needs-https.invalid" : $credentials.baseUrl) : ($credentials.environment === "staging" ? "https://api-staging.funnelchat.com" : "https://api.funnelchat.com")}}',
+				'={{$credentials.environment === "custom" ? (!(($credentials.baseUrl || "").startsWith("http://") || ($credentials.baseUrl || "").startsWith("https://")) || ($credentials.baseUrl || "").endsWith("/") ? "https://invalid-base-url.invalid" : ($credentials.baseUrl || "").startsWith("http://") && /(^|\\|)fc_live_/.test(String($credentials.apiKey || "").trim()) && !/^http:\\/\\/(localhost|127\\.0\\.0\\.1|\\[::1\\])(:\\d+)?(\\/|$)/i.test($credentials.baseUrl) ? "https://live-key-needs-https.invalid" : $credentials.baseUrl) : (!$credentials.environment || $credentials.environment === "production" ? "https://api.funnelchat.com" : "https://environment-not-offered.invalid")}}',
 			url: '/api/v1/me',
 			method: 'GET',
 			headers: { Accept: 'application/json' },
