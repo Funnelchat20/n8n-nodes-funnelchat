@@ -96,6 +96,13 @@ describe('generation from the published specification', () => {
 		expect(resourceOf('campaign.participantEvents')).toBe('group');
 	});
 
+	it('"Get my account" (GET /api/v1/me, without an operationId) keeps the value get_api_v1_me', () => {
+		// Saved workflows use it; when the specification gives it an operationId, keepOperationValues maps that one to it.
+		const me = OPERATIONS.find((o) => o.method === 'GET' && o.path === '/api/v1/me')!;
+		expect(me.value).toBe('get_api_v1_me');
+		expect(published.operations).toContainEqual({ resource: me.resource, value: 'get_api_v1_me' });
+	});
+
 	it('an operation the specification renamed keeps the value saved workflows use', () => {
 		const show = OPERATIONS.find((o) => o.value === 'showMessage')!;
 		expect(show.operationId).toBe('message.showMessage');

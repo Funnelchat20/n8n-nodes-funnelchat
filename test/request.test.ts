@@ -353,7 +353,7 @@ describe('building requests (buildRequest)', () => {
 		});
 	});
 
-	it("List a stage's contacts: date-time values as given, tag IDs with []", () => {
+	it("List a stage's contacts: dates as YYYY-MM-DD (the specification says format date), tag IDs with []", () => {
 		expect(
 			url('kanbanStage.contacts', {
 				kanbanSetting: KANBAN,
@@ -362,7 +362,7 @@ describe('building requests (buildRequest)', () => {
 				tagIds: `${TAG},${TAG_2}`,
 			}),
 		).toBe(
-			`GET /api/v1/kanban-settings/${KANBAN}/stages/${STAGE}/contacts?dateFrom=2026-10-15T00:00:00Z&tagIds[]=${TAG}&tagIds[]=${TAG_2}`,
+			`GET /api/v1/kanban-settings/${KANBAN}/stages/${STAGE}/contacts?dateFrom=2026-10-15&tagIds[]=${TAG}&tagIds[]=${TAG_2}`,
 		);
 	});
 
