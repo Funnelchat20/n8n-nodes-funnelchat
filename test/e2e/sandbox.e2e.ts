@@ -13,8 +13,8 @@ import { FunnelchatTrigger } from '../../nodes/FunnelchatTrigger/FunnelchatTrigg
 import { startReceiver } from './receiver.mjs';
 
 /*
- * End to end against a running funnelchat-sandbox (Funnelchat20/funnelchat-sandbox, 0.6.0 or later: connecting
- * numbers came in 0.2.0): the real HTTP of the node, with a credential on the "Custom" environment. Skipped unless
+ * End to end against a running funnelchat-sandbox (Funnelchat20/funnelchat-sandbox, 0.7.0 or later: paginated
+ * numbers with their `connection`, and `form_id` as the form's `frm_` id, as production takes it): the real HTTP of the node, with a credential on the "Custom" environment. Skipped unless
  * FUNNELCHAT_SANDBOX_URL is set:
  *
  *   npx @funnelchat-hq/sandbox --port 4010 --status-delays 0.2,0.2,0.2
@@ -44,10 +44,11 @@ async function seedIds() {
 		return ((await response.json()) as { data: IDataObject[] }).data;
 	};
 	const contact = (await get('/api/v1/contacts')).find((c) => c.phone === PHONE);
-	const devices = await get('/api/v1/devices');
+	const devices = await get('/api/v1/devices?perPage=100');
 	CONTACT = String(contact?.id);
-	DEVICE = String(devices.find((d) => d.type === 'qr')?.id);
-	OFFICIAL = String(devices.find((d) => d.type === 'meta')?.id);
+	// How a number connects is `connection` (DeviceResource): `qr`, or `coexistence`/`dedicated` for an official one.
+	DEVICE = String(devices.find((d) => d.connection === 'qr')?.id);
+	OFFICIAL = String(devices.find((d) => d.connection === 'coexistence' || d.connection === 'dedicated')?.id);
 	for (const id of [CONTACT, DEVICE, OFFICIAL]) expect(id).toMatch(/^[a-z]{3}_[A-Za-z0-9]{23}$/);
 }
 
@@ -131,7 +132,7 @@ describe.skipIf(!SANDBOX)('e2e against the sandbox', () => {
 			status: 'queued',
 			client_reference: 'e2e-send-1',
 		});
-		expect(typeof queued.id).toBe('number');
+		expect(queued.id).toMatch(/^msg_[A-Za-z0-9]{23}$/);
 
 		const [read] = await run({
 			resource: 'conversation',
@@ -286,7 +287,7 @@ describe.skipIf(!SANDBOX)('e2e against the sandbox', () => {
 				useJsonBody: false,
 				additionalFields: { alias: 'e2e', external_reference: 'e2e-qr-1' },
 			});
-			expect(typeof number.id).toBe('number');
+			expect(number.id).toMatch(/^dev_[A-Za-z0-9]{23}$/);
 			expect(Boolean(number.connected)).toBe(false);
 
 			const [qr] = await run({
