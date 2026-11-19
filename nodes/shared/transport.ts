@@ -15,10 +15,9 @@ import {
 
 export const CREDENTIAL_NAME = 'funnelchatApi';
 
-/** Base URL of each environment of the credential (`environment`). */
+/** Base URL of each environment of the credential (`environment`). Staging is not offered since 0.5.0. */
 export const BASE_URLS: Record<string, string> = {
 	production: 'https://api.funnelchat.com',
-	staging: 'https://api-staging.funnelchat.com',
 };
 
 /** A `429` is retried after `Retry-After` when the wait is this short (seconds), at most `MAX_RETRIES` times. */
@@ -77,11 +76,18 @@ export function allowsLiveKey(baseUrl: string): boolean {
 	}
 }
 
-/** The base URL of the credential: the one of its environment, or its own when the environment is `custom`. */
+/**
+ * The base URL of the credential: the one of its environment, or its own when the environment is `custom`. A credential
+ * without an environment is production; one saved with an environment the node no longer offers (`staging`) has none,
+ * so the node stops instead of sending its key somewhere else.
+ */
 export function baseUrlFor(environment: unknown, customBaseUrl?: unknown): string | undefined {
 	if (environment === CUSTOM_ENVIRONMENT)
 		return isValidBaseUrl(customBaseUrl) ? customBaseUrl : undefined;
-	return BASE_URLS[String(environment)] ?? BASE_URLS.production;
+	if (environment === undefined || environment === null || environment === '') return BASE_URLS.production;
+	return Object.prototype.hasOwnProperty.call(BASE_URLS, String(environment))
+		? BASE_URLS[String(environment)]
+		: undefined;
 }
 
 function header(headers: IDataObject | undefined, name: string): string | undefined {
@@ -198,6 +204,17 @@ export async function funnelchatApiRequest(
 ): Promise<FunnelchatResponse> {
 	const credentials = await this.getCredentials(CREDENTIAL_NAME);
 	const baseURL = baseUrlFor(credentials.environment, credentials.baseUrl);
+	if (!baseURL && credentials.environment !== CUSTOM_ENVIRONMENT) {
+		throw new NodeOperationError(
+			this.getNode(),
+			`The credential's environment, ${String(credentials.environment)}, is no longer offered.`,
+			{
+				itemIndex: request.itemIndex,
+				description:
+					'Nothing was sent. Edit the credential and choose Production, or Custom with a base URL of your own (for example the local sandbox, http://localhost:4010).',
+			},
+		);
+	}
 	if (!baseURL) {
 		throw new NodeOperationError(
 			this.getNode(),

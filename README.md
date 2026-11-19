@@ -3,18 +3,23 @@
 [n8n](https://n8n.io) community node for the Funnelchat public API: connect your WhatsApp numbers, send messages and
 know when they are read, receive messages and work with your groups, from your workflows and without code.
 
-**It covers every function the developer portal publishes** — the WhatsApp functions and the Funnelchat functions, the
+**It covers every function the developer portal publishes** — the WhatsApp functions and the platform functions, the
 ones listed in [More functions](https://developers-portal.funnelchat.app/docs/mas-funciones/) — and nothing the portal
 leaves out. See [Operations](#operations).
 
+> **Self-hosted n8n only, for now.** It installs in any n8n you run yourself (Docker, npm, a server of your own). n8n
+> Cloud only offers community nodes that n8n has verified, and this one is not verified yet: it will show up there
+> when n8n verifies it.
+
 ## First use
 
-1. **Install the node.** In n8n, **Settings → Community nodes → Install** and type
+1. **Install the node.** In your self-hosted n8n, **Settings → Community nodes → Install** and type
    `@funnelchat-hq/n8n-nodes-funnelchat` (other ways in [Installation](#installation)).
 2. **Create your key.** In the Funnelchat panel, **Developers → Create key**. It is shown **only once**: copy it then.
    If you also use it from code, keep it in the `FUNNELCHAT_API_KEY` environment variable, never in the code.
-3. **Add the credential.** In n8n, create a **Funnelchat API** credential: paste the key in **API Key** and leave
-   **Environment** on **Production**. n8n keeps it encrypted.
+3. **Add the credential.** In n8n, **Credentials → Add credential → Funnelchat API**: paste the key in **API Key**
+   and leave **Environment** on **Production**. When you save it, n8n tests it (that needs `accounts:read`). n8n
+   keeps it encrypted. All the details in [Credential](#credential).
 4. **Connect a number.** Skip it if you already have one: **Funnelchat → Numbers → List numbers** gives its `id`.
    Otherwise, a **Funnelchat** node with **Numbers → Create a connect link**, **Type** `qr`. Run it and open the `url`
    of the result: the page shows a QR code. Scan it with WhatsApp on your phone (**Linked devices**). The number's `id`
@@ -71,7 +76,7 @@ leaves out. See [Operations](#operations).
 			"parameters": {
 				"resource": "conversation",
 				"operation": "message.sendMessage",
-				"device_id": "4",
+				"device_id": "dev_N7pLw2QeYt5HcRa9KmXz3Vb",
 				"phone": "5491100000000",
 				"additionalFields": { "text": "Hello!", "client_reference": "order-981" }
 			}
@@ -147,8 +152,8 @@ per workspace: one key, and one credential, for each.
 
 API documentation: [Funnelchat developer portal](https://developers-portal.funnelchat.app/docs/).
 
-The package has three parts: the **Funnelchat API** credential (your key and the environment: production, staging or
-a URL of your own, such as the sandbox); the **Funnelchat** node, with every operation of the API the portal
+The package has three parts: the **Funnelchat API** credential (your key and where it goes: production, or a URL of
+your own, such as the sandbox); the **Funnelchat** node, with every operation of the API the portal
 publishes, grouped as in the portal and generated from its published specification; and the **Funnelchat Trigger**,
 which starts a workflow with each event Funnelchat sends by webhook, with its signature verified.
 
@@ -159,8 +164,9 @@ which starts a workflow with each event Funnelchat sends by webhook, with its si
 In self-hosted n8n: **Settings → Community nodes → Install** and type `@funnelchat-hq/n8n-nodes-funnelchat`. n8n
 downloads it from the public npm registry and makes it available in the nodes panel: search for "Funnelchat".
 
-n8n Cloud only shows the nodes n8n has verified. The package is ready for that (strict mode, no runtime dependencies,
-n8n lint passing), but it has not been submitted for verification yet.
+**n8n Cloud:** not yet. n8n Cloud only offers the community nodes n8n has verified, and this one is not verified yet.
+The package is ready for that (strict mode, no runtime dependencies, n8n's linter and its community package scanner
+passing); when n8n verifies it, it will show up in n8n Cloud's nodes panel and this README will say so.
 
 ### With npm, in n8n's nodes folder
 
@@ -171,7 +177,7 @@ npm install @funnelchat-hq/n8n-nodes-funnelchat
 ```
 
 Restart n8n. With Docker, that folder is `/home/node/.n8n/nodes` inside n8n's volume. It was tested with n8n 2.25.7
-(image `n8nio/n8n`).
+(image `n8nio/n8n`) and, installed from the UI, with n8n 2.48.4.
 
 ### From the source code
 
@@ -180,10 +186,10 @@ git clone https://github.com/Funnelchat20/n8n-nodes-funnelchat.git
 cd n8n-nodes-funnelchat
 npm ci
 npm run build
-npm pack            # creates funnelchat-hq-n8n-nodes-funnelchat-0.4.0.tgz
+npm pack            # creates funnelchat-hq-n8n-nodes-funnelchat-0.5.0.tgz
 ```
 
-Then, in n8n's nodes folder, `npm install /path/to/funnelchat-hq-n8n-nodes-funnelchat-0.4.0.tgz`.
+Then, in n8n's nodes folder, `npm install /path/to/funnelchat-hq-n8n-nodes-funnelchat-0.5.0.tgz`.
 
 ## Credential
 
@@ -191,8 +197,8 @@ Then, in n8n's nodes folder, `npm install /path/to/funnelchat-hq-n8n-nodes-funne
    only once and looks like `<id>|fc_live_…`.
 2. In n8n, create a **Funnelchat API** credential:
    - **API Key**: the full key, including the leading `<id>|`. It is sent as `Authorization: Bearer <key>`.
-   - **Environment**: **Production** (`https://api.funnelchat.com`), **Staging** (`https://api-staging.funnelchat.com`)
-     or **Custom**, with a **Base URL** of your own: for example the local sandbox, `http://localhost:4010` (see
+   - **Environment**: **Production** (`https://api.funnelchat.com`, your real account) or **Custom**, with a
+     **Base URL** of your own: for example the local sandbox, `http://localhost:4010` (see
      [Testing with the sandbox](#testing-with-the-sandbox)). The base URL starts with `http://` or `https://`, does not
      end in `/` and has no `/api/v1`: the node adds it. Otherwise the credential test fails and the node sends nothing.
      With an `fc_live_` key (every real key), the base URL has to be `https://`, or `http://` to this machine only
@@ -201,6 +207,13 @@ Then, in n8n's nodes folder, `npm install /path/to/funnelchat-hq-n8n-nodes-funne
 3. When you save it, n8n tests the credential with `GET /api/v1/me` ("Get my account"). **That test needs the
    `accounts:read` permission**: if your key does not have it, the test fails even if the key works for everything
    else. You can save it anyway.
+4. Choose the credential in each **Funnelchat** and **Funnelchat Trigger** node. One credential per workspace: a key
+   sees only the workspace it was created in.
+
+**Staging is no longer offered** (since 0.5.0): it shares the data and the numbers of production, so it was never a
+place to test. To test without real effects, use **Custom** with the [sandbox](#testing-with-the-sandbox). A credential
+saved with Staging fails its test and the node stops before sending anything: edit it and choose **Production** or
+**Custom**.
 
 Each operation of the node says which permission it needs (`conversations:read`, `conversations:write`,
 `conversations:send`, `communities:read`, `accounts:read`, `accounts:write`, `accounts:operate`, `webhooks:read` or
@@ -272,7 +285,7 @@ All the operations the developer portal publishes, in its categories:
 - **[WhatsApp functions](https://developers-portal.funnelchat.app/docs/mas-funciones/whatsapp/):** numbers, connect
   links and their message queue, groups and group actions, answering a conversation (reactions, forwards, contact
   cards, read and typing), templates, WhatsApp forms, Conversions API, and Meta costs and accounts.
-- **[Funnelchat functions](https://developers-portal.funnelchat.app/docs/mas-funciones/funnelchat/):** contacts and
+- **[Platform functions](https://developers-portal.funnelchat.app/docs/mas-funciones/funnelchat/):** contacts and
   their notes, conversations, tags, custom fields, automations and their folders, group campaigns, scheduled sends and
   their statistics, broadcasts, boards, tickets, quick replies, lead score, sales, custom domains, your account and
   team, alerts and webhooks.
@@ -285,7 +298,7 @@ resource shows up in each one with the operations of that category.
 
 <!-- operations:start (generated by npm run generate) -->
 
-253 operations in 25 resources, and 55 event types in the trigger's built-in list, generated from the portal's published specification (sha256 `fadcd73731cb`). The ones marked ⚠ show a notice in the node: what the code requires and the specification does not say, or an irreversible operation.
+253 operations in 25 resources, and 55 event types in the trigger's built-in list, generated from the portal's published specification (sha256 `4a8fbaee9d8b`). The ones marked ⚠ show a notice in the node: what the code requires and the specification does not say, or an irreversible operation.
 
 #### [First use](https://developers-portal.funnelchat.app/) (5)
 
@@ -308,12 +321,20 @@ resource shows up in each one with the operations of that category.
 
 </details>
 
-#### [WhatsApp functions](https://developers-portal.funnelchat.app/docs/mas-funciones/whatsapp/) (87)
+#### [WhatsApp functions](https://developers-portal.funnelchat.app/docs/mas-funciones/whatsapp/) (114)
 
-<details><summary><strong>Conversations and Messages</strong> (7)</summary>
+<details><summary><strong>Conversations and Messages</strong> (15)</summary>
 
 | Operation | Route | Permission |
 |---|---|---|
+| List conversations "return all" | `GET /api/v1/conversations` | `conversations:read` |
+| Count unread conversations | `GET /api/v1/conversations/count/unread` | `conversations:read` |
+| Count open conversations | `GET /api/v1/conversations/count/open` | `conversations:read` |
+| Count closed conversations | `GET /api/v1/conversations/count/closed` | `conversations:read` |
+| Count all conversations | `GET /api/v1/conversations/count/all` | `conversations:read` |
+| Mark all as read | `POST /api/v1/conversations/mark-all-read` | `conversations:write` |
+| Mark all as unread | `POST /api/v1/conversations/mark-all-unread` | `conversations:write` |
+| List a contact's messages "return all" | `GET /api/v1/contacts/{contactId}/messages` | `conversations:read` |
 | Send a contact card ⚠ | `POST /api/v1/contacts/{contact}/message/contact-card` | `conversations:send` |
 | Send a message to a contact ⚠ | `POST /api/v1/contacts/{contact}/message` | `conversations:send` |
 | Forward a message ⚠ | `POST /api/v1/contacts/{contact}/messages/{message}/forward` | `conversations:send` |
@@ -333,6 +354,21 @@ resource shows up in each one with the operations of that category.
 | Update a template | `PUT /api/v1/templates/{template}` | `conversations:write` |
 | Delete a template from a number ⚠ | `DELETE /api/v1/devices/{device}/templates/{template}` | `conversations:write` |
 | Get a template's metrics | `GET /api/v1/templates/{template}/metrics` | `conversations:read` |
+
+</details>
+
+<details><summary><strong>Contacts</strong> (8)</summary>
+
+| Operation | Route | Permission |
+|---|---|---|
+| List contacts "return all" | `GET /api/v1/contacts` | `conversations:read` |
+| Create a contact | `POST /api/v1/contacts` | `conversations:write` |
+| Create or update a contact | `POST /api/v1/contacts/update-or-create` | `conversations:write` |
+| Get a contact | `GET /api/v1/contacts/{contact}` | `conversations:read` |
+| Update a contact | `PUT /api/v1/contacts/{contact}` | `conversations:write` |
+| Get a contact's 24-hour window | `GET /api/v1/contacts/{contact}/meta-window` | `conversations:read` |
+| List a number's contacts "return all" | `GET /api/v1/devices/{device}/contacts` | `conversations:read` |
+| Delete contacts ⚠ | `POST /api/v1/contacts/delete` | `conversations:write` |
 
 </details>
 
@@ -426,6 +462,34 @@ resource shows up in each one with the operations of that category.
 
 </details>
 
+<details><summary><strong>Webhooks</strong> (8)</summary>
+
+| Operation | Route | Permission |
+|---|---|---|
+| List event types | `GET /api/v1/webhooks/events` | `accounts:read` |
+| List webhook subscriptions ⚠ "return all" | `GET /api/v1/webhooks` | `webhooks:read` |
+| Create a webhook subscription ⚠ | `POST /api/v1/webhooks` | `webhooks:write` |
+| Get a webhook subscription ⚠ | `GET /api/v1/webhooks/{id}` | `webhooks:read` |
+| Update a webhook subscription ⚠ | `PUT /api/v1/webhooks/{id}` | `webhooks:write` |
+| Delete a webhook subscription ⚠ | `DELETE /api/v1/webhooks/{id}` | `webhooks:write` |
+| List a subscription's deliveries ⚠ "return all" | `GET /api/v1/webhooks/{id}/deliveries` | `webhooks:read` |
+| Send a test event ⚠ | `POST /api/v1/webhooks/{id}/test` | `webhooks:write` |
+
+</details>
+
+<details><summary><strong>Account and Team</strong> (6)</summary>
+
+| Operation | Route | Permission |
+|---|---|---|
+| Get your monthly active contacts usage | `GET /api/v1/mac/status` | `conversations:read` |
+| List your monthly active contacts "return all" | `GET /api/v1/mac/contacts` | `conversations:read` |
+| List the history of your monthly active contacts "return all" | `GET /api/v1/mac/contacts/history` | `conversations:read` |
+| Get a team member | `GET /api/v1/agents/{user}` | `conversations:read` |
+| List your team "return all" | `GET /api/v1/agents` | `conversations:read` |
+| Get my account | `GET /api/v1/me` | `accounts:read` |
+
+</details>
+
 <details><summary><strong>Meta Costs and Accounts</strong> (3)</summary>
 
 | Operation | Route | Permission |
@@ -436,30 +500,19 @@ resource shows up in each one with the operations of that category.
 
 </details>
 
-<details><summary><strong>Conversions API</strong> (3)</summary>
+#### [Platform functions](https://developers-portal.funnelchat.app/docs/mas-funciones/funnelchat/) (134)
+
+<details><summary><strong>Contacts</strong> (7)</summary>
 
 | Operation | Route | Permission |
 |---|---|---|
-| Set up a number's dataset | `POST /api/v1/devices/{device}/capi/dataset` | `accounts:write` |
-| Test the Conversions API connection | `GET /api/v1/devices/{device}/capi/test` | `accounts:read` |
-| List your Conversions API datasets "return all" | `GET /api/v1/devices/capi/datasets` | `accounts:read` |
-
-</details>
-
-#### [Funnelchat functions](https://developers-portal.funnelchat.app/docs/mas-funciones/funnelchat/) (161)
-
-<details><summary><strong>Conversations and Messages</strong> (8)</summary>
-
-| Operation | Route | Permission |
-|---|---|---|
-| List conversations "return all" | `GET /api/v1/conversations` | `conversations:read` |
-| Count unread conversations | `GET /api/v1/conversations/count/unread` | `conversations:read` |
-| Count open conversations | `GET /api/v1/conversations/count/open` | `conversations:read` |
-| Count closed conversations | `GET /api/v1/conversations/count/closed` | `conversations:read` |
-| Count all conversations | `GET /api/v1/conversations/count/all` | `conversations:read` |
-| Mark all as read | `POST /api/v1/conversations/mark-all-read` | `conversations:write` |
-| Mark all as unread | `POST /api/v1/conversations/mark-all-unread` | `conversations:write` |
-| List a contact's messages "return all" | `GET /api/v1/contacts/{contactId}/messages` | `conversations:read` |
+| List a contact's notes "return all" | `GET /api/v1/contacts/{contact}/notes` | `conversations:read` |
+| Add a note to a contact | `POST /api/v1/contacts/{contact}/notes` | `conversations:write` |
+| Delete a note ⚠ | `DELETE /api/v1/contacts/{contact}/notes/{note}` | `conversations:write` |
+| Set a custom field on contacts | `POST /api/v1/contacts/attach-custom-field` | `conversations:write` |
+| Remove a custom field from contacts | `POST /api/v1/contacts/detach-custom-field` | `conversations:write` |
+| List a contact's tags "return all" | `GET /api/v1/contacts/{contact}/tags` | `conversations:read` |
+| List a contact's custom fields "return all" | `GET /api/v1/contacts/{contact}/custom-fields` | `conversations:read` |
 
 </details>
 
@@ -468,28 +521,6 @@ resource shows up in each one with the operations of that category.
 | Operation | Route | Permission |
 |---|---|---|
 | List a campaign's joins and leaves "return all" | `GET /api/v1/campaigns/{campaign}/participant-events` | `communities:read` |
-
-</details>
-
-<details><summary><strong>Contacts</strong> (15)</summary>
-
-| Operation | Route | Permission |
-|---|---|---|
-| List contacts "return all" | `GET /api/v1/contacts` | `conversations:read` |
-| Create a contact | `POST /api/v1/contacts` | `conversations:write` |
-| Create or update a contact | `POST /api/v1/contacts/update-or-create` | `conversations:write` |
-| Get a contact | `GET /api/v1/contacts/{contact}` | `conversations:read` |
-| Update a contact | `PUT /api/v1/contacts/{contact}` | `conversations:write` |
-| Get a contact's 24-hour window | `GET /api/v1/contacts/{contact}/meta-window` | `conversations:read` |
-| List a number's contacts "return all" | `GET /api/v1/devices/{device}/contacts` | `conversations:read` |
-| Delete contacts ⚠ | `POST /api/v1/contacts/delete` | `conversations:write` |
-| List a contact's notes "return all" | `GET /api/v1/contacts/{contact}/notes` | `conversations:read` |
-| Add a note to a contact | `POST /api/v1/contacts/{contact}/notes` | `conversations:write` |
-| Delete a note ⚠ | `DELETE /api/v1/contacts/{contact}/notes/{note}` | `conversations:write` |
-| Set a custom field on contacts | `POST /api/v1/contacts/attach-custom-field` | `conversations:write` |
-| Remove a custom field from contacts | `POST /api/v1/contacts/detach-custom-field` | `conversations:write` |
-| List a contact's tags "return all" | `GET /api/v1/contacts/{contact}/tags` | `conversations:read` |
-| List a contact's custom fields "return all" | `GET /api/v1/contacts/{contact}/custom-fields` | `conversations:read` |
 
 </details>
 
@@ -520,21 +551,6 @@ resource shows up in each one with the operations of that category.
 
 </details>
 
-<details><summary><strong>Webhooks</strong> (8)</summary>
-
-| Operation | Route | Permission |
-|---|---|---|
-| List event types | `GET /api/v1/webhooks/events` | `accounts:read` |
-| List webhook subscriptions ⚠ "return all" | `GET /api/v1/webhooks` | `webhooks:read` |
-| Create a webhook subscription ⚠ | `POST /api/v1/webhooks` | `webhooks:write` |
-| Get a webhook subscription ⚠ | `GET /api/v1/webhooks/{id}` | `webhooks:read` |
-| Update a webhook subscription ⚠ | `PUT /api/v1/webhooks/{id}` | `webhooks:write` |
-| Delete a webhook subscription ⚠ | `DELETE /api/v1/webhooks/{id}` | `webhooks:write` |
-| List a subscription's deliveries ⚠ "return all" | `GET /api/v1/webhooks/{id}/deliveries` | `webhooks:read` |
-| Send a test event ⚠ | `POST /api/v1/webhooks/{id}/test` | `webhooks:write` |
-
-</details>
-
 <details><summary><strong>Group Campaigns</strong> (12)</summary>
 
 | Operation | Route | Permission |
@@ -560,7 +576,7 @@ resource shows up in each one with the operations of that category.
 |---|---|---|
 | List scheduled sends "return all" | `GET /api/v1/scheduled-messages` | `communities:read` |
 | Get a scheduled send | `GET /api/v1/scheduled-messages/{scheduledMessage}` | `communities:read` |
-| List a scheduled send's groups | `GET /api/v1/scheduled-messages/{scheduledMessage}/groups` | `communities:read` |
+| List a scheduled send's groups "return all" | `GET /api/v1/scheduled-messages/{scheduledMessage}/groups` | `communities:read` |
 | Get a scheduled send's result by group "return all" | `GET /api/v1/scheduled-messages/{scheduledMessage}/group-messages` | `communities:read` |
 | Get a scheduled send's reads and plays | `GET /api/v1/scheduled-messages/{scheduledMessage}/readed-played-rates` | `communities:read` |
 | List a recurring send's runs "return all" | `GET /api/v1/scheduled-messages/{scheduledMessage}/runs` | `communities:read` |
@@ -597,7 +613,7 @@ resource shows up in each one with the operations of that category.
 | Get a broadcast's statistics | `GET /api/v1/broadcasts/{broadcast}/statistics` | `conversations:read` |
 | Get a broadcast's cost | `GET /api/v1/broadcasts/{broadcast}/cost` | `conversations:read` |
 | List a broadcast's contacts "return all" | `GET /api/v1/broadcasts/{broadcast}/contacts` | `conversations:read` |
-| Cancel a broadcast | `POST /api/v1/broadcasts/{broadcast}/cancel` | `conversations:write` |
+| Cancel a broadcast ⚠ | `POST /api/v1/broadcasts/{broadcast}/cancel` | `conversations:write` |
 | List a broadcast's messages "return all" | `GET /api/v1/broadcasts/{broadcast}/messages` | `conversations:read` |
 | List broadcast folders "return all" | `GET /api/v1/broadcasts/folders` | `conversations:read` |
 | Create a broadcast folder | `POST /api/v1/broadcasts/folders` | `conversations:write` |
@@ -613,7 +629,7 @@ resource shows up in each one with the operations of that category.
 | Pause a contact's automations | `POST /api/v1/contacts/{contact}/pause` | `conversations:write` |
 | List a contact's flows "return all" | `GET /api/v1/contacts/{contact}/flows` | `conversations:read` |
 | List a contact's flow runs "return all" | `GET /api/v1/contact-flows/{contactId}` | `conversations:read` |
-| Cancel a flow run | `PUT /api/v1/contact-flows/{contactFlowId}/cancel` | `conversations:write` |
+| Cancel a flow run ⚠ | `PUT /api/v1/contact-flows/{contactFlowId}/cancel` | `conversations:write` |
 | List flows "return all" | `GET /api/v1/flows` | `conversations:read` |
 | Get a flow | `GET /api/v1/flows/{flow}` | `conversations:read` |
 | List a flow's nodes "return all" | `GET /api/v1/flows/{flow}/nodes` | `conversations:read` |
@@ -709,19 +725,6 @@ resource shows up in each one with the operations of that category.
 
 </details>
 
-<details><summary><strong>Account and Team</strong> (6)</summary>
-
-| Operation | Route | Permission |
-|---|---|---|
-| Get your monthly active contacts usage | `GET /api/v1/mac/status` | `conversations:read` |
-| List your monthly active contacts "return all" | `GET /api/v1/mac/contacts` | `conversations:read` |
-| List the history of your monthly active contacts "return all" | `GET /api/v1/mac/contacts/history` | `conversations:read` |
-| Get a team member | `GET /api/v1/agents/{user}` | `conversations:read` |
-| List your team "return all" | `GET /api/v1/agents` | `conversations:read` |
-| Get my account | `GET /api/v1/me` | `accounts:read` |
-
-</details>
-
 <details><summary><strong>Alerts</strong> (8)</summary>
 
 | Operation | Route | Permission |
@@ -734,6 +737,16 @@ resource shows up in each one with the operations of that category.
 | Get the quiet hours | `GET /api/v1/alerts/quiet-hours` | `accounts:read` |
 | Set the quiet hours | `PUT /api/v1/alerts/quiet-hours` | `accounts:write` |
 | Turn an alert on or off | `PUT /api/v1/alerts/destinations/{id}/settings` | `accounts:write` |
+
+</details>
+
+<details><summary><strong>Conversions API</strong> (3)</summary>
+
+| Operation | Route | Permission |
+|---|---|---|
+| Set up a number's dataset | `POST /api/v1/devices/{device}/capi/dataset` | `accounts:write` |
+| Test the Conversions API connection | `GET /api/v1/devices/{device}/capi/test` | `accounts:read` |
+| List your Conversions API datasets "return all" | `GET /api/v1/devices/capi/datasets` | `accounts:read` |
 
 </details>
 
@@ -750,6 +763,12 @@ resource shows up in each one with the operations of that category.
 </details>
 
 <!-- operations:end -->
+
+### Migrating to 0.5.0: no Staging
+
+The credential no longer offers the **Staging** environment. A credential saved with it stops before sending anything
+(its test fails on `environment-not-offered.invalid`): edit it and choose **Production**, or **Custom** with your base
+URL. Nothing else changes for saved workflows: every operation keeps its value. See [CHANGELOG.md](CHANGELOG.md).
 
 ### Migrating to 0.4.0: opaque IDs
 
@@ -842,7 +861,7 @@ events of those campaigns (`filters.campaign_ids`; with a filter, an event witho
 
 ### What you need
 
-- **A public `https` URL for n8n** (with Production or Staging). Funnelchat rejects `http` URLs, internal addresses
+- **A public `https` URL for n8n** (with Production). Funnelchat rejects `http` URLs, internal addresses
   and URLs with a user and password. In self-hosted n8n, set `WEBHOOK_URL` to your domain or use a tunnel. With a
   custom base URL (the sandbox), n8n's local URL works too, such as `http://localhost:5678`: the node does not filter
   the URL, the API decides.
@@ -959,7 +978,8 @@ its README. By default it listens on `http://localhost:4010`.
    message to a group** and **Get a group action**) and webhook subscriptions keep what you do, in one or more
    workspaces; most of the rest answers an example built from the specification. Sending with an API key is open in
    the sandbox, with the API's 24-hour window and anti-spam guards, every response carries `X-Request-Id`, and every
-   event carries `data.workspace_id` (sandbox `0.4.0`).
+   event carries `data.workspace_id` (sandbox `0.4.0`). Since sandbox `0.7.0`, **Send a form** takes the form's
+   `frm_` ID (its `family_id`), as production does.
 4. **Trigger.** The sandbox accepts `http` and local URLs, so an n8n on `http://localhost:5678` receives the events.
    Activate the workflow with the **Funnelchat Trigger** and simulate an incoming message:
 
@@ -981,13 +1001,13 @@ its README. By default it listens on `http://localhost:4010`.
 5. **What the sandbox does not show you:** with the real API, n8n's URL has to be `https` and public (try it with
    `npx @funnelchat-hq/sandbox --require-https`).
 
-The end-to-end tests (`npm run test:e2e`, see [Development](#development)) last passed on 2026-11-04, against the
-sandbox `0.2.0` (`main` @ `b3b4513`): the first use of 0.2.0 (**Send a message** to a contact and the trigger up to `read`, with the
-`client_reference`), a number created by QR, its QR and `device.connected` through the trigger, a connect link
+The end-to-end tests (`npm run test:e2e`, see [Development](#development)) last passed on 2026-11-18, 9 of 9, against
+the sandbox `0.7.0` (`release/v0.7.0` @ `1092826`): the first use (**Send a message** and the trigger up to `read`, with
+the `client_reference`), a number created by QR, its QR and `device.connected` through the trigger, a connect link
 created, read, listed by reference and revoked, the group participant events, sending and reading a message, file by
-URL, `X-Request-Id` in errors, and a WhatsApp form created, published, sent and completed through the trigger. By
-hand, on 2026-10-16 with n8n 2.25.7 and the sandbox @ `7a1b3d8`: the credential test, a workflow with "Create or update
-a contact" and "List tags", and the full trigger cycle.
+URL, `X-Request-Id` in errors, and a WhatsApp form created, published, sent and completed through the trigger. By hand,
+on 2026-11-17 with n8n 2.48.4 and version 0.4.0: installing it from the UI, the credential test, sending, paging and
+the trigger with a signed event.
 
 ## Regenerating
 
@@ -1085,12 +1105,12 @@ tag `next`, never as the default version.
 
 ## Sources and what is left to verify
 
-| What | Where it comes from | Status on 2026-11-13 |
+| What | Where it comes from | Status on 2026-11-18 |
 | --- | --- | --- |
-| Every operation and the trigger's built-in event list | The specification published at `https://developers-portal.funnelchat.app/specs/funnelchat.json` (portal `v0.6.16`, SHA-256 `7db2ead826697c80fd8feef3f0ea556b5374dd3d2cb5e02f3cfe4584af79e33c`): 253 operations, 56 event types, 30 groups in three categories | The portal's `v0.6.16` |
+| Every operation and the trigger's built-in event list | The specification of the portal at `fe4df8d` (`v0.7.0-35-gfe4df8d`, SHA-256 `4a8fbaee9d8b251fd0df44b5a6ae5e4a55ca4993569a5af6834c09b31a4bb423`): 253 operations, 55 event types the trigger offers, 30 groups in three categories | The portal at `fe4df8d` |
 | `data.message.uid` in `group.message_received` and `group.reaction_added` | The portal's example (since `v0.6.14`) | Published |
 | The page size of "List forms" and "List a form's responses" | The specification: `perPage` | The conversations code read `per_page` in `v1.18.10` (the supplement the node had until 0.2.3); not checked against the code in production |
 | The signature algorithm and vectors, the event envelope | developers-portal (`snippets/verificar-firma.js`, `tests/test_firmas.py`) | Published |
-| The local sandbox of "Testing with the sandbox" | funnelchat-sandbox `0.4.0` (`@funnelchat-hq/sandbox` on npm, 2026-11-12) | Groups, the send to a group and its action, workspaces and `data.workspace_id`; the end-to-end tests last ran against `0.2.0` |
+| The local sandbox of "Testing with the sandbox" | funnelchat-sandbox `0.7.0` | Groups, the send to a group and its action, workspaces and `data.workspace_id`, and `form_id` as `frm_`; the end-to-end tests ran against it on 2026-11-18 |
 
 The details of each source are in [`spec/PROVENANCE.md`](spec/PROVENANCE.md).

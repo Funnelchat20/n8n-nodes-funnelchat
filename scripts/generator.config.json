@@ -15,10 +15,11 @@
 		"names": {
 			"primer-uso": "First use",
 			"whatsapp": "WhatsApp functions",
-			"funnelchat": "Funnelchat functions",
+			"funnelchat": "Platform functions",
 			"Primer uso": "First use",
 			"Funciones de WhatsApp": "WhatsApp functions",
-			"Funciones de Funnelchat": "Funnelchat functions"
+			"Funciones de la plataforma": "Platform functions",
+			"Funciones de Funnelchat": "Platform functions"
 		}
 	},
 	"defaultResource": "contact",
@@ -238,26 +239,6 @@
 		"connectLink.store": {
 			"type": "qr"
 		}
-	},
-	"extraParameters": {
-		"webhookSubscriptionDelivery.index": [
-			{
-				"name": "event_type",
-				"in": "query",
-				"description": "Only the attempts of this event type.",
-				"schema": {
-					"type": "string"
-				}
-			},
-			{
-				"name": "event_id",
-				"in": "query",
-				"description": "Only the attempts of this event (evt_…).",
-				"schema": {
-					"type": "string"
-				}
-			}
-		]
 	},
 	"operationNotes": {
 		"messageReaction.update": "With an API key it answers 202 without a body: a reaction is not a message with an ID. If the provider does not support it, 422 with reason provider_unsupported.",

@@ -29,11 +29,30 @@ download it). The node carries every operation and event type of this file, and 
 | Operations | 253, in 30 groups |
 | Event types (`webhooks`) | 56 |
 | Domains (`x-fc-sources`) | conversations (147 operations), communities (55 operations), accounts (51 operations) |
-| Categories | Primer uso (`primer-uso`): 1 group, Funciones de WhatsApp (`whatsapp`): 9 groups, Funciones de Funnelchat (`funnelchat`): 20 groups |
-| SHA-256 | `fadcd73731cba99d0b49adfec7b5799d7318fe99944c88282a444362d869e576` |
-| Copied | 2026-11-16 |
+| Categories | Primer uso (`primer-uso`): 1 group, Funciones de WhatsApp (`whatsapp`): 12 groups, Funciones de la plataforma (`funnelchat`): 17 groups |
+| SHA-256 | `4a8fbaee9d8b251fd0df44b5a6ae5e4a55ca4993569a5af6834c09b31a4bb423` |
+| Copied | 2026-11-18 |
 
 <!-- spec:end -->
+
+## The copy of 2026-11-18 (portal `v0.7.0-35-gfe4df8d`)
+
+The specification of the portal at `fe4df8d` (branch `docs/integracion-17nov`), SHA-256
+`4a8fbaee9d8b251fd0df44b5a6ae5e4a55ca4993569a5af6834c09b31a4bb423`: 253 operations, as in `v0.7.0`, and 58 entries in
+`webhooks` (`webhook.test` of accounts came in; the trigger does not offer it, as it does not offer the other one).
+
+- **`x-fc-destructive` on every operation**: 23 `true`, 230 `false`. The node already asked for confirmation on every
+  deletion and on what the flag marked; now the flag also marks cancelling a broadcast or a flow run, removing
+  participants from a group and renewing its invite link.
+- **Groups and categories.** The third category is now «Funciones de la plataforma» (in the node, "Platform
+  functions"), and several groups moved to «Funciones de WhatsApp»: 12 groups there and 17 in the platform's. No
+  operation changed resource.
+- **Parameters.** 80 operations changed a parameter: enums that were malformed, dates that are `format: date`
+  (`YYYY-MM-DD`, such as `dateFrom` of "List a stage's contacts"), descriptions, and `event_type` and `event_id` of a
+  subscription's deliveries, which the specification lists now (they left `extraParameters`). `form_id` of "Send a
+  form" is the form's `frm_` ID, as production takes it.
+- **Nothing else.** No operation was added, removed or renamed; `get_api_v1_me` ("Get my account", which has no
+  operationId) keeps its value.
 
 ## The copy of 2026-11-16 (portal `v0.7.0`)
 

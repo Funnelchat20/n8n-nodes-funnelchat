@@ -466,7 +466,7 @@ describe('event list from the catalog', () => {
 		]);
 		const options = await getEvents.call(ctx);
 		expect(requestLine(calls[0])).toBe('GET /api/v1/webhooks/events');
-		expect(calls[0].options.baseURL).toBe('https://api-staging.funnelchat.com');
+		expect(calls[0].options.baseURL).toBe('https://api.funnelchat.com');
 		expect(options.map((o) => o.value)).toEqual([
 			'nuevo.evento',
 			'message.received',
